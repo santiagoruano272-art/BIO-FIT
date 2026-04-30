@@ -1,37 +1,64 @@
-# Created by https://www.toptal.com/developers/gitignore/api/windows
-# Edit at https://www.toptal.com/developers/gitignore?templates=windows
+# =========================
+# 🔐 SEGURIDAD (CRÍTICO)
+# =========================
 
-### Windows ###
-# Windows thumbnail cache files
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-
-# Dump file
-*.stackdump
-bio-fit-serviceAccountKey.json
-
-#firebase / credenciales
-.json
-
-# variables de entorno
 .env
+.env.*
+*.env
 
-# Folder config file
-[Dd]esktop.ini
+# Firebase / Google credentials
+bio-fit-serviceAccountKey.json
+*.json
 
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
+# =========================
+# 🐍 PYTHON / DJANGO
+# =========================
 
-# Windows Installer files
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 
-# Windows shortcuts
-*.lnk
+# Entornos virtuales
+venv/
+env/
+ENV/
 
-# End of https://www.toptal.com/developers/gitignore/api/windows
+# Archivos de Django
+db.sqlite3
+*.log
+
+# =========================
+# 🧠 CACHE / TEMPORALES
+# =========================
+
+*.swp
+*.swo
+*~
+
+# =========================
+# 💻 SISTEMA OPERATIVO
+# =========================
+
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# =========================
+# 🧪 TEST / COVERAGE
+# =========================
+
+.coverage
+htmlcov/
+
+# =========================
+# 📦 NODE (si usas JS)
+# =========================
+
+node_modules/
+
+# =========================
+# 🧾 OTROS
+# =========================
+
+*.stackdump

@@ -1,10 +1,3 @@
-# ============================================================
-#  BIO-FIT — services/firebase_client.py
-#
-#  Cliente centralizado para todas las operaciones con Firebase.
-#  Firestore para datos, Auth para autenticación.
-# ============================================================
-
 import logging
 from datetime import datetime
 from django.conf import settings
@@ -31,7 +24,7 @@ class FirebaseClient:
     - users/{uid}/chat_history → historial del asistente
     """
 
-    # ── Usuarios ────────────────────────────────────────────
+    # ── USUARIOS
 
     def get_user_profile(self, uid: str) -> dict | None:
         """Obtiene el perfil completo del usuario."""
@@ -52,7 +45,7 @@ class FirebaseClient:
             logger.error(f"Error guardando perfil de {uid}: {e}")
             return False
 
-    # ── Rutinas ─────────────────────────────────────────────
+    # ── RUTINAS
 
     def save_routine(self, user_id: str, routine_data: dict, user_inputs: dict) -> str:
         """

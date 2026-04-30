@@ -9,6 +9,7 @@ import json
 import logging
 from django.conf import settings
 import anthropic
+from biofit.apps.calories.calculator import calcular_calorias_completas
 
 from .prompts import (
     get_system_prompt_routine_generator,

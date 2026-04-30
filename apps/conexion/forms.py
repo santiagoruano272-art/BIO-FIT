@@ -1,13 +1,9 @@
 # ============================================================
 #  BIO-FIT — apps/routines/forms.py
-#
-#  Formulario principal de generación de rutinas.
-#  Este es el "bandeja" que el usuario llena para que la IA
-#  genere su rutina personalizada.
 # ============================================================
 
 from django import forms
-from .prompts import (
+from biofit.apps.rutinas.prompts import (
     EXPERIENCE_LEVELS,
     TRAINING_GOALS,
     EQUIPMENT_OPTIONS,
@@ -16,13 +12,8 @@ from .prompts import (
 
 
 class RoutineRequestForm(forms.Form):
-    """
-    Formulario de solicitud de rutina personalizada.
-    Los campos de este formulario alimentan directamente
-    el prompt que se envía a la IA.
-    """
 
-    # ── Objetivo principal ──────────────────────────────────
+    # ── Objetivo principal ──────────a────────────────────────
     main_goal = forms.ChoiceField(
         label='¿Cuál es tu objetivo principal?',
         choices=[(k, v) for k, v in TRAINING_GOALS.items()],
@@ -35,7 +26,7 @@ class RoutineRequestForm(forms.Form):
         choices=[(k, v) for k, v in TRAINING_GOALS.items()],
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'goal-checkbox'}),
         required=False,
-        help_text='Puedes seleccionar hasta 2 adicionales.',
+        help_text='Puedes seleccionar hasta 2 adicionales (distintos al principal).',
     )
 
     # ── Nivel de experiencia ────────────────────────────────
@@ -64,11 +55,11 @@ class RoutineRequestForm(forms.Form):
     session_duration_min = forms.ChoiceField(
         label='Duración por sesión',
         choices=[
-            (20, '20 minutos (express)'),
-            (30, '30 minutos'),
-            (45, '45 minutos (recomendado)'),
-            (60, '1 hora'),
-            (90, '1.5 horas'),
+            (20,  '20 minutos (express)'),
+            (30,  '30 minutos'),
+            (45,  '45 minutos (recomendado)'),
+            (60,  '1 hora'),
+            (90,  '1.5 horas'),
         ],
         initial=45,
         widget=forms.Select(attrs={'class': 'form-select'}),
@@ -139,21 +130,47 @@ class RoutineRequestForm(forms.Form):
     def clean(self):
         cleaned = super().clean()
 
-        # Convertir strings de preferencias a listas
-        preferred = cleaned.get('preferred_exercises', '')
-        if preferred:
-            cleaned['preferred_exercises'] = [p.strip() for p in preferred.split(',') if p.strip()]
-        else:
-            cleaned['preferred_exercises'] = []
+        main_goal = cleaned.get('main_goal')
+        secondary_goals = cleaned.get('secondary_goals', [])
 
-        disliked = cleaned.get('disliked_exercises', '')
-        if disliked:
-            cleaned['disliked_exercises'] = [d.strip() for d in disliked.split(',') if d.strip()]
-        else:
-            cleaned['disliked_exercises'] = []
+        if main_goal and main_goal in secondary_goals:
+            self.add_error(
+                'secondary_goals',
+                'El objetivo secundario no puede ser igual al principal.'
+            )
 
-        # Convertir session_duration_min a int
+        # Convertir preferencias de texto a listas
+        for field in ('preferred_exercises', 'disliked_exercises'):
+            value = cleaned.get(field, '')
+            cleaned[field] = (
+                [item.strip() for item in value.split(',') if item.strip()]
+                if value else []
+            )
+
+        # Convertir duración a int
         if cleaned.get('session_duration_min'):
             cleaned['session_duration_min'] = int(cleaned['session_duration_min'])
 
         return cleaned
+
+    def to_prompt_data(self, user_profile: dict) -> dict:
+        """
+        ✅ NUEVO: Combina los datos del form con el perfil del usuario
+        para construir el dict completo que recibe build_routine_user_prompt().
+
+        Args:
+            user_profile: dict del perfil guardado en Firestore (edad, peso, etc.)
+
+        Returns:
+            dict listo para pasar a build_routine_user_prompt()
+        """
+        form_data = self.cleaned_data.copy()
+
+        return {
+            **form_data,
+            # Datos físicos que vienen del perfil, no del form
+            'age':        user_profile.get('age'),
+            'gender':     user_profile.get('gender'),
+            'weight_kg':  user_profile.get('weight_kg'),
+            'height_cm':  user_profile.get('height_cm'),
+        }   
