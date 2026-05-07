@@ -1,10 +1,12 @@
 from django.urls import path
-from django.http import JsonResponse
+from . import views_rutinas  # Importamos tus vistas reales
 
-# vista temporal SOLO para probar que funciona
-def test_rutinas(request):
-    return JsonResponse({"msg": "rutinas funcionando"})
+app_name = 'routines'
 
 urlpatterns = [
-    path('', test_rutinas),
+    # Esta ruta cargará el formulario para generar la rutina
+    path('generar/', views_rutinas.routine_generator_view, name='generator'),
+    
+    # Esta ruta servirá para procesar la petición de la IA vía AJAX
+    path('api/generate/', views_rutinas.generate_routine_api, name='api_generate'),
 ]

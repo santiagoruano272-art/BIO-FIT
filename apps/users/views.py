@@ -10,7 +10,8 @@ from apps.conexion.auth import register_user, login_user
 # =========================================
 # VISTAS DE PLANTILLAS HTML
 # =========================================
-
+def landing_page(request):
+    return render(request, 'landing.html')
 def login_page(request):
     """Sirve el template de login."""
     return render(request, 'users/login.html')
@@ -79,3 +80,4 @@ def login_view(request):
         "token": result["idToken"],
         "uid": result["uid"]
     })
+

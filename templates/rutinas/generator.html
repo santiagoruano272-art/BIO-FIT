@@ -1,17 +1,74 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<h2>Generar Rutina</h2>
+<style>
+    .generator-container { max-width: 800px; margin: 40px auto; padding: 20px; }
+    .form-card { background: white; padding: 30px; border-radius: 24px; shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: #0d2e1e; }
+    select, input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #d4eee6; }
+    .btn-generate { 
+        background: #0d2e1e; color: #a8e063; width: 100%; padding: 15px; 
+        border: none; border-radius: 12px; font-weight: 700; cursor: pointer;
+    }
+</style>
 
-<form method="POST">
-    {% csrf_token %}
-    <input type="text" name="objetivo" placeholder="Ej: ganar músculo">
-    <button type="submit">Generar</button>
-</form>
+<div class="generator-container">
+    <div class="form-card">
+        <h1>Configura tu Rutina con IA</h1>
+        <p>Cuéntanos cómo quieres entrenar hoy.</p>
+        
+        <form id="routineForm">
+            <div class="form-group">
+                <label>Objetivo Principal</label>
+                <select id="goal">
+                    <option value="perder_peso">Perder Peso</option>
+                    <option value="ganar_musculo">Ganar Músculo</option>
+                    <option value="fuerza">Fuerza</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Días por semana</label>
+                <input type="number" id="days" min="1" max="7" value="3">
+            </div>
 
-{% if rutina_generada %}
-<h3>Resultado:</h3>
-<p>{{ rutina_generada }}</p>
-{% endif %}
+            <button type="submit" class="btn-generate" id="btnSubmit">Generar Rutina Mágica</button>
+        </form>
 
+        <div id="result" style="margin-top: 30px; display: none;">
+            <h3>Tu rutina generada:</h3>
+            <pre id="routineOutput" style="background: #f0f7f4; padding: 15px; border-radius: 10px; white-space: pre-wrap;"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('routineForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmit');
+    btn.textContent = "La IA está pensando...";
+    btn.disabled = true;
+
+    // Aquí conectarías con tu vista de API en views_rutinas.py
+    const response = await fetch("{% url 'routines:api_generate' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            main_goal: document.getElementById('goal').value,
+            days_per_week: document.getElementById('days').value
+        })
+    });
+
+    const data = await response.json();
+    if(data.success) {
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('routineOutput').textContent = JSON.stringify(data.routine, null, 2);
+    }
+    btn.textContent = "Generar Rutina Mágica";
+    btn.disabled = false;
+});
+</script>
 {% endblock %}
