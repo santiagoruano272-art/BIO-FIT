@@ -1,10 +1,10 @@
-# 🥗 BIO-FIT: Porque cuidarte debería ser sencillo (y para todos) 🍃
+# 🥗 BIO-FIT: Porque cuidarte debería ser sencillo 🍃
 
-¡Hola! 👋 Qué emoción que estés por aquí. Te queremos presentar **BIO-FIT**, un proyecto que nació con una misión que va mucho más allá de las notas: queremos usar la tecnología para que nadie se sienta perdido/inseguro al intentar mejorar su salud.
+¡Hola!, Qué emoción que estés por aquí. Te queremos presentar **BIO-FIT**, un proyecto que nació con una misión que va mucho más allá de las notas: queremos usar la tecnología para que nadie se sienta perdido/inseguro al intentar mejorar su salud.
 
 ---
 
-## ✨ ¿Qué es BIO-FIT?
+## ¿Qué es BIO-FIT?
 
 ¿Alguna vez has sentido que hay demasiada información sobre salud y no sabes qué te sirve a ti? Nosotros también. Por eso creamos **BIO-FIT**. 
 
@@ -12,7 +12,7 @@ BIO-FIT no es solo una página web; es un espacio pensado para personas reales d
 
 ---
 
-## 🚀 Lo que hemos construido para ti
+## Lo que hemos construido para ti
 
 Queríamos que la plataforma se sintiera como un asistente que te conoce, que te sientas seguro de estar en un espacio como este:
 
@@ -24,7 +24,7 @@ Queríamos que la plataforma se sintiera como un asistente que te conoce, que te
 
 ---
 
-## 🛠️ La "magia" detrás de la pantalla
+## La "magia" detrás de la pantalla
 
 Para que todo funcione de maravilla, usamos herramientas modernas pero potentes:
 
@@ -35,7 +35,7 @@ Para que todo funcione de maravilla, usamos herramientas modernas pero potentes:
 
 ---
 
-## 👥 ¿Quiénes somos?
+## ¿Quiénes somos?
 
 Somos un grupo de amigos y aprendices del programa **ADSO en el SENA (Ficha 3147269)**. Nos apasiona el código, pero nos apasiona más ver cómo ese código puede ayudar a alguien a sentirse mejor consigo mismo, en como podemos aportar un granito de arena a la sociedad:
 
@@ -46,8 +46,4 @@ Somos un grupo de amigos y aprendices del programa **ADSO en el SENA (Ficha 3147
 
 ---
 
-## 📄 Un mensaje final
-
-BIO-FIT es nuestra forma de decir que la tecnología puede ser cálida y humana. Si este proyecto te ayuda a tomar un vaso más de agua o a caminar 10 minutos más hoy, habremos cumplido nuestra meta.
-
-*“Tu cuerpo es el único lugar que tienes para vivir. En BIO-FIT te ayudamos a que sea el mejor lugar del mundo.”* 🏠✨
+## Gracias:))
