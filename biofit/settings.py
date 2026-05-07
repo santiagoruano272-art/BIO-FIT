@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -41,6 +42,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
     ],
 }
 
@@ -99,3 +101,24 @@ TEMPLATES = [
 ROOT_URLCONF = 'biofit.urls'
 
 WSGI_APPLICATION = 'biofit.wsgi.application'
+
+#FIREBASE
+
+FIREBASE_API_KEY = os.getenv('FIREBASE_API_KEY')
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'bio-fit-serviceAccountKey.json')
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],  
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',  # ✅ IMPORTANTE
+                'django.contrib.auth.context_processors.auth',  # ✅ OBLIGATORIO
+                'django.contrib.messages.context_processors.messages',  # ✅ OBLIGATORIO
+            ],
+        },
+    },
+]

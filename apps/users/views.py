@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -6,9 +7,20 @@ from rest_framework import status
 
 from apps.conexion.auth import register_user, login_user
 
+# =========================================
+# VISTAS DE PLANTILLAS HTML
+# =========================================
+
+def login_page(request):
+    """Sirve el template de login."""
+    return render(request, 'users/login.html')
+
+def registro_page(request):
+    """Sirve el template de registro."""
+    return render(request, 'users/registro.html')
 
 # =========================================
-# REGISTRO
+# REGISTRO (API)
 # =========================================
 
 class RegisterView(APIView):
@@ -38,15 +50,13 @@ class RegisterView(APIView):
             "email": result["email"]
         })
 
-
 # =========================================
-# LOGIN
+# LOGIN (API)
 # =========================================
 
-@api_view(['GET', 'POST'])  # 👈 IMPORTANTE para probar en navegador
+@api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-
     if request.method == "GET":
         return Response({"msg": "Endpoint LOGIN activo. Usa POST"})
 

@@ -1,9 +1,4 @@
-# ============================================================
-#  BIO-FIT — apps/routines/ai_generator.py
-#
-#  Motor de generación de rutinas con IA.
-#  Usa la API de Anthropic (Claude) como proveedor principal.
-# ============================================================
+
 
 import json
 import logging

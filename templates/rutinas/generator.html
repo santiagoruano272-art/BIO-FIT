@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Generar Rutina</h2>
+
+<form method="POST">
+    {% csrf_token %}
+    <input type="text" name="objetivo" placeholder="Ej: ganar músculo">
+    <button type="submit">Generar</button>
+</form>
+
+{% if rutina_generada %}
+<h3>Resultado:</h3>
+<p>{{ rutina_generada }}</p>
+{% endif %}
+
+{% endblock %}

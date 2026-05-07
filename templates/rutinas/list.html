@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Rutinas</h2>
+
+<ul>
+    {% for rutina in rutinas %}
+        <li>
+            <a href="/rutinas/{{ rutina.id }}/">
+                {{ rutina.nombre }}
+            </a>
+        </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

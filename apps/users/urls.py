@@ -1,7 +1,11 @@
 from django.urls import path
-from .views import RegisterView, login_view
+from .views import RegisterView, login_view, registro_page
 
 urlpatterns = [
-    path('register/', RegisterView.as_view(), name='register'),
-    path('login/', login_view, name='login'),
+    # API
+    path('registro/', RegisterView.as_view()),
+    path('login/', login_view),
+
+    # FRONTEND
+    path('registro-page/', registro_page),
 ]
