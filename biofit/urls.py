@@ -1,11 +1,16 @@
 from django.contrib import admin
 from django.urls import path
-# Importamos las vistas desde su ubicación en la app users
+from django.shortcuts import redirect  # ← agregar esto
 from apps.users.views import RegisterView, login_view, login_page, registro_page
+from django.urls import path, include
+
+path('users/', include('apps.users.urls')),
 
 urlpatterns = [
-    # La ruta correcta es admin.site.urls
     path('admin/', admin.site.urls),
+
+    # ── Ruta raíz → redirige al registro ──────────────────────
+    path('', lambda request: redirect('registro-page')),  # ← agregar esto
 
     # ── Páginas HTML ──────────────────────────────────────────
     path('login/', login_page, name='login-page'),
