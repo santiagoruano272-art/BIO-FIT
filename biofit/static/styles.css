@@ -1,5 +1,7 @@
 /* static/styles.css */
-
+/* =========================
+   VARIABLES GLOBALES
+========================= */
 :root {
     --primary-dark: #0d2e1e;
     --primary-light: #a8e063;
@@ -10,33 +12,44 @@
     --text-main: #2c3e50;
 }
 
+/* =========================
+   ESTILOS GENERALES
+========================= */
 body {
-    background-color: var(--bg-light);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: var(--text-main);
     margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-main);
 }
 
-/* Contenedor del Generador */
+/* =========================
+   CONTENEDOR PRINCIPAL
+========================= */
 .generator-container {
     max-width: 800px;
     margin: 60px auto;
     padding: 20px;
 }
 
+/* =========================
+   TARJETA DEL FORMULARIO
+========================= */
 .form-card {
     background: var(--white);
     padding: 40px;
     border-radius: 24px;
-    box-shadow: 0 15px 35px rgba(13, 46, 30, 0.08);
     border: 1px solid var(--border-color);
+    box-shadow: 0 15px 35px rgba(13, 46, 30, 0.08);
 }
 
+/* =========================
+   TÍTULOS Y TEXTO
+========================= */
 h1 {
-    color: var(--primary-dark);
-    font-size: 2rem;
-    margin-bottom: 10px;
     text-align: center;
+    font-size: 2rem;
+    color: var(--primary-dark);
+    margin-bottom: 10px;
 }
 
 p {
@@ -45,7 +58,9 @@ p {
     margin-bottom: 30px;
 }
 
-/* Estilos de Formulario */
+/* =========================
+   FORMULARIO
+========================= */
 .form-group {
     margin-bottom: 25px;
 }
@@ -53,72 +68,98 @@ p {
 label {
     display: block;
     margin-bottom: 10px;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--primary-dark);
-    font-size: 0.95rem;
 }
 
-select, input {
+/* Inputs y Select */
+select,
+input {
     width: 100%;
     padding: 14px;
-    border-radius: 12px;
-    border: 2px solid var(--border-color);
-    background-color: #f9fdfc;
-    transition: all 0.3s ease;
     font-size: 1rem;
-    box-sizing: border-box; /* Importante para el ancho total */
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background-color: #f9fdfc;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
 }
 
-select:focus, input:focus {
+/* Efecto Focus */
+select:focus,
+input:focus {
     outline: none;
     border-color: var(--accent-green);
     box-shadow: 0 0 0 4px rgba(168, 224, 99, 0.2);
 }
 
-/* Botón de Generar */
+/* =========================
+   BOTÓN GENERAR
+========================= */
 .btn-generate {
+    width: 100%;
+    margin-top: 10px;
+    padding: 16px;
+
     background: var(--primary-dark);
     color: var(--primary-light);
-    width: 100%;
-    padding: 16px;
+
     border: none;
     border-radius: 14px;
-    font-weight: 700;
+
     font-size: 1.1rem;
+    font-weight: 700;
+
     cursor: pointer;
-    transition: transform 0.2s, background 0.3s;
-    margin-top: 10px;
+    transition: background 0.3s ease, transform 0.2s ease;
 }
 
+/* Hover */
 .btn-generate:hover {
     background: #15452d;
     transform: translateY(-2px);
 }
 
+/* Deshabilitado */
 .btn-generate:disabled {
     background: #ccc;
     cursor: not-allowed;
     transform: none;
 }
 
-/* Área de Resultado de la IA */
+/* =========================
+   RESULTADO DE LA IA
+========================= */
 #result {
+    padding: 20px;
     background: #f0f7f4;
     border-left: 5px solid var(--accent-green);
-    padding: 20px;
     border-radius: 12px;
+
     animation: fadeIn 0.5s ease;
 }
 
+/* Texto del resultado */
 #routineOutput {
+    margin: 0;
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.9rem;
     line-height: 1.6;
-    color: #2c3e50;
-    margin: 0;
+    color: var(--text-main);
 }
 
+/* =========================
+   ANIMACIONES
+========================= */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
