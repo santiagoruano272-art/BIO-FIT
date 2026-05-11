@@ -1,4 +1,4 @@
-# 🥗 BIO-FIT: Porque cuidarte debería ser sencillo 🍃
+
 
 ¡Hola!, Qué emoción que estés por aquí. Te queremos presentar **BIO-FIT**, un proyecto que nació con una misión que va mucho más allá de las notas: queremos usar la tecnología para que nadie se sienta perdido/inseguro al intentar mejorar su salud.
 
