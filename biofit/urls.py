@@ -22,4 +22,4 @@ urlpatterns = [
     # 4. RUTAS DE RUTINAS (Esto es lo que faltaba para corregir el error del botón)
     # Al poner namespace='routines', el botón {% url 'routines:generator' %} funcionará
     path('rutinas/', include('apps.rutinas.urls', namespace='routines')),
-]
+    ]  

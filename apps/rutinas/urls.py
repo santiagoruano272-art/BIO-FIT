@@ -1,12 +1,13 @@
+# apps/rutinas/urls.py
 from django.urls import path
-from . import views_rutinas  # Importamos tus vistas reales
+from . import views_rutinas
 
 app_name = 'routines'
 
 urlpatterns = [
-    # Esta ruta cargará el formulario para generar la rutina
-    path('generar/', views_rutinas.routine_generator_view, name='generator'),
+    # Esta es la ruta que carga la página (el formulario)
+    path('generar/', views_rutinas.routine_generator_view, name='generate'),
     
-    # Esta ruta servirá para procesar la petición de la IA vía AJAX
-    path('api/generate/', views_rutinas.generate_routine_api, name='api_generate'),
+    # Esta es la ruta que procesa la IA (la que el JavaScript busca)
+    path('api/generar/', views_rutinas.routine_generator_view, name='api_generate'),
 ]
