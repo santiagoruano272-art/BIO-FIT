@@ -22,7 +22,7 @@ def registro_page(request):
     return render(request, 'users/registro.html')
 
 # =========================================
-# REGISTRO (API)
+# REGISTRO (API) - ACTUALIZADO PARA RECIBIR NOMBRE
 # =========================================
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -31,19 +31,34 @@ class RegisterView(APIView):
         return Response({"msg": "Endpoint REGISTER activo. Usa POST"})
 
     def post(self, request):
+        # Extraemos los datos del request
+        nombre = request.data.get("nombre") # <-- Nuevo campo capturado
         email = request.data.get("email")
         password = request.data.get("password")
 
-        if not email or not password:
+        # Validación de campos obligatorios
+        if not email or not password or not nombre:
             return Response(
-                {"error": "Email y password son requeridos"},
+                {"error": "Nombre, email y password son requeridos"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        result = register_user(email, password)
+        # Pasamos el nombre a la función de registro (asegúrate de haber
+        # actualizado register_user en apps/conexion/auth.py como te indiqué antes)
+        result = register_user(email, password, nombre)
 
         if "error" in result:
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
+
+        # Sincronización opcional con el modelo User de Django al registrar
+        # Esto permite que el usuario tenga sesión desde el momento en que se crea
+        user, created = User.objects.get_or_create(
+            username=email, 
+            defaults={
+                'email': email,
+                'first_name': nombre # Guardamos el nombre también en Django
+            }
+        )
 
         return Response({
             "message": "Usuario creado correctamente",
@@ -75,6 +90,7 @@ def login_view(request):
         return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
     # --- SINCRONIZACIÓN CON DJANGO ---
+    # Buscamos o creamos el usuario local para manejar la sesión
     user, created = User.objects.get_or_create(
         username=email, 
         defaults={'email': email}

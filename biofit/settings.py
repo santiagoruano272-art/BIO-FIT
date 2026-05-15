@@ -81,9 +81,9 @@ STATICFILES_DIRS = [
 # Carpeta para producción
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# ── GOOGLE AI STUDIO (GEMINI) ──
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+# ── GROQ CLOUD (IA) ──
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama3-8b-8192')
 
 # ── FIREBASE ──
 FIREBASE_API_KEY = os.getenv('FIREBASE_API_KEY')

@@ -4,6 +4,49 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'styles.css' %}">
 
+<style>
+    /* Estilos para las tarjetas de la rutina */
+    .routine-results { margin-top: 30px; text-align: left; }
+    
+    .day-container { 
+        background: #ffffff; 
+        border-radius: 15px; 
+        padding: 20px; 
+        margin-bottom: 25px; 
+        border-left: 5px solid #2d7a4f; /* var(--green-main) */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    
+    .day-title { color: #0d2e1e; font-family: 'Syne', sans-serif; margin-bottom: 15px; }
+
+    .exercise-card {
+        background: #f9fdfb;
+        border: 1px solid #e0eee6;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .exercise-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .exercise-name { font-weight: 700; color: #2d7a4f; font-size: 1.1rem; }
+    
+    .exercise-stats { display: flex; gap: 10px; font-size: 0.85rem; color: #666; }
+    .stat-item { background: #eef7f1; padding: 2px 8px; border-radius: 5px; border: 1px solid #d4eadc; }
+    
+    .exercise-instructions { font-size: 0.9rem; color: #444; margin: 5px 0; line-height: 1.4; }
+    
+    .nutrition-section {
+        background: #fffdf5;
+        border-radius: 15px;
+        padding: 20px;
+        border-left: 5px solid #a8e063;
+        margin-top: 20px;
+    }
+</style>
+
 <div class="generator-container">
     <div class="form-card">
         <h1>Configura tu Rutina con IA</h1>
@@ -29,10 +72,7 @@
             <button type="submit" class="btn-generate" id="btnSubmit">Generar Rutina Mágica</button>
         </form>
 
-        <div id="result" style="margin-top: 30px; display: none;">
-            <h3>Tu rutina personalizada:</h3>
-            <pre id="routineOutput"></pre>
-        </div>
+        <div id="routine-container" style="display: none;"></div>
     </div>
 </div>
 
@@ -41,13 +81,11 @@ document.getElementById('routineForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const btn = document.getElementById('btnSubmit');
-    const resultDiv = document.getElementById('result');
-    const output = document.getElementById('routineOutput');
+    const container = document.getElementById('routine-container');
     
-    // Estado de carga
     btn.textContent = "La IA está trabajando...";
     btn.disabled = true;
-    resultDiv.style.display = 'none';
+    container.style.display = 'none';
 
     try {
         const response = await fetch("{% url 'routines:api_generate' %}", {
@@ -62,37 +100,78 @@ document.getElementById('routineForm').addEventListener('submit', async (e) => {
             })
         });
 
-        if (!response.ok) {
-            throw new Error(`Error en el servidor: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Error en el servidor: ${response.status}`);
 
         const data = await response.json();
-        console.log("Respuesta de BIO-FIT:", data);
 
-        if(data.success) {
-            resultDiv.style.display = 'block';
-            
-            // Verificamos si la rutina es un objeto o texto
-            if (typeof data.routine === 'object') {
-                // Formateamos el JSON para que se vea bonito (2 espacios de sangría)
-                output.textContent = JSON.stringify(data.routine, null, 2);
-            } else {
-                output.textContent = data.routine;
-            }
-            
-            // Scroll suave hacia el resultado
-            resultDiv.scrollIntoView({ behavior: 'smooth' });
-            
+        if(data.success && data.routine) {
+            renderRoutine(data.routine);
+            container.style.display = 'block';
+            container.scrollIntoView({ behavior: 'smooth' });
         } else {
             alert("Algo salió mal: " + (data.error || "Error desconocido"));
         }
     } catch (error) {
-        console.error("Error en la petición Fetch:", error);
-        alert("No se pudo conectar con la IA. Revisa la terminal de Django.");
+        console.error("Error:", error);
+        alert("No se pudo conectar con la IA. Revisa la terminal.");
     } finally {
         btn.textContent = "Generar Rutina Mágica";
         btn.disabled = false;
     }
 });
+
+function renderRoutine(rutina) {
+    const container = document.getElementById('routine-container');
+    
+    let html = `
+        <div class="routine-results">
+            <h2 style="text-align:center; color:#0d2e1e; margin-bottom:10px;">${rutina.routine_name}</h2>
+            <p style="text-align:center; color: #666; margin-bottom:30px;">🎯 ${rutina.objective}</p>
+    `;
+
+    // Procesar los días de entrenamiento
+    if (rutina.main_workout) {
+        rutina.main_workout.forEach(dia => {
+            html += `
+                <div class="day-container">
+                    <h3 class="day-title">📅 ${dia.day_name}</h3>
+            `;
+
+            dia.exercises.forEach(ex => {
+                html += `
+                    <div class="exercise-card">
+                        <div class="exercise-header">
+                            <span class="exercise-name">${ex.name}</span>
+                            <div class="exercise-stats">
+                                <span class="stat-item"><b>Sets:</b> ${ex.sets}</span>
+                                <span class="stat-item"><b>Reps:</b> ${ex.reps}</span>
+                                <span class="stat-item"><b>Descanso:</b> ${ex.rest_seconds}s</span>
+                            </div>
+                        </div>
+                        <p class="exercise-instructions">📝 ${ex.instructions}</p>
+                        <small style="color: #2d7a4f; font-weight:600;">💪 Grupo: ${ex.muscle_group.toUpperCase()}</small>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+        });
+    }
+
+    // Tips de Nutrición
+    if (rutina.nutrition_tips && rutina.nutrition_tips.length > 0) {
+        html += `
+            <div class="nutrition-section">
+                <h3 class="day-title">🍎 Tips de Nutrición</h3>
+                <ul style="padding-left: 20px;">
+                    ${rutina.nutrition_tips.map(tip => `<li style="margin-bottom:8px;">${tip}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
 </script>
 {% endblock %}

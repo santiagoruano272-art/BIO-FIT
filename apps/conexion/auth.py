@@ -9,20 +9,21 @@ firebase = FirebaseClient()
 # REGISTRO DE USUARIO
 # =========================================
 
-def register_user(email: str, password: str) -> dict:
+def register_user(email: str, password: str, nombre: str) -> dict:
     user = None
     try:
         # 1. Crear en Firebase Auth
         user = firebase_auth.create_user(
             email=email,
-            password=password
+            password=password,
+            display_name=nombre
         )
 
         # 2. Guardar perfil en Firestore → colección 'users'
         firebase.save_user_profile(user.uid, {
             'email':     user.email,
             'uid':       user.uid,
-            'nombre':    '',
+            'nombre':    nombre,
             'nivel':     'principiante',
             'is_active': True,
         })
