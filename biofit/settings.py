@@ -40,7 +40,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'biofit.urls'
+ROOT_URLCONF = 'biofit.urls_app'
 
 # ── TEMPLATES ──
 TEMPLATES = [

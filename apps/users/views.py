@@ -22,59 +22,56 @@ def registro_page(request):
     return render(request, 'users/registro.html')
 
 # =========================================
-# REGISTRO (API) - ACTUALIZADO PARA RECIBIR NOMBRE
+# REGISTRO (API) - SIN CAMPO NOMBRE
 # =========================================
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request):
-        return Response({"msg": "Endpoint REGISTER activo. Usa POST"})
-
     def post(self, request):
-        # Extraemos los datos del request
-        nombre = request.data.get("nombre") # <-- Nuevo campo capturado
         email = request.data.get("email")
         password = request.data.get("password")
 
-        # Validación de campos obligatorios
-        if not email or not password or not nombre:
+        if not email or not password:
             return Response(
-                {"error": "Nombre, email y password son requeridos"},
+                {"error": "Email y password son requeridos"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Pasamos el nombre a la función de registro (asegúrate de haber
-        # actualizado register_user en apps/conexion/auth.py como te indiqué antes)
-        result = register_user(email, password, nombre)
-
+        # Registro en Firebase sin enviar el parámetro nombre
+        result = register_user(email, password)
+        
         if "error" in result:
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
-        # Sincronización opcional con el modelo User de Django al registrar
-        # Esto permite que el usuario tenga sesión desde el momento en que se crea
-        user, created = User.objects.get_or_create(
-            username=email, 
-            defaults={
-                'email': email,
-                'first_name': nombre # Guardamos el nombre también en Django
-            }
-        )
+        try:
+            # Sincronización local en Django
+            user, created = User.objects.get_or_create(
+                username=email, 
+                defaults={'email': email}
+            )
 
-        return Response({
-            "message": "Usuario creado correctamente",
-            "uid": result["uid"],
-            "email": result["email"]
-        })
+            # Guardamos el UID de Firebase en la sesión de Django
+            request.session['user_uid'] = result["uid"]
+            login(request, user)
+
+            return Response({
+                "message": "Usuario creado correctamente",
+                "uid": result["uid"],
+                "email": result["email"]
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {"error": f"Error en base de datos local: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 # =========================================
-# LOGIN (API) CORREGIDO PARA SESIÓN DJANGO
+# LOGIN (API) - CORRECCIÓN DE LA TUPLA
 # =========================================
-@api_view(['GET', 'POST'])
+@api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    if request.method == "GET":
-        return Response({"msg": "Endpoint LOGIN activo. Usa POST"})
-
     email = request.data.get('email')
     password = request.data.get('password')
 
@@ -84,22 +81,35 @@ def login_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    # Autenticación contra Firebase REST API
     result = login_user(email, password)
 
     if "error" in result:
-        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "Credenciales inválidas"}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
 
-    # --- SINCRONIZACIÓN CON DJANGO ---
-    # Buscamos o creamos el usuario local para manejar la sesión
-    user, created = User.objects.get_or_create(
-        username=email, 
-        defaults={'email': email}
-    )
-    login(request, user)
-    # --------------------------------
+    try:
+        # Sincronización con Django para mantener la sesión HTTP activa
+        user, created = User.objects.get_or_create(
+            username=email, 
+            defaults={'email': email}
+        )
+        
+        # AQUÍ ESTABA EL ERROR: Aseguramos la lectura correcta del diccionario 'result'
+        request.session['user_uid'] = result["uid"]
+        login(request, user)
 
-    return Response({
-        "message": "Login exitoso",
-        "token": result["idToken"],
-        "uid": result["uid"]
-    })
+        return Response({
+            "token": result.get("idToken"),
+            "uid": result["uid"],
+            "email": email,
+            "message": "Login exitoso"
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {"error": f"Error al sincronizar sesión local: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

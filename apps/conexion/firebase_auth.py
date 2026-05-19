@@ -8,12 +8,8 @@ logger = logging.getLogger(__name__)
 firebase = FirebaseClient()
 
 class FirebaseUser:
-    """
-    Representa al usuario autenticado en cada request.
-    """
     def __init__(self, uid: str, email: str, perfil: dict):
         self.uid           = uid
-        self.id            = uid # Alias para compatibilidad
         self.email         = email
         self.nombre        = perfil.get('nombre', 'Usuario')
         self.nivel         = perfil.get('nivel', 'principiante')
@@ -27,9 +23,6 @@ class FirebaseUser:
         return f"FirebaseUser(uid={self.uid}, email={self.email})"
 
 class FirebaseAuthentication(BaseAuthentication):
-    """
-    Autenticación personalizada con Firebase JWT para DRF.
-    """
     def authenticate(self, request):
         id_token = self._extraer_token(request)
         if not id_token:
@@ -52,24 +45,29 @@ class FirebaseAuthentication(BaseAuthentication):
 
     def _extraer_token(self, request) -> str | None:
         auth_header = request.META.get('HTTP_AUTHORIZATION') or request.headers.get('Authorization')
-        if not auth_header:
-            return None
-
+        if not auth_header: return None
         partes = auth_header.split()
-        if len(partes) != 2 or partes[0].lower() != 'bearer':
-            return None # Dejar que otros métodos de auth manejen el error o el acceso
+        if len(partes) != 2 or partes[0].lower() != 'bearer': return None
         return partes[1]
 
     def _verificar_token(self, id_token: str) -> dict:
         try:
             return auth.verify_id_token(id_token)
-        except Exception as e:
-            logger.error(f"Error verificando token: {e}")
+        except Exception:
             raise AuthenticationFailed('Token inválido o expirado')
 
     def _cargar_perfil(self, uid: str) -> dict:
         try:
-            perfil = firebase.get_user_profile(uid)
-            return perfil if perfil else {}
+            return firebase.get_user_profile(uid) or {}
         except Exception:
             return {}
+
+    # NUEVO MÉTODO PARA CARGAR HISTORIAL
+    def get_user_routines(self, uid: str):
+        try:
+            # Accedemos a la sub-colección dentro del documento del usuario
+            docs = firebase.db.collection('usuarios').document(uid).collection('rutinas_generadas').stream()
+            return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+        except Exception as e:
+            logger.error(f"Error cargando rutinas: {e}")
+            return []

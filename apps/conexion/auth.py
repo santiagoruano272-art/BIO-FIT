@@ -6,24 +6,21 @@ from django.conf import settings
 firebase = FirebaseClient()
 
 # =========================================
-# REGISTRO DE USUARIO
+# REGISTRO DE USUARIO (SOLO EMAIL Y PASS)
 # =========================================
-
-def register_user(email: str, password: str, nombre: str) -> dict:
+def register_user(email: str, password: str) -> dict:
     user = None
     try:
-        # 1. Crear en Firebase Auth
+        # 1. Crear en Firebase Auth sin display_name
         user = firebase_auth.create_user(
             email=email,
-            password=password,
-            display_name=nombre
+            password=password
         )
 
-        # 2. Guardar perfil en Firestore → colección 'users'
+        # 2. Guardar perfil mínimo en Firestore
         firebase.save_user_profile(user.uid, {
             'email':     user.email,
             'uid':       user.uid,
-            'nombre':    nombre,
             'nivel':     'principiante',
             'is_active': True,
         })
@@ -31,7 +28,6 @@ def register_user(email: str, password: str, nombre: str) -> dict:
         return {"uid": user.uid, "email": user.email}
 
     except Exception as e:
-        # Rollback: eliminar de Auth si Firestore falló
         if user:
             try:
                 firebase_auth.delete_user(user.uid)
@@ -42,7 +38,6 @@ def register_user(email: str, password: str, nombre: str) -> dict:
 # =========================================
 # LOGIN (FIREBASE REST API)
 # =========================================
-
 def login_user(email: str, password: str) -> dict:
     try:
         url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={settings.FIREBASE_API_KEY}"
@@ -67,10 +62,6 @@ def login_user(email: str, password: str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-# =========================================
-# VERIFICAR TOKEN
-# =========================================
-
 def verify_token(id_token: str) -> dict:
     try:
         decoded_token = firebase_auth.verify_id_token(id_token)
@@ -85,13 +76,8 @@ def verify_token(id_token: str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-# =========================================
-# OBTENER USUARIO POR UID
-# =========================================
-
 def get_user(uid: str) -> dict:
     try:
-        user = firebase_auth.get_user(uid)
-        return {"uid": user.uid, "email": user.email}
+        return firebase.get_user_profile(uid) or {}
     except Exception as e:
         return {"error": str(e)}
