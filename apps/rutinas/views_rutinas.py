@@ -32,85 +32,44 @@ _MAPEO_BLOQUES = {
     'enfriamiento':              'Estiramiento y Enfriamiento',
 }
 
-# Claves que nunca son bloques de ejercicios
-_CLAVES_IGNORAR = {
-    'metadata', 'objetivo', 'nivel', 'status', 'success',
-    'dias', 'days', 'info', 'resumen', 'summary',
-}
 
-
-def _extraer_nombre(ej: dict) -> str:
-    """Busca el nombre real del ejercicio en cualquier clave posible."""
-    for clave in _CLAVES_NOMBRE:
-        valor = ej.get(clave, '')
-        if valor and str(valor).strip():
-            nombre = str(valor).strip()
-            # Rechazar nombres genéricos que la IA pueda colar
-            if nombre.lower() not in {
-                'ejercicio', 'ejercicio personalizado', 'exercise',
-                'nombre', 'name', 'n/a', '', 'null', 'none',
-            }:
-                return nombre
-    # Último recurso: buscar cualquier clave cuyo valor sea un string largo
-    for k, v in ej.items():
-        if isinstance(v, str) and len(v) > 4 and k not in {
-            'series', 'repeticiones', 'reps', 'descanso', 'rest', 'nota', 'note', 'tips'
-        }:
-            return v.strip()
-    return 'Ejercicio sin nombre'
-
-
-def normalizar_rutina(raw: dict) -> dict:
+def _normalizar_rutina(rutina_raw: dict) -> dict:
     """
-    Convierte cualquier estructura JSON que devuelva la IA al formato estándar
-    que espera generador.html:
-      { "Calentamiento": [...], "Entrenamiento Principal": [...], "Estiramiento y Enfriamiento": [...] }
+    Toma el JSON crudo de la IA y devuelve un diccionario con bloques fijos
+    y campos de ejercicio estandarizados en español.
     """
-    # Desempaquetar un nivel si viene envuelto
-    if isinstance(raw, str):
-        try:
-            raw = json.loads(raw)
-        except Exception:
-            return {}
+    rutina_normalizada = {
+        'Calentamiento': [],
+        'Entrenamiento Principal': [],
+        'Estiramiento y Enfriamiento': []
+    }
 
-    for wrapper in ('routine', 'rutina', 'data', 'resultado'):
-        if wrapper in raw and isinstance(raw[wrapper], dict):
-            raw = raw[wrapper]
-            break
+    if not isinstance(rutina_raw, dict):
+        return rutina_normalizada
 
-    rutina_limpia = {}
+    for bloque_key, ejercicios in rutina_raw.items():
+        bloque_normalizado = _MAPEO_BLOQUES.get(bloque_key.lower().strip(), 'Entrenamiento Principal')
+        
+        if isinstance(ejercicios, list):
+            for ej in ejercicios:
+                if isinstance(ej, dict):
+                    nombre_ejercicio = "Ejercicio sin nombre"
+                    for k in _CLAVES_NOMBRE:
+                        if k in ej:
+                            nombre_ejercicio = ej[k]
+                            break
+                    
+                    ejercicio_limpio = {
+                        'ejercicio': nombre_ejercicio,
+                        'series': str(ej.get('series', '3')),
+                        'repeticiones': str(ej.get('repeticiones', '10')),
+                        'descanso': str(ej.get('descanso', '60s')),
+                        'nota': ej.get('nota', ej.get('recomendacion', ''))
+                    }
+                    rutina_normalizada[bloque_normalizado].append(ejercicio_limpio)
+                    
+    return rutina_normalizada
 
-    for bloque_key, ejercicios in raw.items():
-        if bloque_key.lower() in _CLAVES_IGNORAR:
-            continue
-        if not isinstance(ejercicios, list):
-            continue
-
-        nombre_bloque = _MAPEO_BLOQUES.get(
-            bloque_key.lower(),
-            bloque_key.replace('_', ' ').capitalize()
-        )
-
-        lista_limpia = []
-        for ej in ejercicios:
-            if not isinstance(ej, dict):
-                continue
-
-            lista_limpia.append({
-                'ejercicio':    _extraer_nombre(ej),
-                'series':       str(ej.get('series') or ej.get('sets') or '3'),
-                'repeticiones': str(ej.get('repeticiones') or ej.get('reps') or ej.get('repetitions') or '12'),
-                'descanso':     str(ej.get('descanso') or ej.get('rest') or ej.get('break') or '60 seg'),
-                'nota':         str(ej.get('nota') or ej.get('note') or ej.get('tips') or ''),
-            })
-
-        if lista_limpia:
-            rutina_limpia[nombre_bloque] = lista_limpia
-
-    return rutina_limpia
-
-
-# ── Vistas ─────────────────────────────────────────────────────────────────────
 
 @login_required
 def routine_generator_view(request):
@@ -118,36 +77,24 @@ def routine_generator_view(request):
     return render(request, 'rutinas/generador.html')
 
 
+@login_required
 def generate_routine_api(request):
-    """Endpoint POST asíncrono: recibe parámetros, llama a la IA y devuelve JSON."""
+    """API dedicada que procesa la IA (POST asíncrono)."""
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'error': 'Método no permitido'}, status=405)
 
     try:
         data = json.loads(request.body)
-
-        # Enriquecer con datos de sesión/perfil si están disponibles
-        uid = request.session.get('user_uid')
-        if uid:
-            perfil = firebase.get_user_profile(uid) or {}
-            data.setdefault('edad',   perfil.get('age', ''))
-            data.setdefault('peso',   perfil.get('weight_kg', ''))
-            data.setdefault('genero', perfil.get('gender', ''))
+        
+        request.session['ultimo_nivel'] = data.get('nivel', '')
+        request.session['ultimo_objetivo'] = data.get('objetivo', '')
+        request.session['ultimo_dias'] = data.get('dias', '')
 
         print(f"[BIO-FIT] Generando rutina — parámetros: {data}")
-
         result = routine_generator.generate_routine(data)
 
         if result.get('success') and 'routine' in result:
-            rutina_procesada = normalizar_rutina(result['routine'])
-
-            if not rutina_procesada:
-                print("[BIO-FIT] normalizar_rutina devolvió vacío. Raw:", result['routine'])
-                return JsonResponse({
-                    'status': 'error',
-                    'error': 'La IA generó datos pero no se pudo interpretar la estructura.'
-                }, status=400)
-
+            rutina_procesada = _normalizar_rutina(result['routine'])
             print(f"[BIO-FIT] Rutina lista — bloques: {list(rutina_procesada.keys())}")
             return JsonResponse({'status': 'success', 'rutina': rutina_procesada})
 
@@ -169,13 +116,28 @@ def save_routine_api(request):
         return JsonResponse({'error': 'Método no permitido'}, status=405)
 
     try:
-        rutina_data = json.loads(request.body)
+        body = json.loads(request.body)
         user_uid = request.session.get('user_uid')
 
         if not user_uid:
             return JsonResponse({'error': 'Sesión inválida. Inicia sesión de nuevo.'}, status=401)
 
-        firebase.save_routine(user_id=user_uid, routine_data=rutina_data)
+        if 'rutina' in body and isinstance(body['rutina'], dict):
+            routine_data = body['rutina']
+            user_inputs  = body.get('inputs', {})
+        else:
+            routine_data = body
+            user_inputs  = {}
+
+        user_inputs.setdefault('nivel',    request.session.get('ultimo_nivel', ''))
+        user_inputs.setdefault('objetivo', request.session.get('ultimo_objetivo', ''))
+        user_inputs.setdefault('dias',     request.session.get('ultimo_dias', ''))
+
+        firebase.save_routine(
+            user_id=user_uid,
+            routine_data=routine_data,
+            user_inputs=user_inputs,
+        )
 
         return JsonResponse({'success': True, 'message': 'Rutina guardada correctamente.'})
 
@@ -184,3 +146,64 @@ def save_routine_api(request):
     except Exception as e:
         print(f"[BIO-FIT] Error al guardar rutina: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def routine_detail_view(request):
+    """
+    Recupera TODAS las rutinas del usuario desde la subcolección
+    users/{uid}/routines/ y las muestra en detail.html.
+    """
+    try:
+        user_uid = request.session.get('user_uid')
+        if not user_uid:
+            return render(request, 'rutinas/detail.html', {
+                'error': 'No se encontró una sesión activa. Por favor, inicia sesión de nuevo.'
+            })
+
+        # ── CORRECCIÓN: leer de la subcolección, NO del perfil ──────────
+        # firebase.get_user_routines() devuelve lista de dicts con:
+        # { 'id': doc_id, 'routine': {...}, 'user_inputs': {...}, 'created_at': ... }
+        docs = firebase.get_user_routines(user_uid, limit=20)
+
+        if not docs:
+            return render(request, 'rutinas/detail.html', {
+                'rutinas': [],
+                'sin_rutinas': True,
+            })
+
+        # Construir lista de rutinas para el template
+        rutinas = []
+        for doc in docs:
+            routine_data = doc.get('routine', {})
+            user_inputs  = doc.get('user_inputs', {})
+            created_at   = doc.get('created_at', '')
+
+            # Formatear fecha si viene como datetime de Firestore
+            if hasattr(created_at, 'strftime'):
+                created_at = created_at.strftime('%d/%m/%Y %H:%M')
+            elif hasattr(created_at, 'isoformat'):
+                created_at = str(created_at)[:16].replace('T', ' ')
+
+            rutinas.append({
+                'id':       doc.get('id', ''),
+                'bloques':  routine_data,
+                'inputs':   user_inputs,
+                'fecha':    created_at,
+                'nivel':    user_inputs.get('nivel', '—'),
+                'objetivo': user_inputs.get('objetivo', '—').replace('_', ' '),
+                'dias':     user_inputs.get('dias', '—'),
+            })
+
+        print(f"[BIO-FIT] {len(rutinas)} rutina(s) cargadas para {user_uid}")
+
+        return render(request, 'rutinas/detail.html', {
+            'rutinas':     rutinas,
+            'sin_rutinas': False,
+        })
+
+    except Exception as e:
+        print(f"[BIO-FIT] Error al cargar rutinas: {e}")
+        return render(request, 'rutinas/detail.html', {
+            'error': f'Ocurrió un error al conectar con tu plan de entrenamiento: {str(e)}'
+        })
