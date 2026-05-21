@@ -11,20 +11,31 @@ if not firebase_admin._apps:
     cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
     firebase_admin.initialize_app(cred)
 
+# Variable de módulo — usada internamente por todos los métodos de la clase
 db = firestore.client()
 
 
 class FirebaseClient:
     """
     Encapsula todas las operaciones de lectura/escritura en Firebase.
-    
+
     Colecciones en Firestore:
     - users/{uid}              → perfil del usuario
     - users/{uid}/routines/    → rutinas generadas
     - users/{uid}/chat_history → historial del asistente
+    - equipamientos/           → inventario global del gimnasio
+
+    FIX: Se expone `self.db` apuntando a la variable de módulo `db` para
+    que las vistas externas (views_inventario.py) puedan acceder a Firestore
+    a través de la instancia, siguiendo el patrón `firebase.db.collection(...)`.
     """
 
-    # ── USUARIOS
+    def __init__(self):
+        # Exponer el cliente de Firestore como atributo de instancia
+        # para que vistas externas puedan usar: firebase.db.collection(...)
+        self.db = db
+
+    # ── USUARIOS ─────────────────────────────────────────────────────────────
 
     def get_user_profile(self, uid: str) -> dict | None:
         """Obtiene el perfil completo del usuario."""
@@ -45,26 +56,26 @@ class FirebaseClient:
             logger.error(f"Error guardando perfil de {uid}: {e}")
             return False
 
-    # ── RUTINAS
+    # ── RUTINAS ───────────────────────────────────────────────────────────────
 
     def save_routine(self, user_id: str, routine_data: dict, user_inputs: dict) -> str:
         """
         Guarda una rutina generada en Firestore.
-        
+
         Returns:
             str: ID del documento creado
         """
         try:
-            doc_ref = db.collection('users').document(user_id)\
+            doc_ref = db.collection('users').document(user_id) \
                          .collection('routines').document()
-            
+
             doc_ref.set({
                 'routine': routine_data,
                 'user_inputs': user_inputs,
                 'created_at': datetime.utcnow(),
                 'is_active': True,
             })
-            
+
             logger.info(f"Rutina guardada: {doc_ref.id} para usuario {user_id}")
             return doc_ref.id
 
@@ -75,7 +86,7 @@ class FirebaseClient:
     def get_routine(self, user_id: str, routine_id: str) -> dict | None:
         """Obtiene una rutina específica por su ID."""
         try:
-            doc = db.collection('users').document(user_id)\
+            doc = db.collection('users').document(user_id) \
                     .collection('routines').document(routine_id).get()
             return doc.to_dict() if doc.exists else None
         except Exception as e:
@@ -85,12 +96,12 @@ class FirebaseClient:
     def get_user_routines(self, user_id: str, limit: int = 10) -> list:
         """Obtiene las rutinas del usuario, ordenadas por fecha."""
         try:
-            docs = db.collection('users').document(user_id)\
-                     .collection('routines')\
-                     .order_by('created_at', direction=firestore.Query.DESCENDING)\
-                     .limit(limit)\
+            docs = db.collection('users').document(user_id) \
+                     .collection('routines') \
+                     .order_by('created_at', direction=firestore.Query.DESCENDING) \
+                     .limit(limit) \
                      .stream()
-            
+
             return [{'id': doc.id, **doc.to_dict()} for doc in docs]
 
         except Exception as e:
@@ -100,19 +111,19 @@ class FirebaseClient:
     def delete_routine(self, user_id: str, routine_id: str) -> bool:
         """Elimina una rutina del usuario."""
         try:
-            db.collection('users').document(user_id)\
+            db.collection('users').document(user_id) \
               .collection('routines').document(routine_id).delete()
             return True
         except Exception as e:
             logger.error(f"Error eliminando rutina {routine_id}: {e}")
             return False
 
-    # ── Historial del asistente ─────────────────────────────
+    # ── HISTORIAL DEL ASISTENTE ───────────────────────────────────────────────
 
     def save_chat_history(self, user_id: str, session_id: str, history: list) -> bool:
         """Guarda el historial de chat del asistente."""
         try:
-            db.collection('users').document(user_id)\
+            db.collection('users').document(user_id) \
               .collection('chat_history').document(session_id).set({
                   'history': history,
                   'updated_at': datetime.utcnow(),
@@ -125,7 +136,7 @@ class FirebaseClient:
     def get_chat_history(self, user_id: str, session_id: str) -> list:
         """Obtiene el historial de chat de una sesión."""
         try:
-            doc = db.collection('users').document(user_id)\
+            doc = db.collection('users').document(user_id) \
                     .collection('chat_history').document(session_id).get()
             if doc.exists:
                 return doc.to_dict().get('history', [])
@@ -134,8 +145,50 @@ class FirebaseClient:
             logger.error(f"Error obteniendo chat de {user_id}: {e}")
             return []
 
+    # ── INVENTARIO DE EQUIPAMIENTOS ───────────────────────────────────────────
+    # Métodos opcionales: las vistas también pueden usar self.db directamente,
+    # pero estos wrappers mantienen el patrón del resto de la clase.
 
-# ── Funciones de autenticación con Firebase Auth ─────────────
+    def get_all_equipment(self) -> list:
+        """Obtiene todos los equipos del inventario global."""
+        try:
+            docs = db.collection('equipamientos').stream()
+            return [{'id': doc.id, **doc.to_dict()} for doc in docs]
+        except Exception as e:
+            logger.error(f"Error obteniendo inventario: {e}")
+            return []
+
+    def create_equipment(self, data: dict) -> str:
+        """Crea un nuevo equipo y devuelve su ID."""
+        try:
+            doc_ref = db.collection('equipamientos').document()
+            doc_ref.set(data)
+            logger.info(f"Equipo creado: {doc_ref.id}")
+            return doc_ref.id
+        except Exception as e:
+            logger.error(f"Error creando equipo: {e}")
+            raise
+
+    def update_equipment(self, equip_id: str, data: dict) -> bool:
+        """Actualiza un equipo existente."""
+        try:
+            db.collection('equipamientos').document(equip_id).update(data)
+            return True
+        except Exception as e:
+            logger.error(f"Error actualizando equipo {equip_id}: {e}")
+            raise
+
+    def delete_equipment(self, equip_id: str) -> bool:
+        """Elimina un equipo del inventario."""
+        try:
+            db.collection('equipamientos').document(equip_id).delete()
+            return True
+        except Exception as e:
+            logger.error(f"Error eliminando equipo {equip_id}: {e}")
+            raise
+
+
+# ── FUNCIONES DE AUTENTICACIÓN CON FIREBASE AUTH ─────────────────────────────
 
 def verify_firebase_token(id_token: str) -> dict | None:
     """

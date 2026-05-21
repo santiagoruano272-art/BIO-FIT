@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'apps.rutinas',
     'apps.asistente',
     'apps.calories',
+    'apps.inventory',
 ]
 
 # ── MIDDLEWARE ──
