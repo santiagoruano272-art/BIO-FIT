@@ -97,7 +97,7 @@
             <section class="routine-section" style="background: #1e293b;">
                 <h2>Gestión de Máquinas y Equipamiento</h2>
                 <p>Accede al inventario completo para dar de alta nuevas máquinas, cambiar estados de mantenimiento o remover equipos obsoletos.</p>
-                <a href="{% url 'inventory:dashboard' %}" class="btn-admin">Ir al Inventario de Máquinas</a>
+                <a href="/inventory/dashboard/" class="btn-admin">Ir al Inventario de Máquinas</a>
             </section>
 
         {% else %}
@@ -135,26 +135,22 @@
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('biofit_token');
         
-        // 1. Proteger ruta: si no hay sesión local, vaciar cookies e ir al login limpio
         if (!token) {
             document.cookie = "sessionid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/login/';
             return;
         }
 
-        // Pintar nombre amigable basado en el correo electrónico
         const email = localStorage.getItem('biofit_email');
         const userDisplay = document.getElementById('user-display-name');
         if (email && userDisplay) {
             userDisplay.textContent = email.split('@')[0];
         }
 
-        // 2. Controladores de sincronización cruzada sin cruzar lenguajes
         const appRoot = document.getElementById('biofit-app-root');
         const currentServerRole = appRoot ? appRoot.getAttribute('data-role') : 'atleta';
         const localBrowserRole = localStorage.getItem('biofit_rol');
 
-        // Si el navegador es Admin pero el backend renderizó la plantilla de Atleta, redirigir al panel logístico
         if (localBrowserRole === 'admin' && currentServerRole !== 'admin') {
             console.log("[BIO-FIT] Sincronizando e ingresando al panel de administración...");
             window.location.href = '/inventory/dashboard/';
