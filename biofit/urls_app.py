@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/register/', RegisterView.as_view(), name='api_register'),
     path('api/login/', login_view, name='api_login'),
     path('rutinas/', include('apps.rutinas.urls')),
+    path('inventory/', include('apps.inventory.urls_inventario', namespace='inventory')),
 ]

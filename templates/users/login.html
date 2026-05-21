@@ -152,7 +152,7 @@
             btn.disabled = true;
 
             try {
-                // Sincronizado con path('api/login/', login_view, name='login') en urls.py
+                // Petición al endpoint limpio centralizado del proyecto
                 const res = await fetch('/api/login/', { 
                     method: 'POST',
                     headers: {
@@ -168,16 +168,16 @@
                     throw new Error(data.error || 'Credenciales incorrectas');
                 }
 
-                // Guardar datos (idToken viene de tu auth.py)
-                localStorage.setItem('biofit_token', data.idToken);
+                // Guardar las llaves exactas en memoria local
+                localStorage.setItem('biofit_token', data.token);
                 localStorage.setItem('biofit_uid', data.uid);
                 localStorage.setItem('biofit_email', email);
+                localStorage.setItem('biofit_rol', data.rol); 
 
                 showAlert('¡Acceso concedido! Entrando...', 'success');
 
                 setTimeout(() => {
-                    // Sincronizado con path('inicio/', landing_page, name='landing') en urls.py
-                    window.location.href = '/inicio/'; 
+                    window.location.href = '/'; 
                 }, 1000);
 
             } catch (err) {

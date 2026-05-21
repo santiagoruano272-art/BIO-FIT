@@ -22,7 +22,7 @@ def registro_page(request):
     return render(request, 'users/registro.html')
 
 # =========================================
-# REGISTRO (API) - SIN CAMPO NOMBRE
+# REGISTRO (API)
 # =========================================
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -37,37 +37,22 @@ class RegisterView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Registro en Firebase sin enviar el parámetro nombre
         result = register_user(email, password)
         
         if "error" in result:
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            # Sincronización local en Django
-            user, created = User.objects.get_or_create(
-                username=email, 
-                defaults={'email': email}
-            )
-
-            # Guardamos el UID de Firebase en la sesión de Django
-            request.session['user_uid'] = result["uid"]
-            login(request, user)
-
-            return Response({
-                "message": "Usuario creado correctamente",
-                "uid": result["uid"],
-                "email": result["email"]
-            }, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
             return Response(
-                {"error": f"Error en base de datos local: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": result["error"]},
+                status=status.HTTP_400_BAD_REQUEST
             )
+
+        return Response({
+            "uid": result["uid"],
+            "email": result["email"],
+            "message": "Usuario registrado exitosamente"
+        }, status=status.HTTP_201_CREATED)
 
 # =========================================
-# LOGIN (API) - CORRECCIÓN DE LA TUPLA
+# LOGIN (API) - CORRECCIÓN ARQUITECTÓNICA COMPLETA
 # =========================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -81,7 +66,7 @@ def login_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Autenticación contra Firebase REST API
+    # Autenticación e identificación de rol contra Firebase unificada
     result = login_user(email, password)
 
     if "error" in result:
@@ -91,25 +76,30 @@ def login_view(request):
         )
 
     try:
-        # Sincronización con Django para mantener la sesión HTTP activa
+        # Sincronización con el modelo de Django para la sesión local
         user, created = User.objects.get_or_create(
             username=email, 
             defaults={'email': email}
         )
         
-        # AQUÍ ESTABA EL ERROR: Aseguramos la lectura correcta del diccionario 'result'
+        # Persistencia clave en la sesión del servidor (Para tags {% if %})
         request.session['user_uid'] = result["uid"]
+        request.session['user_rol'] = result.get("rol", "atleta")
+        
         login(request, user)
 
+        # Retorno completo de llaves hacia el LocalStorage de JS
         return Response({
             "token": result.get("idToken"),
             "uid": result["uid"],
             "email": email,
+            "rol": result.get("rol", "atleta"),
             "message": "Login exitoso"
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
+        print(f"[BIO-FIT Error] Error en login_view: {e}")
         return Response(
-            {"error": f"Error al sincronizar sesión local: {str(e)}"},
+            {"error": "Error interno al procesar la sesión"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
