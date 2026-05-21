@@ -1,49 +1,173 @@
-# 🥗 BIO-FIT: Porque cuidarte debería ser sencillo 🍃
+# 🏋️BIO-FIT
 
-¡Hola!, Qué emoción que estés por aquí. Te queremos presentar **BIO-FIT**, un proyecto que nació con una misión que va mucho más allá de las notas: queremos usar la tecnología para que nadie se sienta perdido/inseguro al intentar mejorar su salud.
+¡Hola! Bienvenido a **BIO-FIT**, un proyecto creado con dedicación, esfuerzo y muchas ganas de ayudar a las personas a sentirse mejor consigo mismas.
 
----
-
-## ¿Qué es BIO-FIT?
-
-¿Alguna vez has sentido que hay demasiada información sobre salud y no sabes qué te sirve a ti? Nosotros también. Por eso creamos **BIO-FIT**. 
-
-BIO-FIT no es solo una página web; es un espacio pensado para personas reales de entre 18 y 60 años (aprendices SENA). Nuestra idea es que no tengas que ser un experto en nutrición o fitness para empezar. Queremos ser ese "empujoncito" tecnológico que te ayuda a organizar tus comidas (enfocado en calorias), tus rutinas y, sobre todo, a creer en tu propio proceso, en que si puedes.
+Este proyecto nació en el **SENA**, gracias a un grupo de aprendices que creemos que la tecnología no solo sirve para programar, sino también para mejorar vidas, y ayudar a que obtengan una mayor seguridad consigo mismas. Queríamos construir algo útil, cercano y humano, una herramienta que acompañe a las personas en su proceso de cambiar hábitos, mejorar su salud y alcanzar sus metas físicas sin sentirse perdidas mientras lo hacen.
 
 ---
 
-## Lo que hemos construido para ti
+## 🤔 ¿Qué es BIO-FIT?
 
-Queríamos que la plataforma se sintiera como un asistente que te conoce, que te sientas seguro de estar en un espacio como este:
+Muchas veces las personas quieren empezar una vida más saludable, pero no saben cómo hacerlo. Buscan rutinas, dietas o consejos en internet y terminan encontrando información confusa, planes genéricos o recomendaciones que no se adaptan a lo que ellos buscan en sí.
 
-* **🤖 Una IA que te escucha:** Analiza quién eres (tu edad, tus metas, tus retos) y te sugiere un camino claro, sin complicaciones.
-* **📈 Celebramos tus victorias:** Tenemos un lugar especial para que veas, para que te des cuenta cómo vas mejorando. Cada kilo, cada medida y cada hábito cuenta.
-* **🥗 Comer bien sin sufrir:** Olvídate de las dietas imposibles. Adaptamos los planes a lo que te gusta y a lo que tu cuerpo necesita enfocando nos en una recomendación de calorías.
-* **🔔 Tu recordatorio amigo:** A veces el día a día nos gana, el consancio, la pereza, así que te enviamos alertas al correo para que no olvides ese momento dedicado a ti.
-* **🛡️ Tu tranquilidad es lo primero:** Nos tomamos muy en serio tus datos. Tu información de salud está protegida con las mejores herramientas de seguridad.
+Por eso creamos **BIO-FIT** 💚
 
----
+BIO-FIT es una plataforma pensada para ayudarte a mejorar tu bienestar físico y nutricional enfoncandose en el consumo de calorías díarias de manera más personalizada y obviamente adptandose a lo que quieren lograr. Nuestro objetivo es que cada usuario pueda recibir recomendaciones acordes a sus necesidades, hábitos y metas, combinando entrenamiento, consumo de calorías y tecnología en un solo lugar.
 
-## La "magia" detrás de la pantalla
-
-Para que todo funcione de maravilla, usamos herramientas modernas pero potentes:
-
-* **Django & Python:** El motor que hace todo el trabajo pesado.
-* **Firebase:** Donde guardamos con cuidado cada uno de tus progresos.
-* **HTML & CSS:** Diseñamos una interfaz limpia para que navegar sea un descanso, no un estrés.
-* **Metodología Scrum:** Trabajamosen jira para que así se nos haga más fácil equipo, paso a paso, siempre pensando en cómo mejorar para ti.
+Más que una página web, queremos que BIO-FIT sea una guía y un apoyo para quienes desean empezar a cuidarse sin complicaciones.
 
 ---
 
-## ¿Quiénes somos?
+## 👥 Equipo de desarrollo
 
-Somos un grupo de amigos y aprendices del programa **ADSO en el SENA (Ficha 3147269)**. Nos apasiona el código, pero nos apasiona más ver cómo ese código puede ayudar a alguien a sentirse mejor consigo mismo, en como podemos aportar un granito de arena a la sociedad:
+Este proyecto fue desarrollado por aprendices del programa **ANALISIS Y DESARROLLO DE SOFTWARE – Ficha 3147269**, quienes trabajamos en equipo para convertir esta idea en realidad:
 
-* **María Camila Llorente Sierra** ✍️
-* **Diego Alejandro Torres Mendivelso** 💻
-* **Erik Santiago Ruano Ascuntar** 🛠️
-* **Daniel Matias Pardo Núñez** 🚀
+* **María Camila Llorente Sierra** ✍️  
+* **Diego Alejandro Torres Mendivelso** 💻  
+* **Erik Santiago Ruano Ascuntar** 🛠️  
+* **Daniel Matias Pardo Núñez** 🚀  
+
+Cada integrante aportó ideas, creatividad y muchas horas de trabajo para construir BIO-FIT.
 
 ---
 
-## Gracias:))
+## 🛠️ Tecnologías utilizadas
+
+Para desarrollar BIO-FIT utilizamos herramientas modernas que nos permitieron crear una plataforma rápida, segura y eficiente:
+
+* **Python** → Lenguaje principal del proyecto.  
+* **Django** → Framework utilizado para el desarrollo web.  
+* **Firebase** → Sistema utilizado para autenticación y almacenamiento de datos.  
+* **OpenAI** → Implementado para generar recomendaciones inteligentes y personalizadas.  
+* **Django-environ** → Utilizado para manejar variables de entorno y proteger información sensible.
+
+---
+
+## 📋 Requisitos previos
+
+Antes de ejecutar el proyecto, necesitas tener instalado lo siguiente:
+
+* **Python 3.10 o superior**  
+* **Git**  
+* **Visual Studio Code (VS Code)**  
+* Una cuenta en **Firebase**
+
+---
+
+## 📥 Instalación
+
+Sigue estos pasos para tener BIO-FIT funcionando en tu computador:
+
+1. **Clonar el repositorio**
+```bash
+git clone https://github.com/tu-usuario/bio-fit.git
+```
+
+2. **Entrar a la carpeta del proyecto**
+```bash
+cd bio-fit
+```
+
+3. **Crear el entorno virtual**
+```bash
+python -m venv env
+```
+
+---
+
+## 🚀 Ejecución local
+
+1. **Activar el entorno virtual**
+
+### Windows
+```bash
+.\env\Scripts\activate
+```
+
+### Mac/Linux
+```bash
+source env/bin/activate
+```
+
+2. **Instalar dependencias**
+```bash
+pip install -r requirements.txt
+```
+
+3. **Ejecutar el servidor**
+```bash
+python manage.py runserver
+```
+
+4. **Abrir en el navegador**
+```bash
+http://127.0.0.1:8000/
+```
+
+---
+
+## 🗄️ Base de datos
+
+BIO-FIT utiliza **Firebase** para gestionar la autenticación y el almacenamiento de información.
+
+Solo necesitas:
+
+* Crear un proyecto en Firebase.  
+* Descargar las credenciales en formato JSON.  
+* Habilitar el inicio de sesión por correo electrónico.
+
+Gracias a esto, los datos de los usuarios permanecen seguros y organizados.
+
+---
+
+## 🔐 Variables de entorno
+
+Para proteger información importante del proyecto utilizamos un archivo `.env`.
+
+Dentro de este archivo debes configurar:
+
+```env
+SECRET_KEY=
+FIREBASE_CONFIG=
+API_IA_KEY=
+```
+
+Estas variables permiten mantener seguras las credenciales y conexiones del sistema.
+
+---
+
+## 👤 Usuario de prueba
+
+Si deseas explorar BIO-FIT rápidamente, puedes ingresar con este usuario de prueba:
+
+```txt
+Usuario: visitante@biofit.com
+Contraseña: BioFit2026*
+```
+
+---
+
+## 🌐 Despliegue
+
+Para publicar y compartir nuestro proyecto utilizamos **Render**, una plataforma que nos permite mantener BIO-FIT disponible de forma online y accesible desde cualquier lugar.
+
+---
+
+## 📸 Evidencias del proyecto
+
+Aquí podrás visualizar algunas capturas y avances del sistema:
+
+* Panel principal  
+* Plan personalizado  
+* Sistema de recomendaciones  
+* Interfaz de entrenamiento y recomendación para el consumo de calorías a diario
+
+---
+
+## 💚 Nuestro propósito
+
+BIO-FIT no es solo un proyecto académico. Es una idea construida con dedicación, aprendizaje y el deseo de crear una herramienta que realmente pueda ayudar a las personas.
+
+Queremos demostrar que la tecnología también puede ser cercana, motivadora y capaz de generar cambios positivos en la vida de alguien.
+
+Gracias por visitar BIO-FIT 🚀

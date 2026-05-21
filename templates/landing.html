@@ -1,137 +1,164 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-    :root {
-        --green-dark:  #0d2e1e;
-        --green-main:  #2d7a4f;
-        --accent:      #a8e063;
-        --white:       #f8fdf9;
-        --card-bg:     #ffffff;
-    }
-
-    body {
-        font-family: 'DM Sans', sans-serif;
-        background-color: #f0f7f4;
-        color: var(--green-dark);
-        margin: 0;
-    }
-
     .dashboard-container {
         max-width: 1200px;
         margin: 0 auto;
         padding: 40px 20px;
     }
-
     .welcome-header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: row;
+        align-items: baseline;
+        gap: 15px;
         margin-bottom: 30px;
+        flex-wrap: wrap;
     }
-
     .welcome-header h1 {
         font-family: 'Syne', sans-serif;
-        font-size: 2.5rem;
+        font-size: 2rem;
         margin: 0;
     }
-
+    .welcome-header p {
+        margin: 0;
+        color: #666;
+        font-size: 1.1rem;
+    }
     .grid-stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 20px;
         margin-bottom: 40px;
     }
-
     .stat-card {
-        background: var(--card-bg);
+        background: var(--white);
         padding: 25px;
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(13,46,30,0.05);
-        border: 1px solid rgba(45,122,79,0.1);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
-
-    .stat-card h3 { font-size: 0.9rem; color: var(--green-main); margin-bottom: 10px; }
-    .stat-card p { font-size: 1.8rem; font-weight: 700; margin: 0; }
-
-    .routine-section {
-        background: var(--card-bg);
-        padding: 30px;
-        border-radius: 24px;
-        box-shadow: 0 10px 30px rgba(13,46,30,0.05);
-    }
-
-    .btn-ai {
-        background: var(--green-dark);
-        color: var(--accent);
-        padding: 12px 24px;
-        border-radius: 12px;
-        text-decoration: none;
-        font-weight: 600;
-        display: inline-block;
-        margin-top: 20px;
-        transition: 0.3s;
-    }
-
-    .btn-ai:hover { transform: translateY(-3px); background: var(--green-main); }
-
-    .btn-logout {
-        color: var(--green-main);
-        text-decoration: none;
-        font-weight: 500;
+    .stat-card h3 {
+        margin: 0 0 10px 0;
         font-size: 0.9rem;
+        color: #888;
+        text-transform: uppercase;
+    }
+    .stat-card p {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--black);
+    }
+    .routine-section {
+        background: #111827;
+        color: #ffffff;
+        padding: 35px;
+        border-radius: 25px;
+        margin-bottom: 30px;
+    }
+    .routine-section h2 { margin: 0 0 10px 0; font-family: 'Syne', sans-serif; }
+    .routine-section p { color: #9ca3af; margin-bottom: 25px; }
+    
+    .btn-ai { display: inline-block; background: #10b981; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; }
+    .btn-ai:hover { background: #059669; }
+    
+    .btn-admin { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; }
+    .btn-admin:hover { background: #2563eb; }
+
+    @media (max-width: 768px) {
+        .grid-stats { grid-template-columns: 1fr; }
+        .welcome-header h1 { font-size: 1.8rem; }
     }
 </style>
 
-<div class="dashboard-container">
-    <header class="welcome-header">
-        <div>
-            <h1>Hola, <span id="user-display-name">Atleta</span> 👋</h1>
-            <p>Tu IA ha preparado el entrenamiento de hoy.</p>
-        </div>
-        <a href="#" onclick="logout()" class="btn-logout">Cerrar sesión</a>
-    </header>
-
-    <div class="grid-stats">
-        <div class="stat-card">
-            <h3>Nivel actual</h3>
-            <p id="user-level">Principiante</p>
-        </div>
-        <div class="stat-card">
-            <h3>Ejercicios Completados</h3>
-            <p>0/20</p>
-        </div>
-        <div class="stat-card">
-            <h3>Estado de Plan</h3>
-            <p>Activo</p>
-        </div>
-    </div>
-
-    <section class="routine-section">
-        <h2>Tu Rutina Personalizada</h2>
-        <p>Basado en tu perfil de BIO-FIT, aquí tienes tus ejercicios:</p>
+<div id="biofit-app-root" data-role="{{ request.session.user_rol|default:'atleta' }}">
+    <div class="dashboard-container">
         
-        <a href="{% url 'routines:generator' %}" class="btn-ai">Generar nueva rutina con IA</a>
-    </section>
+        {% if request.session.user_rol == 'admin' %}
+            <header class="welcome-header">
+                <h1>Panel Administrativo 🛠️</h1>
+                <p>Gestión de infraestructura global de BIO-FIT.</p>
+            </header>
+
+            <div class="grid-stats">
+                <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                    <h3>Tipo de Cuenta</h3>
+                    <p>Administrador</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Módulo Inventario</h3>
+                    <p>Habilitado</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Estado</h3>
+                    <p style="color: #10b981;">Conectado</p>
+                </div>
+            </div>
+
+            <section class="routine-section" style="background: #1e293b;">
+                <h2>Gestión de Máquinas y Equipamiento</h2>
+                <p>Accede al inventario completo para dar de alta nuevas máquinas, cambiar estados de mantenimiento o remover equipos obsoletos.</p>
+                <a href="{% url 'inventory:dashboard' %}" class="btn-admin">Ir al Inventario de Máquinas</a>
+            </section>
+
+        {% else %}
+            <header class="welcome-header">
+                <h1>Hola, <span id="user-display-name">Atleta</span> 👋</h1>
+                <p>Tu IA ha preparado el entrenamiento de hoy.</p>
+            </header>
+
+            <div class="grid-stats">
+                <div class="stat-card">
+                    <h3>Nivel actual</h3>
+                    <p id="user-level">Principiante</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Ejercicios Completados</h3>
+                    <p>0/20</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Estado de Plan</h3>
+                    <p>Active</p>
+                </div>
+            </div>
+
+            <section class="routine-section">
+                <h2>Tu Rutina Personalizada</h2>
+                <p>Basado en tu perfil de BIO-FIT, aquí tienes tus ejercicios:</p>
+                <a href="{% url 'routines:generate' %}" class="btn-ai">Generar nueva rutina con IA</a>
+            </section>
+        {% endif %}
+
+    </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Verificar si el usuario está logueado
         const token = localStorage.getItem('biofit_token');
+        
+        // 1. Proteger ruta: si no hay sesión local, vaciar cookies e ir al login limpio
         if (!token) {
+            document.cookie = "sessionid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/login/';
             return;
         }
 
+        // Pintar nombre amigable basado en el correo electrónico
         const email = localStorage.getItem('biofit_email');
-        if (email) {
-            document.getElementById('user-display-name').textContent = email.split('@')[0];
+        const userDisplay = document.getElementById('user-display-name');
+        if (email && userDisplay) {
+            userDisplay.textContent = email.split('@')[0];
+        }
+
+        // 2. Controladores de sincronización cruzada sin cruzar lenguajes
+        const appRoot = document.getElementById('biofit-app-root');
+        const currentServerRole = appRoot ? appRoot.getAttribute('data-role') : 'atleta';
+        const localBrowserRole = localStorage.getItem('biofit_rol');
+
+        // Si el navegador es Admin pero el backend renderizó la plantilla de Atleta, redirigir al panel logístico
+        if (localBrowserRole === 'admin' && currentServerRole !== 'admin') {
+            console.log("[BIO-FIT] Sincronizando e ingresando al panel de administración...");
+            window.location.href = '/inventory/dashboard/';
         }
     });
-
-    function logout() {
-        localStorage.clear();
-        window.location.href = '/login/';
-    }
 </script>
 {% endblock %}

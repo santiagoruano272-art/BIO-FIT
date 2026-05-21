@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from django.contrib.auth import login
+from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -12,23 +14,18 @@ from apps.conexion.auth import register_user, login_user
 # =========================================
 def landing_page(request):
     return render(request, 'landing.html')
+
 def login_page(request):
-    """Sirve el template de login."""
     return render(request, 'users/login.html')
 
 def registro_page(request):
-    """Sirve el template de registro."""
     return render(request, 'users/registro.html')
 
 # =========================================
 # REGISTRO (API)
 # =========================================
-
 class RegisterView(APIView):
     permission_classes = [AllowAny]
-
-    def get(self, request):
-        return Response({"msg": "Endpoint REGISTER activo. Usa POST"})
 
     def post(self, request):
         email = request.data.get("email")
@@ -41,26 +38,25 @@ class RegisterView(APIView):
             )
 
         result = register_user(email, password)
-
+        
         if "error" in result:
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": result["error"]},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         return Response({
-            "message": "Usuario creado correctamente",
             "uid": result["uid"],
-            "email": result["email"]
-        })
+            "email": result["email"],
+            "message": "Usuario registrado exitosamente"
+        }, status=status.HTTP_201_CREATED)
 
 # =========================================
-# LOGIN (API)
+# LOGIN (API) - CORRECCIÓN ARQUITECTÓNICA COMPLETA
 # =========================================
-
-@api_view(['GET', 'POST'])
+@api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    if request.method == "GET":
-        return Response({"msg": "Endpoint LOGIN activo. Usa POST"})
-
     email = request.data.get('email')
     password = request.data.get('password')
 
@@ -70,14 +66,40 @@ def login_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    # Autenticación e identificación de rol contra Firebase unificada
     result = login_user(email, password)
 
     if "error" in result:
-        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "Credenciales inválidas"}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
 
-    return Response({
-        "message": "Login exitoso",
-        "token": result["idToken"],
-        "uid": result["uid"]
-    })
+    try:
+        # Sincronización con el modelo de Django para la sesión local
+        user, created = User.objects.get_or_create(
+            username=email, 
+            defaults={'email': email}
+        )
+        
+        # Persistencia clave en la sesión del servidor (Para tags {% if %})
+        request.session['user_uid'] = result["uid"]
+        request.session['user_rol'] = result.get("rol", "atleta")
+        
+        login(request, user)
 
+        # Retorno completo de llaves hacia el LocalStorage de JS
+        return Response({
+            "token": result.get("idToken"),
+            "uid": result["uid"],
+            "email": email,
+            "rol": result.get("rol", "atleta"),
+            "message": "Login exitoso"
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        print(f"[BIO-FIT Error] Error en login_view: {e}")
+        return Response(
+            {"error": "Error interno al procesar la sesión"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

@@ -3,7 +3,7 @@
 # ============================================================
 
 from django import forms
-from biofit.apps.rutinas.prompts import (
+from apps.rutinas.prompts import (
     EXPERIENCE_LEVELS,
     TRAINING_GOALS,
     EQUIPMENT_OPTIONS,

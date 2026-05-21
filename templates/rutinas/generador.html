@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'styles.css' %}">
+
+<style>
+    .routine-results { margin-top: 30px; text-align: left; }
+    .day-container { 
+        background: #ffffff; 
+        border-radius: 15px; 
+        padding: 20px; 
+        margin-bottom: 25px; 
+        border-left: 5px solid #2d7a4f; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .day-title { color: #0d2e1e; font-family: 'Syne', sans-serif; margin-bottom: 15px; }
+    .exercise-card {
+        background: #f9fdfb;
+        border: 1px solid #e0eee6;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    .btn-save-routine {
+        background-color: #2d7a4f;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-bottom: 25px;
+        transition: background-color 0.3s;
+    }
+    .btn-save-routine:hover {
+        background-color: #1e5335;
+    }
+</style>
+
+<div style="max-width: 800px; margin: 50px auto; padding: 20px; text-align: center;">
+    <h1 style="color: #0d2e1e; font-family: 'Syne', sans-serif; font-size: 36px; margin-bottom: 10px;">
+        Generador de Rutinas Inteligente
+    </h1>
+    <p style="color: #555; font-size: 16px; margin-bottom: 40px;">
+        Configura tus preferencias y nuestro BioFit Coach creará un plan de entrenamiento estructurado y adaptado a tus objetivos.
+    </p>
+
+    <form id="routineForm" onsubmit="procesarGeneracion(event)" style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: left;">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 20px;">
+            <label for="level" style="display: block; font-weight: bold; margin-bottom: 8px; color: #0d2e1e;">Nivel de Experiencia:</label>
+            <select id="level" name="level" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;">
+                <option value="principiante">Principiante (Menos de 6 meses)</option>
+                <option value="intermedio">Intermedio (6 meses a 2 años)</option>
+                <option value="avanzado">Avanzado (Más de 2 años)</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="goal" style="display: block; font-weight: bold; margin-bottom: 8px; color: #0d2e1e;">Objetivo Principal:</label>
+            <select id="goal" name="goal" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;">
+                <option value="perder_peso">Perder Peso / Definición</option>
+                <option value="ganar_musculo">Ganar Masa Muscular (Hipertrofia)</option>
+                <option value="fuerza">Aumento de Fuerza Máxima</option>
+                <option value="resistencia">Mejora Cardiovascular y Resistencia</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+            <label for="days" style="display: block; font-weight: bold; margin-bottom: 8px; color: #0d2e1e;">Días de Entrenamiento por Semana:</label>
+            <select id="days" name="days" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;">
+                <option value="3">3 Días a la semana</option>
+                <option value="4">4 Días a la semana</option>
+                <option value="5">5 Días a la semana</option>
+            </select>
+        </div>
+
+        <button type="submit" id="btnSubmit" style="width: 100%; background: #2d7a4f; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.3s;">
+            ✨ Generar Mi Plan Personalizado
+        </button>
+    </form>
+
+    <div id="routineContent" class="routine-results"></div>
+</div>
+
+<script>
+    let rutinaActual = null;
+
+    function getAuthToken() {
+        return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    }
+
+    async function procesarGeneracion(e) {
+        e.preventDefault(); 
+        
+        const btn = document.getElementById('btnSubmit');
+        const content = document.getElementById('routineContent');
+        
+        const level = document.getElementById('level').value;
+        const goal = document.getElementById('goal').value;
+        const days = document.getElementById('days').value;
+
+        btn.textContent = "🧠 Pensando tu rutina ideal...";
+        btn.disabled = true;
+        content.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <p style="color: #666; font-size: 16px;">Generando tu estructura de entrenamiento de forma inteligente, por favor espera...</p>
+            </div>
+        `;
+
+        try {
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            };
+            if(token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+
+            const response = await fetch("{% url 'routines:api_generate' %}", {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ nivel: level, objetivo: goal, dias: days })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.rutina) {
+                rutinaActual = data.rutina;
+                renderRutina(data.rutina);
+            } else {
+                content.innerHTML = `
+                    <div style="background: #fdf2f2; border: 1px solid #f8b4b4; padding: 15px; border-radius: 10px; color: #9b1c1c;">
+                        ⚠️ <strong>Error del servidor:</strong> ${data.error || 'No se recibió un objeto de rutina válido.'}
+                    </div>
+                `;
+            }
+        } catch (err) {
+            console.error(err);
+            content.innerHTML = `
+                <div style="background: #fdf2f2; border: 1px solid #f8b4b4; padding: 15px; border-radius: 10px; color: #9b1c1c;">
+                    ⚠️ Ocurrió un problema de red al procesar o renderizar los datos de tu rutina.
+                </div>
+            `;
+        } finally {
+            btn.textContent = "✨ Generar Mi Plan Personalizado";
+            btn.disabled = false;
+        }
+    }
+
+    function renderRutina(rutina) {
+        const content = document.getElementById('routineContent');
+        let html = '';
+
+        html += `
+            <div style="text-align: right; margin-bottom: 20px;">
+                <button id="btnSave" onclick="guardarRutina()" class="btn-save-routine">
+                    💾 Activar y Guardar esta Rutina
+                </button>
+            </div>
+        `;
+
+        for (const [bloque, ejercicios] of Object.entries(rutina)) {
+            html += `
+                <div class="day-container">
+                    <h3 class="day-title">${bloque}</h3>
+            `;
+
+            if (Array.isArray(ejercicios)) {
+                ejercicios.forEach(ej => {
+                    html += `
+                        <div class="exercise-card">
+                            <h4 style="color: #2d7a4f; margin: 0 0 10px 0; font-size: 18px;">${ej.ejercicio}</h4>
+                            <p style="margin: 5px 0; color: #444; font-size: 14px;">
+                                <strong>🔢 Series:</strong> ${ej.series} | 
+                                <strong>🔁 Repeticiones:</strong> ${ej.repeticiones} | 
+                                <strong>⏱️ Descanso:</strong> ${ej.descanso}
+                            </p>
+                            ${ej.nota ? `<p style="margin: 5px 0 0 0; color: #666; font-size: 13px; font-style: italic; background: #f1f8f4; padding: 8px; border-radius: 5px;">💡 <strong>Nota:</strong> ${ej.nota}</p>` : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                html += `<p style="color: #888;">No hay ejercicios especificados para esta fase.</p>`;
+            }
+
+            html += `</div>`;
+        }
+
+        content.innerHTML = html;
+    }
+
+    async function guardarRutina() {
+        if(!rutinaActual) return;
+        
+        const btn = document.getElementById('btnSave');
+        const usuarioAutenticado = "{% if user.is_authenticated %}true{% else %}false{% endif %}";
+
+        if (usuarioAutenticado !== "true") {
+            alert("Para guardar tu plan necesitas estar identificado.");
+            window.location.href = "{% url 'login' %}";
+            return;
+        }
+
+        btn.textContent = "💾 Guardando en tu perfil...";
+        btn.disabled = true;
+
+        const level = document.getElementById('level').value;
+        const goal = document.getElementById('goal').value;
+        const days = document.getElementById('days').value;
+
+        try {
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            };
+            
+            if(token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+
+            const response = await fetch("{% url 'routines:api_save' %}", {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    rutina: rutinaActual,
+                    inputs: { nivel: level, objetivo: goal, dias: days }
+                })
+            });
+
+            const resData = await response.json();
+
+            if (response.ok && resData.success) {
+                alert("¡Plan guardado con éxito! Redirigiendo al detalle de tu rutina...");
+                // CORRECCIÓN AQUÍ: Cambiado de /inicio/ a la URL de detalle asignada
+                window.location.href = "{% url 'routines:detail' %}"; 
+            } else {
+                alert("No se pudo guardar la rutina: " + (resData.error || "Sesión inválida"));
+            }
+        } catch (e) {
+            alert("Error de red al intentar conectar con la base de datos.");
+            console.error(e);
+        } finally {
+            btn.textContent = "💾 Activar y Guardar esta Rutina";
+            btn.disabled = false;
+        }
+    }
+</script>
+{% endblock %}

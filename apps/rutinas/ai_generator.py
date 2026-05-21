@@ -1,222 +1,136 @@
-
-
 import json
-import logging
+import re
+import random
+from groq import Groq
 from django.conf import settings
-import anthropic
-from biofit.apps.calories.calculator import calcular_calorias_completas
 
-from .prompts import (
-    get_system_prompt_routine_generator,
-    build_routine_user_prompt,
-    get_calorie_estimation_prompt,
-)
+# ── Prompt del sistema — Optimizado para evitar repeticiones en modo JSON ─────
+SYSTEM_PROMPT = """Eres un entrenador personal de élite, experto y certificado con más de 15 años de experiencia en diseño de programas biomecánicos para gimnasio y calistenia.
 
-logger = logging.getLogger(__name__)
+Tu única tarea es generar rutinas de ejercicio ALTAMENTE DETALLADAS, PROFESIONALES y 100% PERSONALIZADAS en español.
 
+═══════════════════════════════════════════════════════════
+REGLAS DE DINAMISMO Y VARIABILIDAD ABSOLUTA:
+═══════════════════════════════════════════════════════════
+- Está PROHIBIDO devolver siempre los mismos ejercicios.
+- Debes alterar completamente la selección de ejercicios, el orden, los rangos de repeticiones, las series y los tiempos de descanso en función de los parámetros de nivel y objetivo que te provea el usuario.
+- Analiza científicamente lo que implica cada objetivo para estructurar entrenamientos únicos y funcionales.
 
-class RoutineGeneratorAI:
+═══════════════════════════════════════════════════════════
+REGLAS DE FORMATO — NUNCA LAS VIOLES:
+═══════════════════════════════════════════════════════════
+REGLA 1 — FORMATO DE RESPUESTA:
+Responde ÚNICAMENTE con un objeto JSON válido. Sin texto explicativo antes ni después. Sin bloques de marcado markdown como ```json o similares. Solo el JSON puro y directo.
+
+REGLA 2 — ESTRUCTURA OBLIGATORIA DEL JSON:
+El JSON debe tener EXACTAMENTE estas 3 claves principales de nivel superior:
+  "calentamiento"
+  "entrenamiento_principal"
+  "estiramiento"
+
+REGLA 3 — ESTRUCTURA DE CADA EJERCICIO:
+Cada bloque contiene una lista de objetos. Cada ejercicio es un objeto con EXACTAMENTE estas 5 claves en minúsculas:
+  "ejercicio"     → nombre real, específico y profesional del ejercicio (NUNCA genérico)
+  "series"        → número de series como string (ej. "3" o "4")
+  "repeticiones"  → rango o número de repeticiones (ej. "12-15", "6-8" o "12")
+  "descanso"      → tiempo estimado (ej. "60 seg", "90 seg" o "2 min")
+  "nota"          → tip breve enfocado en la ejecución técnica correcta y segura
+"""
+
+def _build_user_prompt(user_data: dict) -> str:
     """
-    Clase principal para generar rutinas de ejercicio con IA.
-    Encapsula toda la lógica de comunicación con la API de Anthropic.
+    Extrae de forma dinámica y rigurosa los datos del formulario de BIO-FIT.
+    Introduce un token de entropía aleatoria para romper el caché estático del modelo de Groq.
     """
+    nivel = str(user_data.get('nivel', 'principiante')).strip().lower()
+    objetivo = str(user_data.get('objetivo', 'salud_general')).strip().lower()
+    dias = str(user_data.get('dias', '3')).strip()
 
+    # Reemplazar guiones bajos por espacios legibles para mejor contexto semántico de la IA
+    objetivo_limpio = objetivo.replace('_', ' ')
+    
+    # Generador de entropía interna para obligar al modelo a recalcular la respuesta desde cero
+    seed_id = random.randint(1000, 9999)
+
+    return f"""Genera un plan de entrenamiento totalmente inédito y específico en formato JSON (Request ID: {seed_id}).
+
+PARÁMETROS DEL CLIENTE BIO-FIT:
+- Nivel de experiencia real: {nivel}
+- Objetivo principal: {objetivo_limpio}
+- Días disponibles a la semana: {dias} días
+
+REQUERIMIENTOS EXCLUSIVOS DE ADAPTACIÓN BIOMECÁNICA:
+1. Si el nivel es 'principiante', prescribe ejercicios en máquinas guiadas, poleas fijas o peso corporal controlado para mitigar riesgos de lesión, con descansos amplios.
+2. Si el nivel es 'intermedio' o 'avanzado', prescribe variantes avanzadas utilizando pesos libres (barras, mancuernas), superseries, movimientos compuestos poliarticulares complejos y técnicas de sobrecarga progresiva.
+3. Si el objetivo es 'perder peso' o 'resistencia', el entrenamiento principal debe enfocarse en alta densidad metabólica (ejercicios multiarticulares combinados, repeticiones altas entre 12 y 15, y descansos cortos de 45-60 seg).
+4. Si el objetivo es 'ganar musculo' (hipertrofia) o 'fuerza', enfócate en rangos pesados o moderados (6-10 repeticiones), con mayor volumen de series y descansos de 90 seg a 3 min.
+
+Adapta el plan de forma estricta a un usuario {nivel} que busca {objetivo_limpio}. No copies respuestas anteriores."""
+
+
+class RoutineGenerator:
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self.model = settings.ANTHROPIC_MODEL
-        self.max_tokens = settings.ANTHROPIC_MAX_TOKENS
+        # Inicialización del cliente leyendo desde settings.py
+        api_key = getattr(settings, "GROQ_API_KEY", None)
+        self.client = Groq(api_key=api_key) if api_key else None
+        
+        # Lee dinámicamente el modelo configurado en tu archivo .env
+        self.model_name = getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile")
+        print(f"[BIO-FIT] Motor de IA cargado con el modelo: {self.model_name}")
 
     def generate_routine(self, user_data: dict) -> dict:
-        """
-        Genera una rutina personalizada para el usuario.
+        """Genera una rutina de ejercicios adaptada con datos reales y específicos."""
+        if not self.client:
+            print("[BIO-FIT] ERROR: No se detectó GROQ_API_KEY en los settings.")
+            return {'success': False, 'error': 'La API Key de Groq no está configurada.'}
 
-        Args:
-            user_data: dict con todos los datos del formulario del usuario
-                Ejemplo:
-                {
-                    'age': 28,
-                    'gender': 'masculino',
-                    'weight_kg': 75,
-                    'height_cm': 175,
-                    'experience_level': 'principiante',
-                    'main_goal': 'perder_peso',
-                    'days_per_week': 3,
-                    'session_duration_min': 45,
-                    'equipment': ['Mancuernas', 'Colchoneta'],
-                    'training_location': 'casa',
-                    'medical_conditions': '',
-                    'injuries': '',
-                }
-
-        Returns:
-            dict con la rutina generada o un dict de error
-        """
         try:
-            system_prompt = get_system_prompt_routine_generator()
-            user_prompt = build_routine_user_prompt(user_data)
+            # Construcción dinámica del prompt con las selecciones del atleta
+            user_msg = _build_user_prompt(user_data)
 
-            logger.info(f"Generando rutina para usuario con objetivo: {user_data.get('main_goal')}")
-
-            message = self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                system=system_prompt,
+            response = self.client.chat.completions.create(
+                model=self.model_name,
                 messages=[
-                    {"role": "user", "content": user_prompt}
-                ]
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user",   "content": user_msg},
+                ],
+                # Subimos ligeramente la temperatura a 0.75 para dar flexibilidad creativa
+                # al diseño fitness sin perder la rigidez de la sintaxis JSON
+                temperature=0.75,       
+                max_tokens=3000,
+                response_format={"type": "json_object"},
             )
 
-            response_text = message.content[0].text
+            content = response.choices[0].message.content
+            if not content:
+                return {'success': False, 'error': 'La IA no devolvió contenido.'}
 
-            # Limpiar posibles backticks de markdown si la IA los añade
-            response_text = response_text.strip()
-            if response_text.startswith("```json"):
-                response_text = response_text[7:]
-            if response_text.startswith("```"):
-                response_text = response_text[3:]
-            if response_text.endswith("```"):
-                response_text = response_text[:-3]
+            content_limpio = self._limpiar_json(content)
+            routine_json   = json.loads(content_limpio)
 
-            routine_data = json.loads(response_text.strip())
-
-            logger.info(f"Rutina generada exitosamente: {routine_data.get('routine_name')}")
-            return {
-                'success': True,
-                'routine': routine_data,
-                'tokens_used': message.usage.input_tokens + message.usage.output_tokens,
-            }
+            return {'success': True, 'routine': routine_json}
 
         except json.JSONDecodeError as e:
-            logger.error(f"Error parseando JSON de la IA: {e}")
-            return {
-                'success': False,
-                'error': 'La IA devolvió un formato inesperado. Intenta de nuevo.',
-                'raw_response': response_text if 'response_text' in locals() else '',
-            }
-
-        except anthropic.APIConnectionError:
-            logger.error("Error de conexión con la API de Anthropic")
-            return {
-                'success': False,
-                'error': 'No se pudo conectar con el servicio de IA. Verifica tu conexión.',
-            }
-
-        except anthropic.RateLimitError:
-            logger.warning("Rate limit alcanzado en Anthropic API")
-            return {
-                'success': False,
-                'error': 'Servicio temporalmente ocupado. Intenta en unos minutos.',
-            }
-
-        except anthropic.APIStatusError as e:
-            logger.error(f"Error de API Anthropic: {e.status_code} — {e.message}")
-            return {
-                'success': False,
-                'error': f'Error del servicio de IA: {e.message}',
-            }
-
+            print(f"[BIO-FIT] JSON inválido de Groq: {e}\nContenido original: {content[:500]}")
+            return {'success': False, 'error': 'La IA devolvió un formato inesperado. Inténtalo de nuevo.'}
         except Exception as e:
-            logger.exception(f"Error inesperado generando rutina: {e}")
-            return {
-                'success': False,
-                'error': 'Ocurrió un error inesperado. Por favor contacta soporte.',
-            }
+            print(f"[BIO-FIT] Error crítico en módulo Groq: {e}")
+            return {'success': False, 'error': f'Error de conexión con el motor de IA: {str(e)}'}
 
-    def estimate_calories(self, user_data: dict) -> dict:
-        """
-        Genera recomendaciones de gasto calórico personalizadas.
-        """
-        try:
-            prompt = get_calorie_estimation_prompt(user_data)
-
-            message = self.client.messages.create(
-                model=self.model,
-                max_tokens=800,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
-            )
-
-            response_text = message.content[0].text.strip()
-            # Limpiar backticks
-            for prefix in ("```json", "```"):
-                if response_text.startswith(prefix):
-                    response_text = response_text[len(prefix):]
-            if response_text.endswith("```"):
-                response_text = response_text[:-3]
-
-            calorie_data = json.loads(response_text.strip())
-            return {'success': True, 'data': calorie_data}
-
-        except Exception as e:
-            logger.exception(f"Error estimando calorías: {e}")
-            return {'success': False, 'error': str(e)}
+    def _limpiar_json(self, texto: str) -> str:
+        """Limpia cualquier residuo de texto o markdown que pueda romper el parseo del JSON."""
+        texto_limpio = texto.strip()
+        # Elimina bloques de código markdown si la IA los agregó por error
+        if texto_limpio.startswith("```json"):
+            texto_limpio = texto_limpio[7:]
+        elif texto_limpio.startswith("```"):
+            texto_limpio = texto_limpio[3:]
+        
+        if texto_limpio.endswith("```"):
+            texto_limpio = texto_limpio[:-3]
+            
+        return texto_limpio.strip()
 
 
-class AssistantAI:
-    """
-    Asistente conversacional de BIO-FIT.
-    Mantiene el contexto de la conversación con historial.
-    """
-
-    def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self.model = settings.ANTHROPIC_MODEL
-
-    def chat(self, user_message: str, conversation_history: list,
-             user_profile: dict, current_routine: dict = None) -> dict:
-        """
-        Envía un mensaje al asistente y obtiene la respuesta.
-
-        Args:
-            user_message: mensaje del usuario
-            conversation_history: lista de mensajes previos
-                Formato: [{"role": "user"|"assistant", "content": "..."}]
-            user_profile: perfil del usuario para contextualizar
-            current_routine: rutina actual del usuario (opcional)
-
-        Returns:
-            dict con 'success', 'response' y 'updated_history'
-        """
-        from .prompts import get_system_prompt_assistant, build_assistant_context_prompt
-
-        try:
-            context = build_assistant_context_prompt(user_profile, current_routine)
-            system = get_system_prompt_assistant() + f"\n\n{context}"
-
-            # Construir historial limitado (últimos 10 mensajes para no exceder tokens)
-            limited_history = conversation_history[-10:] if len(conversation_history) > 10 else conversation_history
-            messages = limited_history + [{"role": "user", "content": user_message}]
-
-            message = self.client.messages.create(
-                model=self.model,
-                max_tokens=600,
-                system=system,
-                messages=messages,
-            )
-
-            assistant_response = message.content[0].text
-
-            # Actualizar historial
-            updated_history = messages + [
-                {"role": "assistant", "content": assistant_response}
-            ]
-
-            return {
-                'success': True,
-                'response': assistant_response,
-                'updated_history': updated_history,
-            }
-
-        except Exception as e:
-            logger.exception(f"Error en asistente IA: {e}")
-            return {
-                'success': False,
-                'response': 'Lo siento, ocurrió un error. Por favor intenta de nuevo.',
-                'updated_history': conversation_history,
-            }
-
-
-# ── Instancias singleton para reutilizar conexiones ──────────
-routine_generator = RoutineGeneratorAI()
-assistant_ai = AssistantAI()
+# Instancia única reutilizable para toda la aplicación
+routine_generator = RoutineGenerator()

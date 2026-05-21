@@ -1,12 +1,16 @@
 from django.urls import path
-from . import views_rutinas  # Importamos tus vistas reales
+from . import views_rutinas
 
 app_name = 'routines'
 
 urlpatterns = [
-    # Esta ruta cargará el formulario para generar la rutina
-    path('generar/', views_rutinas.routine_generator_view, name='generator'),
+    # 1. Formulario del generador
+    path('generar/', views_rutinas.routine_generator_view, name='generate'),
     
-    # Esta ruta servirá para procesar la petición de la IA vía AJAX
-    path('api/generate/', views_rutinas.generate_routine_api, name='api_generate'),
+    # 2. Vista del detalle de rutina cargada de Firebase
+    path('detalle/', views_rutinas.routine_detail_view, name='detail'),
+    
+    # APIs internas
+    path('api/generar/', views_rutinas.generate_routine_api, name='api_generate'),
+    path('api/save/', views_rutinas.save_routine_api, name='api_save'),
 ]

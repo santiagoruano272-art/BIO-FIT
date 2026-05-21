@@ -6,9 +6,8 @@ from django.conf import settings
 firebase = FirebaseClient()
 
 # =========================================
-# REGISTRO DE USUARIO
+# REGISTRO DE USUARIO (SOLO EMAIL Y PASS)
 # =========================================
-
 def register_user(email: str, password: str) -> dict:
     user = None
     try:
@@ -18,19 +17,18 @@ def register_user(email: str, password: str) -> dict:
             password=password
         )
 
-        # 2. Guardar perfil en Firestore → colección 'users'
+        # 2. Guardar perfil mínimo en Firestore (Rol por defecto: atleta)
         firebase.save_user_profile(user.uid, {
             'email':     user.email,
             'uid':       user.uid,
-            'nombre':    '',
             'nivel':     'principiante',
+            'rol':       'atleta',
             'is_active': True,
         })
 
         return {"uid": user.uid, "email": user.email}
 
     except Exception as e:
-        # Rollback: eliminar de Auth si Firestore falló
         if user:
             try:
                 firebase_auth.delete_user(user.uid)
@@ -39,9 +37,8 @@ def register_user(email: str, password: str) -> dict:
         return {"error": str(e)}
 
 # =========================================
-# LOGIN (FIREBASE REST API)
+# LOGIN (FIREBASE REST API) - CON EXTRACCIÓN DE ROL
 # =========================================
-
 def login_user(email: str, password: str) -> dict:
     try:
         url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={settings.FIREBASE_API_KEY}"
@@ -57,18 +54,26 @@ def login_user(email: str, password: str) -> dict:
         if "error" in data:
             return {"error": data["error"]["message"]}
 
+        uid = data["localId"]
+        
+        # Recuperar el rol real guardado en Firestore
+        rol = "atleta"  # Fallback por seguridad y compatibilidad hacia atrás
+        try:
+            perfil = firebase.get_user_profile(uid)
+            if perfil and "rol" in perfil:
+                rol = perfil["rol"]
+        except Exception as e:
+            print(f"[BIO-FIT Warning] No se pudo obtener el rol de Firestore para {uid}: {e}")
+
         return {
             "idToken":      data["idToken"],
             "refreshToken": data["refreshToken"],
-            "uid":          data["localId"]
+            "uid":          uid,
+            "rol":          rol
         }
 
     except Exception as e:
         return {"error": str(e)}
-
-# =========================================
-# VERIFICAR TOKEN
-# =========================================
 
 def verify_token(id_token: str) -> dict:
     try:
@@ -81,16 +86,5 @@ def verify_token(id_token: str) -> dict:
         return {"error": "Token expirado"}
     except firebase_auth.InvalidIdTokenError:
         return {"error": "Token inválido"}
-    except Exception as e:
-        return {"error": str(e)}
-
-# =========================================
-# OBTENER USUARIO POR UID
-# =========================================
-
-def get_user(uid: str) -> dict:
-    try:
-        user = firebase_auth.get_user(uid)
-        return {"uid": user.uid, "email": user.email}
     except Exception as e:
         return {"error": str(e)}
