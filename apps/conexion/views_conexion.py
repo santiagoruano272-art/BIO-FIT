@@ -8,63 +8,44 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from apps.conexion.auth import register_user, login_user
+from apps.conexion.serializers_conexion import RegisterSerializer
 from services.firebase_client import FirebaseClient
 
 firebase = FirebaseClient()
 
-# =========================================================================
-# VISTAS DE PLANTILLAS HTML
-# =========================================================================
 def landing_page(request):
-    # Recuperamos el rol de la sesión de Django
     user_rol = request.session.get('user_rol', 'atleta')
-    
-    # Pasamos explícitamente el rol al contexto para que el HTML lo procese
     return render(request, 'landing.html', {'user_rol': user_rol})
 
 def login_page(request):
+    if request.session.get('user_rol') == 'admin':
+        return redirect('inventory:admin_dashboard')
     return render(request, 'users/login.html')
 
 def registro_page(request):
-    return render(request, 'users/registro.html')
+    # Catálogo simulado de sedes disponibles para el registro
+    gimnasios_disponibles = [
+        {'id': 'gym_bogota_norte', 'nombre': 'BIO-FIT Sede Bogotá Norte'},
+        {'id': 'gym_medellin_poblado', 'nombre': 'BIO-FIT Sede Medellín Poblado'},
+        {'id': 'gym_cali_sur', 'nombre': 'BIO-FIT Sede Cali Sur'},
+    ]
+    return render(request, 'users/registro.html', {'gimnasios': gimnasios_disponibles})
 
 
-# =========================================================================
-# REGISTRO (API)
-# =========================================================================
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
-        requested_role = request.data.get("rol", "atleta")
+        serializer = RegisterSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not email or not password:
-            return Response(
-                {"error": "Email y password son requeridos"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        email = serializer.validated_data.get("email")
+        password = serializer.validated_data.get("password")
+        requested_role = serializer.validated_data.get("rol", "atleta")
+        gym_id = serializer.validated_data.get("gym_id", None)
 
-        if requested_role not in ['atleta', 'admin', 'entrenador']:
-            return Response({"error": "El rol especificado no es válido."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Seguridad: Bloquear creación anónima de administradores
-        if requested_role == 'admin':
-            current_user_uid = request.session.get('user_uid')
-            is_authorized = False
-            if current_user_uid:
-                perfil = firebase.get_user_profile(current_user_uid) or {}
-                if perfil.get('rol') == 'admin':
-                    is_authorized = True
-            
-            if not is_authorized:
-                return Response(
-                    {"error": "No tienes permisos para crear cuentas de administrador."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-        result = register_user(email, password, requested_role)
+        result = register_user(email, password, requested_role, gym_id)
         
         if "error" in result:
             return Response({"error": result["error"]}, status=status.HTTP_400_BAD_REQUEST)
@@ -73,13 +54,11 @@ class RegisterView(APIView):
             "uid": result["uid"],
             "email": result["email"],
             "rol": result["rol"],
-            "message": "Usuario registrado exitosamente."
+            "gym_id": result.get("gym_id"),
+            "message": "Usuario registrado con éxito."
         }, status=status.HTTP_201_CREATED)
 
 
-# =========================================================================
-# LOGIN (API) — CORREGIDO PARA EXTRAER Y PERSISTIR ROL
-# =========================================================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
@@ -87,59 +66,46 @@ def login_view(request):
     password = request.data.get('password')
 
     if not email or not password:
-        return Response(
-            {"error": "Email y password son requeridos"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": "Email y password son requeridos"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Autenticación en Firebase Auth
     result = login_user(email, password)
 
     if "error" in result:
-        return Response(
-            {"error": "Credenciales inválidas"}, 
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+        return Response({"error": "Credenciales inválidas en el sistema"}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
         uid = result["uid"]
-        
-        # 1. Consultar el rol real del usuario en Firestore
-        perfil = firebase.get_user_profile(uid) or {}
-        user_rol = perfil.get('rol', 'atleta') 
+        user_rol = result["rol"]
+        gym_id = result["gym_id"]
 
-        # 2. Sincronizar con la base de datos interna de Django
         user, created = User.objects.get_or_create(
             username=email, 
             defaults={'email': email}
         )
         
-        if user_rol == 'admin':
-            user.is_staff = True
-            user.save()
-        else:
-            if user.is_staff:
-                user.is_staff = False
-                user.save()
+        user.is_staff = (user_rol == 'admin')
+        user.save()
         
-        # 3. Guardar variables de estado en la sesión de Django (Cookies)
+        # Guardar en sesión de Django de forma persistente
         request.session['user_uid'] = uid
         request.session['user_rol'] = user_rol  
-        request.session.modified = True # Forzar a Django a guardar la cookie inmediatamente
+        request.session['gym_id'] = gym_id  
+        request.session.modified = True 
         
         login(request, user)
 
-        # 4. Retornar respuesta incluyendo el rol para el LocalStorage del cliente
         return Response({
             "token": result.get("idToken"),
             "uid": uid,
             "email": email,
             "rol": user_rol,
-            "message": "Login exitoso"
+            "gym_id": gym_id,
+            "redirect_url": "/inventory/dashboard/" if user_rol == 'admin' else "/routines/generar/",
+            "message": "Autenticación exitosa."
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response(
-            {"error": f"Error interno en el servidor: {str(e)}"},
+            {"error": f"Falla interna: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

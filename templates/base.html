@@ -32,9 +32,10 @@
             color: var(--green-dark); 
             font-weight: 500;
             font-size: 0.95rem;
+            cursor: pointer;
         }
 
-        .btn-logout-nav { color: #e74c3c !important; font-weight: 700 !important; cursor: pointer; }
+        .btn-logout-nav { color: #e74c3c !important; font-weight: 700 !important; }
 
         /* Hamburguesa */
         .menu-toggle { display: none; flex-direction: column; cursor: pointer; gap: 5px; }
@@ -43,7 +44,7 @@
         @media (max-width: 768px) {
             .menu-toggle { display: flex; }
             .nav-links {
-                display: none; /* Se oculta por defecto en movil */
+                display: none;
                 flex-direction: column;
                 position: absolute;
                 top: 100%;
@@ -61,24 +62,31 @@
 <body>
 
 <nav>
-    <h2>BIO-FIT</h2>
+    <h2>BIO-FIT 📊</h2>
     <div class="menu-toggle" id="mobile-menu">
         <span></span>
         <span></span>
         <span></span>
     </div>
+    
     <div class="nav-links" id="nav-links">
-        <a href="/">Inicio</a>
-        <a href="/rutinas/detalle/">Rutinas</a>
-        <a href="/rutinas/generar/">Asistente</a>
-        <a onclick="logout()" class="btn-logout-nav">Cerrar Sesión</a>
+        {% if request.session.user_rol == 'admin' %}
+            <a href="/">Inicio</a>
+            <a href="{% url 'inventory:registrar_gimnasio_view' %}">Registrar</a>
+            <a href="{% url 'inventory:admin_dashboard' %}">Inventario</a>
+            <a onclick="logout()" class="btn-logout-nav">Cerrar Sesión</a>
+        {% else %}
+            <a href="/">Inicio</a>
+            <a href="/rutinas/detalle/">Rutinas</a>
+            <a href="/rutinas/generar/">Asistente</a>
+            <a onclick="logout()" class="btn-logout-nav">Cerrar Sesión</a>
+        {% endif %}
     </div>
 </nav>
 
 {% block content %}{% endblock %}
 
 <script>
-    // Toggle Menu movil
     const menuToggle = document.getElementById('mobile-menu');
     const navLinks = document.getElementById('nav-links');
 
@@ -87,7 +95,9 @@
     });
 
     function logout() {
+        // Limpieza de datos en LocalStorage y redirección limpia
         localStorage.clear();
+        document.cookie = "sessionid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         window.location.href = '/login/';
     }
 </script>

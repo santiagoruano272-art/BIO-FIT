@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="max-width: 500px; margin: 60px auto; padding: 30px; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+    <h2 style="font-family: 'Syne', sans-serif; margin-bottom: 20px; color: #0d2e1e;">Registrar Nuevo Gimnasio 🏢</h2>
+    <p style="color: #666; font-size: 0.9rem; margin-bottom: 25px;">Da de alta sedes principales del ecosistema para segmentar sus equipamientos independientes.</p>
+    
+    <form id="form-gym">
+        <div style="margin-bottom: 15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:500;">Nombre de la Sede:</label>
+            <input type="text" id="gym-name" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:500;">Dirección / Ubicación:</label>
+            <input type="text" id="gym-location" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+        </div>
+        <div style="margin-bottom: 25px;">
+            <label style="display:block; margin-bottom:5px; font-weight:500;">Teléfono de Contacto:</label>
+            <input type="text" id="gym-phone" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+        </div>
+        
+        <button type="submit" style="width:100%; background:#2d7a4f; color:white; padding:12px; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Guardar Colección Principal</button>
+    </form>
+    <div id="msg" style="margin-top:15px; font-weight:500; display:none;"></div>
+</div>
+
+<script>
+    document.getElementById('form-gym').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msgDiv = document.getElementById('msg');
+        
+        const payload = {
+            nombre: document.getElementById('gym-name').value,
+            ubicacion: document.getElementById('gym-location').value,
+            telefono: document.getElementById('gym-phone').value
+        };
+
+        try {
+            const response = await fetch("{% url 'inventory:api_crear_gimnasio' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            
+            if(response.ok && data.success) {
+                msgDiv.style.color = '#27ae60';
+                msgDiv.textContent = `¡Gimnasio creado con ID: ${data.gym_id}! Subcolección de equipamientos inicializada.`;
+                msgDiv.style.display = 'block';
+                document.getElementById('form-gym').reset();
+            } else {
+                msgDiv.style.color = '#c0392b';
+                msgDiv.textContent = data.error || 'Fallo en la persistencia del documento.';
+                msgDiv.style.display = 'block';
+            }
+        } catch (err) {
+            msgDiv.style.color = '#c0392b';
+            msgDiv.textContent = 'Error fatal de conexión con los endpoints.';
+            msgDiv.style.display = 'block';
+        }
+    });
+</script>
+{% endblock %}
