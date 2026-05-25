@@ -143,15 +143,52 @@ Para proteger información importante y evitar exponer credenciales sensibles de
 Dentro del archivo `.env` debes configurar las siguientes variables:
 
 ```env
-SECRET_KEY=Clave secreta generada para la seguridad interna de Django.
+FIREBASE_CREDENTIALS_PATH=
+1. Abrir el navegador y buscar "Firebase Console".
+2. Iniciar sesión con una cuenta de Google.
+3. Presionar "Crear un proyecto".
+4. Escribir el nombre del proyecto y continuar con la configuración.
+5. Una vez creado el proyecto, entrar a "Configuración del proyecto".
+6. Ir a la pestaña "Cuentas de servicio".
+7. Presionar "Generar nueva clave privada".
+8. Descargar el archivo JSON generado.
+9. Guardar el archivo dentro del proyecto.
+10. Después del "=" colocar la ruta del archivo JSON.
+Ejemplo:
+FIREBASE_CREDENTIALS_PATH=./firebase-config.json
 
-FIREBASE_CREDENTIALS_PATH=Ruta del archivo JSON descargado desde Firebase > Configuración del proyecto > Cuentas de servicio.
+FIREBASE_API_KEY=
+1. Entrar a "Firebase Console" desde el navegador.
+2. Abrir el proyecto creado anteriormente.
+3. Ir a "Configuración del proyecto".
+4. Buscar la sección llamada "Tus apps".
+5. Crear una aplicación web si aún no existe.
+6. Firebase mostrará la configuración del proyecto.
+7. Copiar el valor llamado "apiKey".
+8. Después del "=" pegar esa clave.
+Ejemplo:
+FIREBASE_API_KEY=AIzaSyXXXXXXXXXXXX
 
-FIREBASE_API_KEY=Web API Key obtenida desde Firebase > Configuración del proyecto > Tus apps.
+GROQ_MODEL=
+1. Buscar en el navegador "Groq Cloud".
+2. Crear una cuenta o iniciar sesión.
+3. Entrar al panel principal.
+4. Ir a la sección de modelos disponibles.
+5. Seleccionar el modelo de inteligencia artificial que se va a utilizar.
+6. Después del "=" colocar el nombre exacto del modelo.
+Ejemplo:
+GROQ_MODEL=llama-3.3-70b-versatile
 
-GROQ_MODEL=Nombre del modelo de inteligencia artificial seleccionado dentro de Groq Cloud.
-
-GROQ_API_KEY=API Key generada desde el panel de desarrolladores de Groq Cloud.
+GROQ_API_KEY=
+1. Buscar en el navegador "Groq Cloud".
+2. Crear una cuenta o iniciar sesión.
+3. Entrar al panel de desarrolladores.
+4. Ir a la sección "API Keys".
+5. Presionar "Create API Key".
+6. Copiar la clave generada.
+7. Después del "=" pegar la API Key.
+Ejemplo:
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxx
 ```
 
 ---
