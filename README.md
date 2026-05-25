@@ -141,8 +141,8 @@ Estas variables permiten mantener seguras las credenciales y conexiones del sist
 Si deseas explorar BIO-FIT rápidamente, puedes ingresar con este usuario de prueba:
 
 ```txt
-Usuario: visitante@biofit.com
-Contraseña: BioFit2026*
+Usuario: matias@gmail.com
+Contraseña: matias12345
 ```
 
 ---
