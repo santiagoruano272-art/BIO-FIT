@@ -157,3 +157,26 @@ class EquipoDeleteAPI(APIView):
             return Response({"success": True})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GimnasiosPublicListAPI(APIView):
+    """
+    Endpoint público que devuelve la lista de gimnasios registrados.
+    Lo consume el selector del formulario de registro de usuarios.
+    No requiere autenticación — sólo expone nombre, ubicación e id.
+    """
+    def get(self, request):
+        try:
+            gyms_raw = firebase.get_all_gyms()  # debe devolver una lista de dicts
+            gimnasios = [
+                {
+                    "id":        g.get("id") or g.get("gym_id"),
+                    "nombre":    g.get("nombre", "Sin nombre"),
+                    "ubicacion": g.get("ubicacion", ""),
+                }
+                for g in (gyms_raw or [])
+            ]
+            return Response({"gimnasios": gimnasios}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error("Error listando gimnasios públicos: %s", e)
+            return Response({"gimnasios": []}, status=status.HTTP_200_OK)
