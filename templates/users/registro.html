@@ -627,8 +627,8 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
         }
 
         const destino = gym_id === null
-            ? '/rutinas/casa/'   // redirige al flujo de rutina en casa
-            : '/dashboard/';     // redirige al dashboard del gimnasio
+            ? '/login/'   // redirige al flujo de rutina en casa
+            : '/inventory/dashboard/';     // redirige al dashboard del gimnasio
 
         showAlert('Cuenta creada exitosamente. Redirigiendo…', 'success');
         setTimeout(() => { window.location.href = destino; }, 1400);
