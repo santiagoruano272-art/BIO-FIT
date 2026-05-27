@@ -77,6 +77,12 @@
             </select>
         </div>
 
+        <!-- Badge de contexto: gimnasio asignado o modo casa -->
+        <div id="gym-context-badge" style="display:flex; align-items:center; gap:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px 15px; margin-bottom:20px; font-size:13.5px; color:#15803d;">
+            <span style="font-size:20px;" id="gym-badge-icon">⏳</span>
+            <span id="gym-badge-text">Consultando tu gimnasio asignado…</span>
+        </div>
+
         <button type="submit" id="btnSubmit" style="width: 100%; background: #2d7a4f; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.3s;">
             ✨ Generar Mi Plan Personalizado
         </button>
@@ -87,6 +93,37 @@
 
 <script>
     let rutinaActual = null;
+
+    // ── Badge: muestra el gimnasio/modo activo del usuario ──────────────────
+    async function cargarContextoGimnasio() {
+        const badge  = document.getElementById('gym-context-badge');
+        const icon   = document.getElementById('gym-badge-icon');
+        const text   = document.getElementById('gym-badge-text');
+        try {
+            const res  = await fetch('/inventory/api/gimnasios/contexto/');
+            const data = await res.json();
+            if (data.gym_id && data.gym_nombre) {
+                icon.textContent = '🏋️';
+                text.innerHTML   = `Rutina adaptada al inventario de <strong>${data.gym_nombre}</strong> — solo se usarán los equipos disponibles allí.`;
+                badge.style.background = '#f0fdf4';
+                badge.style.borderColor = '#bbf7d0';
+                badge.style.color = '#15803d';
+            } else {
+                icon.textContent = '🏠';
+                text.textContent = 'No tienes un gimnasio asignado — tu rutina usará ejercicios con peso corporal.';
+                badge.style.background = '#fffbeb';
+                badge.style.borderColor = '#fde68a';
+                badge.style.color = '#92400e';
+            }
+        } catch (_) {
+            icon.textContent = '⚠️';
+            text.textContent = 'No se pudo verificar tu gimnasio. La rutina se generará con equipamiento general.';
+            badge.style.background = '#fef2f2';
+            badge.style.borderColor = '#fecaca';
+            badge.style.color = '#991b1b';
+        }
+    }
+    cargarContextoGimnasio();
 
     function getAuthToken() {
         return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');

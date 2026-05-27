@@ -157,3 +157,45 @@ class EquipoDeleteAPI(APIView):
             return Response({"success": True})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GimnasiosPublicListAPI(APIView):
+    """
+    Endpoint público que devuelve la lista de gimnasios registrados.
+    Lo consume el selector del formulario de registro de usuarios.
+    No requiere autenticación — sólo expone nombre, ubicación e id.
+    """
+    def get(self, request):
+        try:
+            gyms_raw = firebase.get_all_gyms()  # debe devolver una lista de dicts
+            gimnasios = [
+                {
+                    "id":        g.get("id") or g.get("gym_id"),
+                    "nombre":    g.get("nombre", "Sin nombre"),
+                    "ubicacion": g.get("ubicacion", ""),
+                }
+                for g in (gyms_raw or [])
+            ]
+            return Response({"gimnasios": gimnasios}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error("Error listando gimnasios públicos: %s", e)
+            return Response({"gimnasios": []}, status=status.HTTP_200_OK)
+
+class GimnasioContextoAPI(APIView):
+    """
+    Devuelve el gimnasio activo del usuario en sesión.
+    Lo consume el badge del generador de rutinas para mostrar
+    qué gimnasio/modo está activo antes de generar la rutina.
+    """
+    def get(self, request):
+        gym_id = request.session.get('gym_id')
+        if not gym_id:
+            return Response({"gym_id": None, "gym_nombre": None})
+        try:
+            gyms = firebase.get_all_gyms()
+            gym  = next((g for g in gyms if g.get('id') == gym_id), None)
+            nombre = gym.get('nombre', 'Gimnasio') if gym else 'Gimnasio'
+            return Response({"gym_id": gym_id, "gym_nombre": nombre})
+        except Exception as e:
+            logger.error("Error en contexto de gimnasio: %s", e)
+            return Response({"gym_id": None, "gym_nombre": None})
