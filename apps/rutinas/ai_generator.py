@@ -68,15 +68,27 @@ Todo el contenido (ejercicios, notas, descripciones) en ESPAÑOL.
 
 def _build_user_prompt(user_data: dict) -> str:
     """Construye el mensaje del usuario con sus datos específicos."""
-    nivel      = user_data.get('nivel', 'intermedio')
-    objetivo   = user_data.get('objetivo', 'salud_general')
-    dias       = user_data.get('dias', 3)
-    lugar      = user_data.get('lugar', 'gimnasio')
-    equipo     = user_data.get('equipo', 'equipamiento completo de gimnasio')
-    lesiones   = user_data.get('lesiones', 'ninguna')
-    edad       = user_data.get('edad', '')
-    peso       = user_data.get('peso', '')
-    genero     = user_data.get('genero', '')
+    nivel      = user_data.get("nivel", "intermedio")
+    objetivo   = user_data.get("objetivo", "salud_general")
+    dias       = user_data.get("dias", 3)
+    lugar      = user_data.get("lugar", "gimnasio")
+    lesiones   = user_data.get("lesiones", "ninguna")
+    edad       = user_data.get("edad", "")
+    peso       = user_data.get("peso", "")
+    genero     = user_data.get("genero", "")
+
+    # ── Inventario real del gimnasio ──────────────────────────────────────
+    # Si viene la lista de equipos desde Firebase la usamos directamente.
+    # Si el usuario entrena en casa o no hay inventario, usamos peso corporal.
+    inventario = user_data.get("inventario_gimnasio", [])
+    if inventario:
+        nombres = [e.get("nombre", "") for e in inventario if e.get("nombre")]
+        equipo  = ", ".join(nombres) if nombres else "equipamiento completo de gimnasio"
+        lugar   = "gimnasio"
+    elif lugar == "casa":
+        equipo = "peso corporal, colchoneta (sin maquinas de gimnasio)"
+    else:
+        equipo = user_data.get("equipo", "equipamiento completo de gimnasio")
 
     # Mapear objetivo a descripción
     objetivos_map = {
@@ -137,6 +149,7 @@ INSTRUCCIONES CRÍTICAS:
 2. El entrenamiento principal debe incluir una mezcla de ejercicios COMPUESTOS e AISLAMIENTO.
 3. Adapta las series/repeticiones al nivel "{nivel}" y objetivo "{objetivo_desc}".
 4. Responde SOLO con el JSON, sin texto adicional.
+5. EQUIPAMIENTO OBLIGATORIO: SOLO puedes usar ejercicios que se realicen con el equipamiento listado arriba. NO inventes ni uses máquinas o implementos que no estén en la lista. Si el usuario entrena en casa, usa únicamente ejercicios con peso corporal.
 
 FORMATO JSON REQUERIDO (ejemplo de estructura — usa ejercicios reales, no estos):
 {{

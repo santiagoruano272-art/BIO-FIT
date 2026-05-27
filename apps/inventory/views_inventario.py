@@ -180,3 +180,22 @@ class GimnasiosPublicListAPI(APIView):
         except Exception as e:
             logger.error("Error listando gimnasios públicos: %s", e)
             return Response({"gimnasios": []}, status=status.HTTP_200_OK)
+
+class GimnasioContextoAPI(APIView):
+    """
+    Devuelve el gimnasio activo del usuario en sesión.
+    Lo consume el badge del generador de rutinas para mostrar
+    qué gimnasio/modo está activo antes de generar la rutina.
+    """
+    def get(self, request):
+        gym_id = request.session.get('gym_id')
+        if not gym_id:
+            return Response({"gym_id": None, "gym_nombre": None})
+        try:
+            gyms = firebase.get_all_gyms()
+            gym  = next((g for g in gyms if g.get('id') == gym_id), None)
+            nombre = gym.get('nombre', 'Gimnasio') if gym else 'Gimnasio'
+            return Response({"gym_id": gym_id, "gym_nombre": nombre})
+        except Exception as e:
+            logger.error("Error en contexto de gimnasio: %s", e)
+            return Response({"gym_id": None, "gym_nombre": None})
