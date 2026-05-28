@@ -188,46 +188,83 @@
         }
     }
 
+    function renderEjercicios(lista) {
+        if (!Array.isArray(lista) || lista.length === 0) {
+            return '<p style="color:#888; font-size:13px;">Sin ejercicios para esta fase.</p>';
+        }
+        return lista.map(ej => `
+            <div class="exercise-card">
+                <h4 style="color:#2d7a4f; margin:0 0 8px 0; font-size:17px;">${ej.ejercicio}</h4>
+                <p style="margin:4px 0; color:#444; font-size:13.5px;">
+                    <strong>🔢 Series:</strong> ${ej.series} &nbsp;|&nbsp;
+                    <strong>🔁 Reps:</strong> ${ej.repeticiones} &nbsp;|&nbsp;
+                    <strong>⏱️ Descanso:</strong> ${ej.descanso}
+                </p>
+                ${ej.nota ? `<p style="margin:6px 0 0 0; color:#555; font-size:12.5px; font-style:italic; background:#f1f8f4; padding:7px 10px; border-radius:6px;">💡 <strong>Nota:</strong> ${ej.nota}</p>` : ''}
+            </div>
+        `).join('');
+    }
+
     function renderRutina(rutina) {
         const content = document.getElementById('routineContent');
-        let html = '';
+        const dias = rutina.dias || [];
 
-        html += `
-            <div style="text-align: right; margin-bottom: 20px;">
+        if (dias.length === 0) {
+            content.innerHTML = '<p style="color:#888;">No se generaron días de entrenamiento.</p>';
+            return;
+        }
+
+        // ── Pestañas de días ──────────────────────────────────────────────────
+        const tabsBtns = dias.map((dia, i) => `
+            <button onclick="mostrarDia(${i})" id="tab-btn-${i}"
+                style="padding:9px 18px; border:none; border-radius:8px; cursor:pointer; font-weight:600;
+                       font-size:13.5px; transition:all .2s;
+                       background:${i === 0 ? '#2d7a4f' : '#e8f5ee'};
+                       color:${i === 0 ? '#fff' : '#2d7a4f'};">
+                ${dia.dia}
+            </button>
+        `).join('');
+
+        const diasHtml = dias.map((dia, i) => `
+            <div id="dia-panel-${i}" style="display:${i === 0 ? 'block' : 'none'};">
+                ${dia.enfoque ? `<p style="color:#6b7280; font-size:13px; margin:0 0 18px 0; font-weight:500;">🎯 Enfoque: <strong style="color:#2d7a4f;">${dia.enfoque}</strong></p>` : ''}
+
+                <div class="day-container">
+                    <h3 class="day-title">🔥 Calentamiento</h3>
+                    ${renderEjercicios(dia.calentamiento)}
+                </div>
+                <div class="day-container">
+                    <h3 class="day-title">💪 Entrenamiento Principal</h3>
+                    ${renderEjercicios(dia.entrenamiento_principal)}
+                </div>
+                <div class="day-container">
+                    <h3 class="day-title">🧘 Estiramiento</h3>
+                    ${renderEjercicios(dia.estiramiento)}
+                </div>
+            </div>
+        `).join('');
+
+        content.innerHTML = `
+            <div style="text-align:right; margin-bottom:20px;">
                 <button id="btnSave" onclick="guardarRutina()" class="btn-save-routine">
                     💾 Activar y Guardar esta Rutina
                 </button>
             </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+                ${tabsBtns}
+            </div>
+            ${diasHtml}
         `;
+    }
 
-        for (const [bloque, ejercicios] of Object.entries(rutina)) {
-            html += `
-                <div class="day-container">
-                    <h3 class="day-title">${bloque}</h3>
-            `;
-
-            if (Array.isArray(ejercicios)) {
-                ejercicios.forEach(ej => {
-                    html += `
-                        <div class="exercise-card">
-                            <h4 style="color: #2d7a4f; margin: 0 0 10px 0; font-size: 18px;">${ej.ejercicio}</h4>
-                            <p style="margin: 5px 0; color: #444; font-size: 14px;">
-                                <strong>🔢 Series:</strong> ${ej.series} | 
-                                <strong>🔁 Repeticiones:</strong> ${ej.repeticiones} | 
-                                <strong>⏱️ Descanso:</strong> ${ej.descanso}
-                            </p>
-                            ${ej.nota ? `<p style="margin: 5px 0 0 0; color: #666; font-size: 13px; font-style: italic; background: #f1f8f4; padding: 8px; border-radius: 5px;">💡 <strong>Nota:</strong> ${ej.nota}</p>` : ''}
-                        </div>
-                    `;
-                });
-            } else {
-                html += `<p style="color: #888;">No hay ejercicios especificados para esta fase.</p>`;
-            }
-
-            html += `</div>`;
-        }
-
-        content.innerHTML = html;
+    function mostrarDia(idx) {
+        document.querySelectorAll('[id^="dia-panel-"]').forEach((el, i) => {
+            el.style.display = i === idx ? 'block' : 'none';
+        });
+        document.querySelectorAll('[id^="tab-btn-"]').forEach((btn, i) => {
+            btn.style.background = i === idx ? '#2d7a4f' : '#e8f5ee';
+            btn.style.color      = i === idx ? '#fff'    : '#2d7a4f';
+        });
     }
 
     async function guardarRutina() {

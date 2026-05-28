@@ -34,49 +34,69 @@ _MAPEO_BLOQUES = {
 }
 
 
-def _normalizar_ejercicios(lista_ejercicios):
-    """
-    Toma una lista de ejercicios cruda de la IA y asegura que cada objeto
-    tenga exactamente las llaves: 'ejercicio', 'series', 'repeticiones', 'descanso', 'nota'.
-    """
-    if not isinstance(lista_ejercicios, list):
-        return []
-
-    ejercicios_limpios = []
-    for ej in lista_ejercicios:
+def _normalizar_ejercicios(lista: list) -> list:
+    """Normaliza una lista de ejercicios crudos de la IA."""
+    resultado = []
+    for ej in lista:
         if not isinstance(ej, dict):
             continue
-
-        # Buscar el nombre del ejercicio en las variantes permitidas
-        nombre_detectado = "Ejercicio sin nombre"
-        for clave in _CLAVES_NOMBRE:
-            if clave in ej:
-                nombre_detectado = ej[clave]
+        nombre = "Ejercicio sin nombre"
+        for k in _CLAVES_NOMBRE:
+            if k in ej:
+                nombre = ej[k]
                 break
-
-        # Limpiar y estructurar de forma segura para la base de datos y plantilla
-        ejercicios_limpios.append({
-            'ejercicio':    str(nombre_detectado),
+        resultado.append({
+            'ejercicio':    nombre,
             'series':       str(ej.get('series', '3')),
-            'repeticiones': str(ej.get('repeticiones', '10-12')),
+            'repeticiones': str(ej.get('repeticiones', '10')),
             'descanso':     str(ej.get('descanso', '60 seg')),
-            'nota':         str(ej.get('nota', '')),
+            'nota':         ej.get('nota', ej.get('recomendacion', '')),
         })
-    return ejercicios_limpios
+    return resultado
 
 
-def _normalizar_rutina(rutina_raw):
-    """Normaliza las llaves de los bloques principales de la IA."""
+def _normalizar_rutina(rutina_raw: dict) -> dict:
+    """
+    Soporta dos formatos de respuesta de la IA:
+    - NUEVO (multi-día): {"dias": [{"dia": "Día 1", "enfoque": "...", "calentamiento": [...], ...}]}
+    - LEGACY (un solo día): {"calentamiento": [...], "entrenamiento_principal": [...], ...}
+    Devuelve siempre {"dias": [...]} para que el template itere de forma uniforme.
+    """
     if not isinstance(rutina_raw, dict):
-        return {}
+        return {'dias': []}
 
-    rutina_normalizada = {}
-    for bloque_ia, ejercicios in rutina_raw.items():
-        bloque_limpio = str(bloque_ia).lower().strip()
-        nombre_oficial = _MAPEO_BLOQUES.get(bloque_limpio, bloque_ia)
-        rutina_normalizada[nombre_oficial] = _normalizar_ejercicios(ejercicios)
-        
-    return rutina_normalizada
+    # ── Formato nuevo: multi-día ──────────────────────────────────────────────
+    if 'dias' in rutina_raw and isinstance(rutina_raw['dias'], list):
+        dias_normalizados = []
+        for dia in rutina_raw['dias']:
+            if not isinstance(dia, dict):
+                continue
+            dias_normalizados.append({
+                'dia':                    dia.get('dia', 'Día'),
+                'enfoque':                dia.get('enfoque', ''),
+                'calentamiento':          _normalizar_ejercicios(dia.get('calentamiento', [])),
+                'entrenamiento_principal': _normalizar_ejercicios(
+                    dia.get('entrenamiento_principal', dia.get('entrenamiento principal', []))
+                ),
+                'estiramiento':           _normalizar_ejercicios(
+                    dia.get('estiramiento', dia.get('estiramiento_y_enfriamiento', []))
+                ),
+            })
+        return {'dias': dias_normalizados}
+
+    # ── Formato legacy: un solo día ───────────────────────────────────────────
+    dia_unico = {
+        'dia':    'Día 1',
+        'enfoque': 'Entrenamiento Completo',
+        'calentamiento':           _normalizar_ejercicios(rutina_raw.get('calentamiento', [])),
+        'entrenamiento_principal': _normalizar_ejercicios(
+            rutina_raw.get('entrenamiento_principal', rutina_raw.get('main_workout', []))
+        ),
+        'estiramiento':            _normalizar_ejercicios(
+            rutina_raw.get('estiramiento', rutina_raw.get('cooldown', []))
+        ),
+    }
+    return {'dias': [dia_unico]}
 
 
 # ── Vistas del Servidor Web (Manejo de Renderizado) ───────────────────────────
@@ -156,7 +176,7 @@ def generate_routine_api(request):
         return JsonResponse({'status': 'error', 'error': 'Método no permitido'}, status=405)
 
     try:
-diego
+
         data = json.loads(request.body)
 
         request.session['ultimo_nivel'] = data.get('nivel', '')
@@ -184,39 +204,8 @@ diego
 
         if result.get('success') and 'routine' in result:
             rutina_procesada = _normalizar_rutina(result['routine'])
-            print(f"[BIO-FIT] Rutina lista — bloques: {list(rutina_procesada.keys())}")
-
-        body = json.loads(request.body)
-        
-        # 1. Extraemos los parámetros dinámicos enviados por el formulario
-        nivel = body.get('nivel', 'principiante')
-        objetivo = body.get('objetivo', 'salud_general')
-        dias = body.get('dias', '3')
-
-        # 2. Respaldamos en sesión (servirá de contexto rápido al guardar)
-        request.session['ultimo_nivel'] = nivel
-        request.session['ultimo_objetivo'] = objetivo
-        request.session['ultimo_dias'] = dias
-
-        print(f"[BIO-FIT] Petición recibida — Nivel: {nivel}, Objetivo: {objetivo}, Días: {dias}")
-
-        # 3. Estructuramos el diccionario que requiere ai_generator.py
-        user_data = {
-            'nivel': nivel,
-            'objetivo': objetivo,
-            'dias': dias
-        }
-
-        # 4. Solicitamos la generación dinámica al motor Groq
-        result = routine_generator.generate_routine(user_data)
-
-        if result.get('success'):
-            rutina_original = result.get('routine', {})
-            
-            # CORRECCIÓN INTEGRADA: Usamos la función nativa '_normalizar_rutina' de este archivo
-            rutina_procesada = _normalizar_rutina(rutina_original)
-
-
+            n_dias = len(rutina_procesada.get('dias', []))
+            print(f"[BIO-FIT] Rutina lista — {n_dias} día(s) generados")
             return JsonResponse({'status': 'success', 'rutina': rutina_procesada})
 
         error_msg = result.get('error', 'La IA no devolvió un formato válido.')
