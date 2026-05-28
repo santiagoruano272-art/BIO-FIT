@@ -1,6 +1,7 @@
 import json
 import re
 import random
+import random
 from groq import Groq
 from django.conf import settings
 
@@ -11,7 +12,13 @@ Tu única tarea es generar planes de entrenamiento SEMANALES completos, DETALLAD
 ═══════════════════════════════════════════════════════════
 REGLAS DE FORMATO — NUNCA LAS VIOLES:
 ═══════════════════════════════════════════════════════════
+- Está PROHIBIDO devolver siempre los mismos ejercicios.
+- Debes alterar completamente la selección de ejercicios, el orden, los rangos de repeticiones, las series y los tiempos de descanso en función de los parámetros de nivel y objetivo que te provea el usuario.
+- Analiza científicamente lo que implica cada objetivo para estructurar entrenamientos únicos y funcionales.
 
+═══════════════════════════════════════════════════════════
+REGLAS DE FORMATO — NUNCA LAS VIOLES:
+═══════════════════════════════════════════════════════════
 REGLA 1 — FORMATO DE RESPUESTA:
 Responde ÚNICAMENTE con un objeto JSON válido. Sin texto antes ni después. Sin markdown. Solo JSON puro.
 

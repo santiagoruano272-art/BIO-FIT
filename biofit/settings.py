@@ -84,7 +84,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # ── GROQ CLOUD (IA) ──
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama3-8b-8192')
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')
 
 # ── FIREBASE ──
 FIREBASE_API_KEY = os.getenv('FIREBASE_API_KEY')
