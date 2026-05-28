@@ -1,16 +1,16 @@
 import json
 import re
 import random
+import random
 from groq import Groq
 from django.conf import settings
 
-# ── Prompt del sistema — Optimizado para evitar repeticiones en modo JSON ─────
 SYSTEM_PROMPT = """Eres un entrenador personal de élite, experto y certificado con más de 15 años de experiencia en diseño de programas biomecánicos para gimnasio y calistenia.
 
-Tu única tarea es generar rutinas de ejercicio ALTAMENTE DETALLADAS, PROFESIONALES y 100% PERSONALIZADAS en español.
+Tu única tarea es generar planes de entrenamiento SEMANALES completos, DETALLADOS y 100% PERSONALIZADOS en español.
 
 ═══════════════════════════════════════════════════════════
-REGLAS DE DINAMISMO Y VARIABILIDAD ABSOLUTA:
+REGLAS DE FORMATO — NUNCA LAS VIOLES:
 ═══════════════════════════════════════════════════════════
 - Está PROHIBIDO devolver siempre los mismos ejercicios.
 - Debes alterar completamente la selección de ejercicios, el orden, los rangos de repeticiones, las series y los tiempos de descanso en función de los parámetros de nivel y objetivo que te provea el usuario.
@@ -20,22 +20,40 @@ REGLAS DE DINAMISMO Y VARIABILIDAD ABSOLUTA:
 REGLAS DE FORMATO — NUNCA LAS VIOLES:
 ═══════════════════════════════════════════════════════════
 REGLA 1 — FORMATO DE RESPUESTA:
-Responde ÚNICAMENTE con un objeto JSON válido. Sin texto explicativo antes ni después. Sin bloques de marcado markdown como ```json o similares. Solo el JSON puro y directo.
+Responde ÚNICAMENTE con un objeto JSON válido. Sin texto antes ni después. Sin markdown. Solo JSON puro.
 
-REGLA 2 — ESTRUCTURA OBLIGATORIA DEL JSON:
-El JSON debe tener EXACTAMENTE estas 3 claves principales de nivel superior:
-  "calentamiento"
-  "entrenamiento_principal"
-  "estiramiento"
+REGLA 2 — ESTRUCTURA OBLIGATORIA:
+El JSON debe tener una clave "dias" que contiene una lista de objetos.
+Cada objeto representa UN DÍA de entrenamiento con EXACTAMENTE estas claves:
+  "dia"        → número del día como string: "Día 1", "Día 2", etc.
+  "enfoque"    → grupo muscular o tipo de entrenamiento del día (ej: "Tren Superior", "Cardio y Core")
+  "calentamiento"          → lista de ejercicios
+  "entrenamiento_principal" → lista de ejercicios
+  "estiramiento"            → lista de ejercicios
 
 REGLA 3 — ESTRUCTURA DE CADA EJERCICIO:
-Cada bloque contiene una lista de objetos. Cada ejercicio es un objeto con EXACTAMENTE estas 5 claves en minúsculas:
-  "ejercicio"     → nombre real, específico y profesional del ejercicio (NUNCA genérico)
-  "series"        → número de series como string (ej. "3" o "4")
-  "repeticiones"  → rango o número de repeticiones (ej. "12-15", "6-8" o "12")
-  "descanso"      → tiempo estimado (ej. "60 seg", "90 seg" o "2 min")
-  "nota"          → tip breve enfocado en la ejecución técnica correcta y segura
+Cada ejercicio tiene EXACTAMENTE estas 5 claves:
+  "ejercicio"     → nombre real y específico (NUNCA genérico)
+  "series"        → string (ej. "4")
+  "repeticiones"  → string (ej. "12", "12-15", "30 seg")
+  "descanso"      → string (ej. "60 seg", "90 seg")
+  "nota"          → tip técnico breve en español
+
+REGLA 4 — EQUIPAMIENTO:
+SOLO usa ejercicios con el equipamiento listado. Sin excepciones.
+
+REGLA 5 — DISTRIBUCIÓN MUSCULAR:
+Distribuye los grupos musculares de forma inteligente para asegurar recuperación adecuada entre días.
+Ejemplo para 3 días: Día1=Tren Superior Empuje | Día2=Tren Inferior | Día3=Tren Superior Jale+Core
+Ejemplo para 4 días: Día1=Pecho+Tríceps | Día2=Espalda+Bíceps | Día3=Piernas | Día4=Hombros+Core
+Ejemplo para 5 días: Día1=Pecho | Día2=Espalda | Día3=Piernas | Día4=Hombros | Día5=Brazos+Core
+
+REGLA 6 — CANTIDAD POR DÍA:
+  - calentamiento: 3 ejercicios
+  - entrenamiento_principal: 5 a 7 ejercicios
+  - estiramiento: 3 ejercicios
 """
+
 
 def _build_user_prompt(user_data: dict) -> str:
     """Construye el mensaje del usuario con sus datos específicos."""
@@ -48,68 +66,55 @@ def _build_user_prompt(user_data: dict) -> str:
     peso       = user_data.get("peso", "")
     genero     = user_data.get("genero", "")
 
-    # ── Inventario real del gimnasio ──────────────────────────────────────
-    # Si viene la lista de equipos desde Firebase la usamos directamente.
-    # Si el usuario entrena en casa o no hay inventario, usamos peso corporal.
+    # ── Equipamiento real del gimnasio ────────────────────────────────────────
     inventario = user_data.get("inventario_gimnasio", [])
     if inventario:
-        nombres = [e.get("nombre", "") for e in inventario if e.get("nombre")]
+        nombres = [e.get("nombre", "").strip() for e in inventario if e.get("nombre")]
         equipo  = ", ".join(nombres) if nombres else "equipamiento completo de gimnasio"
         lugar   = "gimnasio"
+        fuente_equipo = "equipos REALES registrados en el gimnasio del usuario"
     elif lugar == "casa":
-        equipo = "peso corporal, colchoneta (sin maquinas de gimnasio)"
+        equipo = "peso corporal y colchoneta únicamente (SIN máquinas)"
+        fuente_equipo = "entrenamiento en casa"
     else:
-        equipo = user_data.get("equipo", "equipamiento completo de gimnasio")
+        equipo = "equipamiento completo de gimnasio"
+        fuente_equipo = "gimnasio genérico"
 
-    # Mapear objetivo a descripción
     objetivos_map = {
-        'perder_peso':         'Pérdida de grasa y definición muscular',
-        'ganar_musculo':       'Hipertrofia y ganancia de masa muscular',
-        'resistencia':         'Resistencia cardiovascular y capacidad aeróbica',
-        'fuerza':              'Fuerza máxima y potencia',
-        'tonificar':           'Tonificación y mejora de la condición física general',
-        'salud_general':       'Salud general y bienestar',
-        'mantenimiento':       'Mantenimiento del estado físico actual',
+        'perder_peso':   'Pérdida de grasa y definición muscular',
+        'ganar_musculo': 'Hipertrofia y ganancia de masa muscular',
+        'resistencia':   'Resistencia cardiovascular y capacidad aeróbica',
+        'fuerza':        'Fuerza máxima y potencia',
+        'tonificar':     'Tonificación y mejora estética',
+        'salud_general': 'Salud general y bienestar',
+        'mantenimiento': 'Mantenimiento del estado físico actual',
     }
-    objetivo_desc = objetivos_map.get(objetivo, objetivo)
+    objetivo_desc = objetivos_map.get(objetivo, objetivo.replace('_', ' '))
 
-    # Ejercicios recomendados según objetivo
-    ejercicios_objetivo = {
-        'perder_peso': (
-            "Prioriza circuitos metabólicos: sentadillas, lunges, peso muerto, "
-            "press de banca, remo, burpees modificados, mountain climbers, "
-            "kettlebell swings. Descansos cortos (30-45 seg)."
-        ),
-        'ganar_musculo': (
-            "Prioriza ejercicios compuestos pesados: press de banca con barra, "
-            "sentadilla con barra, peso muerto, press militar, dominadas, remo con barra, "
-            "hip thrust, prensa de pierna. Complementa con aislamiento: curl de bíceps, "
-            "extensión de tríceps en polea, elevaciones laterales, leg curl, leg extension. "
-            "Descansos de 60-90 seg."
-        ),
-        'resistencia': (
-            "Prioriza ejercicios de alta repetición y cardio funcional: sentadillas, "
-            "lunges, step-ups, burpees, saltos, mountain climbers, remo en máquina, "
-            "bicicleta estática, elíptica. Descansos cortos (20-30 seg)."
-        ),
-        'fuerza': (
-            "Prioriza los grandes levantamientos: peso muerto con barra, sentadilla trasera, "
-            "press de banca con barra, press militar con barra, remo con barra. "
-            "Series de 3-5 reps con peso máximo. Descansos largos (2-3 min)."
-        ),
+    adaptacion_nivel = {
+        'principiante': "Máquinas guiadas, poleas o peso corporal. Descansos amplios. Movimientos simples.",
+        'intermedio':   "Pesos libres combinados con máquinas. Superseries simples. Compuestos moderados.",
+        'avanzado':     "Pesos libres, superseries, poliarticulares complejos, sobrecarga progresiva.",
     }
-    ejercicios_sugeridos = ejercicios_objetivo.get(objetivo, ejercicios_objetivo['ganar_musculo'])
+    adaptacion = adaptacion_nivel.get(nivel, adaptacion_nivel['intermedio'])
+
+    seed_id = random.randint(1000, 9999)
 
     perfil = f"Nivel: {nivel} | Objetivo: {objetivo_desc} | Días/semana: {dias} | Lugar: {lugar}"
     if edad:   perfil += f" | Edad: {edad} años"
     if peso:   perfil += f" | Peso: {peso} kg"
     if genero: perfil += f" | Género: {genero}"
 
-    return f"""Genera una rutina de entrenamiento para UN SOLO DÍA con el siguiente perfil:
+    # Construir ejemplo de estructura JSON con N días
+    dias_ejemplo = "\n    ".join([
+        f'{{"dia": "Día {i+1}", "enfoque": "...", "calentamiento": [...], "entrenamiento_principal": [...], "estiramiento": [...]}}'
+        for i in range(dias)
+    ])
+
+    return f"""Genera un plan de entrenamiento semanal de EXACTAMENTE {dias} DÍAS (Request ID: {seed_id}).
 
 PERFIL DEL USUARIO:
 {perfil}
-Equipamiento disponible: {equipo}
 Lesiones o limitaciones: {lesiones}
 
 ORIENTACIÓN DE EJERCICIOS PARA ESTE OBJETIVO:
@@ -186,23 +191,23 @@ Adapta el plan de forma estricta a un usuario {nivel} que busca {objetivo_limpio
 
 class RoutineGenerator:
     def __init__(self):
-        # Inicialización del cliente leyendo desde settings.py
         api_key = getattr(settings, "GROQ_API_KEY", None)
         self.client = Groq(api_key=api_key) if api_key else None
-        
-        # Lee dinámicamente el modelo configurado en tu archivo .env
         self.model_name = getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile")
-        print(f"[BIO-FIT] Motor de IA cargado con el modelo: {self.model_name}")
+        print(f"[BIO-FIT] Motor de IA cargado: {self.model_name}")
 
     def generate_routine(self, user_data: dict) -> dict:
-        """Genera una rutina de ejercicios adaptada con datos reales y específicos."""
         if not self.client:
-            print("[BIO-FIT] ERROR: No se detectó GROQ_API_KEY en los settings.")
             return {'success': False, 'error': 'La API Key de Groq no está configurada.'}
-
         try:
-            # Construcción dinámica del prompt con las selecciones del atleta
             user_msg = _build_user_prompt(user_data)
+
+            inventario = user_data.get("inventario_gimnasio", [])
+            if inventario:
+                nombres = [e.get("nombre", "") for e in inventario if e.get("nombre")]
+                print(f"[BIO-FIT] Equipos enviados a la IA: {', '.join(nombres)}")
+            else:
+                print(f"[BIO-FIT] Sin inventario — modo: {user_data.get('lugar', 'desconocido')}")
 
             response = self.client.chat.completions.create(
                 model=self.model_name,
@@ -210,10 +215,8 @@ class RoutineGenerator:
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": user_msg},
                 ],
-                # Subimos ligeramente la temperatura a 0.75 para dar flexibilidad creativa
-                # al diseño fitness sin perder la rigidez de la sintaxis JSON
-                temperature=0.75,       
-                max_tokens=3000,
+                temperature=0.75,
+                max_tokens=6000,  # Aumentado para soportar múltiples días
                 response_format={"type": "json_object"},
             )
 
@@ -227,26 +230,21 @@ class RoutineGenerator:
             return {'success': True, 'routine': routine_json}
 
         except json.JSONDecodeError as e:
-            print(f"[BIO-FIT] JSON inválido de Groq: {e}\nContenido original: {content[:500]}")
+            print(f"[BIO-FIT] JSON inválido de Groq: {e}")
             return {'success': False, 'error': 'La IA devolvió un formato inesperado. Inténtalo de nuevo.'}
         except Exception as e:
-            print(f"[BIO-FIT] Error crítico en módulo Groq: {e}")
+            print(f"[BIO-FIT] Error crítico en Groq: {e}")
             return {'success': False, 'error': f'Error de conexión con el motor de IA: {str(e)}'}
 
     def _limpiar_json(self, texto: str) -> str:
-        """Limpia cualquier residuo de texto o markdown que pueda romper el parseo del JSON."""
-        texto_limpio = texto.strip()
-        # Elimina bloques de código markdown si la IA los agregó por error
-        if texto_limpio.startswith("```json"):
-            texto_limpio = texto_limpio[7:]
-        elif texto_limpio.startswith("```"):
-            texto_limpio = texto_limpio[3:]
-        
-        if texto_limpio.endswith("```"):
-            texto_limpio = texto_limpio[:-3]
-            
-        return texto_limpio.strip()
+        texto = texto.strip()
+        texto = re.sub(r'^```(?:json)?\s*', '', texto, flags=re.MULTILINE)
+        texto = re.sub(r'\s*```$', '', texto, flags=re.MULTILINE)
+        inicio = texto.find('{')
+        fin    = texto.rfind('}')
+        if inicio != -1 and fin != -1:
+            return texto[inicio:fin+1]
+        return texto
 
 
-# Instancia única reutilizable para toda la aplicación
 routine_generator = RoutineGenerator()
