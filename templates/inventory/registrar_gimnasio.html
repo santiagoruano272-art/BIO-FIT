@@ -1,24 +1,24 @@
 {% extends 'base.html' %}
 {% block content %}
-<div style="max-width: 500px; margin: 60px auto; padding: 30px; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-    <h2 style="font-family: 'Syne', sans-serif; margin-bottom: 20px; color: #0d2e1e;">Registrar Nuevo Gimnasio 🏢</h2>
-    <p style="color: #666; font-size: 0.9rem; margin-bottom: 25px;">Da de alta sedes principales del ecosistema para segmentar sus equipamientos independientes.</p>
+<div style="max-width: 500px; margin: 60px auto; padding: 30px; background: linear-gradient(145deg, #111c30, #0d1b2e); border-radius: 16px; box-shadow: 0 16px 48px rgba(8,15,30,0.7); border: 1px solid rgba(96,165,250,0.12);">
+    <h2 style="font-family: 'Syne', sans-serif; margin-bottom: 20px; color: #c4d4e8;">Registrar Nuevo Gimnasio 🏢</h2>
+    <p style="color: #4a6a8f; font-size: 0.9rem; margin-bottom: 25px;">Da de alta sedes principales del ecosistema para segmentar sus equipamientos independientes.</p>
     
     <form id="form-gym">
         <div style="margin-bottom: 15px;">
-            <label style="display:block; margin-bottom:5px; font-weight:500;">Nombre de la Sede:</label>
-            <input type="text" id="gym-name" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600; color:#8ba3c7; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.04em;">Nombre de la Sede:</label>
+            <input type="text" id="gym-name" required style="width:100%; padding:10px; border:1.5px solid rgba(96,165,250,0.15); border-radius:8px; background:rgba(8,15,30,0.6); color:#c4d4e8; font-family:'DM Sans',sans-serif;">
         </div>
         <div style="margin-bottom: 15px;">
-            <label style="display:block; margin-bottom:5px; font-weight:500;">Dirección / Ubicación:</label>
-            <input type="text" id="gym-location" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600; color:#8ba3c7; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.04em;">Dirección / Ubicación:</label>
+            <input type="text" id="gym-location" required style="width:100%; padding:10px; border:1.5px solid rgba(96,165,250,0.15); border-radius:8px; background:rgba(8,15,30,0.6); color:#c4d4e8; font-family:'DM Sans',sans-serif;">
         </div>
         <div style="margin-bottom: 25px;">
-            <label style="display:block; margin-bottom:5px; font-weight:500;">Teléfono de Contacto:</label>
-            <input type="text" id="gym-phone" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+            <label style="display:block; margin-bottom:5px; font-weight:600; color:#8ba3c7; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.04em;">Teléfono de Contacto:</label>
+            <input type="text" id="gym-phone" style="width:100%; padding:10px; border:1.5px solid rgba(96,165,250,0.15); border-radius:8px; background:rgba(8,15,30,0.6); color:#c4d4e8; font-family:'DM Sans',sans-serif;">
         </div>
         
-        <button type="submit" style="width:100%; background:#2d7a4f; color:white; padding:12px; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Guardar Colección Principal</button>
+        <button type="submit" style="width:100%; background:linear-gradient(135deg,#1e3a5f 0%,#2a5298 100%); color:#93c5fd; padding:12px; border:1px solid rgba(96,165,250,0.2); border-radius:8px; font-weight:700; font-family:'Syne',sans-serif; cursor:pointer; letter-spacing:0.04em; box-shadow:0 4px 16px rgba(42,82,152,0.3); transition:all 0.3s;">Guardar Colección Principal</button>
     </form>
     <div id="msg" style="margin-top:15px; font-weight:500; display:none;"></div>
 </div>

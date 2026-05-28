@@ -37,11 +37,26 @@ def admin_dashboard_view(request):
             return redirect('inventory:registrar_gimnasio_view')
         return redirect('login')
     
+    # Recuperar el nombre del gimnasio desde la sesión o consultarlo en Firebase si no existe
+    gym_nombre = request.session.get('gym_nombre')
+    if not gym_nombre:
+        try:
+            gyms = firebase.get_all_gyms()
+            gym = next((g for g in gyms if g.get('id') == gym_id or g.get('gym_id') == gym_id), None)
+            if gym:
+                gym_nombre = gym.get('nombre', 'Gimnasio')
+                request.session['gym_nombre'] = gym_nombre
+                request.session.modified = True
+        except Exception as e:
+            logger.error("Error obteniendo nombre del gimnasio: %s", e)
+            gym_nombre = "Gimnasio"
+
     # Consulta los equipos directo desde la subcolección interna del gimnasio activo
     inventario = firebase.get_all_equipment(gym_id)
     return render(request, 'inventory/dashboard.html', {
         'inventario': inventario,
-        'gym_id': gym_id
+        'gym_id': gym_id,
+        'gym_nombre': gym_nombre or "Gimnasio"
     })
 
 
@@ -80,9 +95,10 @@ class GimnasioCreateAPI(APIView):
             
             # 2. Vinculación inmediata en cookies de sesión del navegador
             request.session['gym_id'] = gym_id
+            request.session['gym_nombre'] = nombre
             request.session.modified = True
             
-            # 3. Vinculación persistente en el documento de perfil del administrador en Firestore
+            # 3. Vinculación persistentente en el documento de perfil del administrador en Firestore
             if uid:
                 firebase.save_user_profile(uid, {'gym_id': gym_id})
 
@@ -180,6 +196,7 @@ class GimnasiosPublicListAPI(APIView):
         except Exception as e:
             logger.error("Error listando gimnasios públicos: %s", e)
             return Response({"gimnasios": []}, status=status.HTTP_200_OK)
+
 
 class GimnasioContextoAPI(APIView):
     """

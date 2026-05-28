@@ -73,14 +73,13 @@ DATABASES = {
 # ── ARCHIVOS ESTÁTICOS (CSS, JS, IMÁGENES) ──
 STATIC_URL = '/static/'
 
-# Según tu imagen, la carpeta 'static' está DENTRO de la carpeta 'biofit'
-# Esta configuración apunta exactamente a esa ruta:
+# La carpeta 'static' está dentro de la carpeta 'biofit'
 STATICFILES_DIRS = [
     BASE_DIR / 'biofit' / 'static',
 ]
 
 # Carpeta para producción
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # ── GROQ CLOUD (IA) ──
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
