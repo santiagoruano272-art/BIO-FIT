@@ -6,98 +6,209 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Inventario — BIO-FIT</title>
     <style>
-        /* ── RESET & BASE ─────────────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #f0f2f5;
-            color: #1a1a2e;
+            background: #0f172a; /* Fondo oscuro profundo acorde al logo */
+            color: #f1f5f9; /* Texto claro para alto contraste */
             min-height: 100vh;
         }
 
-        /* ── TOPBAR ───────────────────────────────────────────────── */
+        /* ── TOPBAR ── */
         .topbar {
-            background: #1a1a2e;
+            background: #1e293b; /* Gris azulado oscuro metalizado */
             color: #fff;
-            padding: 0 2rem;
-            height: 60px;
+            padding: 0 1.5rem;
+            height: auto;
+            min-height: 70px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 8px rgba(0,0,0,.35);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border-bottom: 1px solid #334155;
         }
-        .topbar-left { display: flex; align-items: center; gap: 1rem; }
-        .topbar h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: 0.5px; }
-        .topbar-right { display: flex; align-items: center; gap: 1.5rem; }
-        .badge-gym { background: #2d7a4f; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        .btn-back { color: #fff; text-decoration: none; font-size: 0.9rem; transition: color .2s; }
-        .btn-back:hover { color: #3b82f6; }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+        }
+        /* Contenedor del Logo con puntas redondeadas */
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        .logo-container img {
+            height: 45px;
+            width: auto;
+            border-radius: 8px; /* Puntas redondeadas para el logo */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            border: 1px solid #475569;
+        }
+        .topbar h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            color: #f8fafc;
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .badge-gym {
+            background: #334155; /* Fondo acero sutil */
+            color: #38bdf8; /* Azul eléctrico del logo para destacar */
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            white-space: nowrap;
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border: 1px solid #475569;
+        }
+        .btn-back {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            transition: color .2s;
+            font-weight: 500;
+        }
+        .btn-back:hover { color: #38bdf8; }
 
-        /* ── MAIN CONTENT ─────────────────────────────────────────── */
+        /* ── MAIN CONTENT ── */
         .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
-        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .header-actions h2 { font-size: 1.75rem; color: #1a1a2e; }
-        
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .header-actions h2 { font-size: 1.75rem; color: #f8fafc; font-weight: 600; }
+
         .btn-add {
-            background: #2d7a4f;
-            color: #fff;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); /* Degradado metalizado */
+            color: #38bdf8; /* Texto azul brillante */
             padding: 10px 20px;
-            border: none;
+            border: 1px solid #38bdf8;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            box-shadow: 0 2px 5px rgba(45,122,79,.3);
-            transition: background .2s;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
+            transition: all .2.5s;
+            white-space: nowrap;
         }
-        .btn-add:hover { background: #225c3c; }
+        .btn-add:hover { 
+            background: #38bdf8; 
+            color: #0f172a; 
+            box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+        }
 
-        /* ── TABLE STYLES ─────────────────────────────────────────── */
-        .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
-        th { background: #f8f9fa; padding: 1rem; color: #6c757d; font-weight: 600; border-bottom: 2px solid #dee2e6; }
-        td { padding: 1rem; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
+        /* ── TABLE ── */
+        .table-wrapper {
+            background: #1e293b; /* Contenedor gris azulado oscuro */
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #334155;
+        }
+        table {
+            width: 100%;
+            min-width: 650px;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+        th {
+            background: #111827; /* Encabezado más oscuro para contraste */
+            padding: 1.2rem 1rem;
+            color: #94a3b8;
+            font-weight: 600;
+            border-bottom: 2px solid #334155;
+            white-space: nowrap;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 1.1rem 1rem;
+            border-bottom: 1px solid #334155;
+            vertical-align: middle;
+            color: #cbd5e1;
+        }
         tr:last-child td { border-bottom: none; }
-        
+        tr:hover td { background: #243249; } /* Efecto hover elegante en las filas */
+
         /* Status Badges */
-        .status { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-        .status-operativo { background: #d1e7dd; color: #0f5132; }
-        .status-mantenimiento { background: #fff3cd; color: #664d03; }
-        .status-fuera { background: #f8d7da; color: #842029; }
+        .status { padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block; white-space: nowrap; }
+        .status-operativo { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .status-mantenimiento { background: rgba(245, 158, 11s, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .status-fuera { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
         .actions-cell { display: flex; gap: 0.5rem; }
-        .btn-action { padding: 6px 12px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all .2s; }
-        .btn-edit:hover { background: #e3f2fd; color: #0d6efd; border-color: #0d6efd; }
-        .btn-delete:hover { background: #f8d7da; color: #dc3545; border-color: #dc3545; }
+        .btn-action { 
+            padding: 6px 12px; 
+            border: 1px solid #475569; 
+            border-radius: 6px; 
+            background: #111827; 
+            color: #94a3b8;
+            cursor: pointer; 
+            font-size: 0.85rem; 
+            font-weight: 500; 
+            transition: all .2s; 
+            white-space: nowrap; 
+        }
+        .btn-edit:hover { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border-color: #38bdf8; }
+        .btn-delete:hover { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: #f87171; }
 
-        /* ── MODAL STYLES ─────────────────────────────────────────── */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+        /* ── MODAL ── */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .3s ease; padding: 1rem; }
         .modal.active { opacity: 1; pointer-events: auto; }
-        .modal-content { background: #fff; padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transform: translateY(-20px); transition: transform .3s ease; }
+        .modal-content { background: #1e293b; border: 1px solid #475569; padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); transform: translateY(-20px); transition: transform .3s ease; max-height: 90vh; overflow-y: auto; }
         .modal.active .modal-content { transform: translateY(0); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-        .modal-header h3 { font-size: 1.25rem; color: #1a1a2e; }
-        .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d; }
-        
-        /* Forms */
-        .form-group { margin-bottom: 1.25rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500; color: #495057; }
-        .form-control { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.95rem; transition: border-color .2s; }
-        .form-control:focus { border-color: #2d7a4f; outline: none; }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 0.75rem; }
+        .modal-header h3 { font-size: 1.25rem; color: #f8fafc; }
+        .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; }
+        .btn-close:hover { color: #f87171; }
 
-        /* ── UTILITIES ────────────────────────────────────────────── */
-        .empty-state { padding: 3rem; text-align: center; color: #6c757d; }
-        .error-message { color: #dc3545; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
-        
-        /* Spinner */
-        .spinner { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #2d7a4f; animation: spin 1s linear infinite; z-index: 2000; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500; color: #94a3b8; }
+        .form-control { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; font-size: 0.95rem; color: #fff; transition: border-color .2s; }
+        .form-control:focus { border-color: #38bdf8; outline: none; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+        select.form-control option { background: #0f172a; color: #fff; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+
+        .empty-state { padding: 3rem; text-align: center; color: #94a3b8; }
+        .error-message { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
+
+        .spinner { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 4px solid rgba(255,255,255,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #38bdf8; animation: spin 1s linear infinite; z-index: 2000; }
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* ── MÓVIL ── */
+        @media (max-width: 600px) {
+            .topbar { padding: 0.75rem 1rem; }
+            .topbar h1 { font-size: 0.9rem; }
+            .header-actions h2 { font-size: 1.3rem; }
+            .container { padding: 0 1rem; margin: 1.25rem auto; }
+        }
     </style>
 </head>
 <body>
@@ -106,11 +217,14 @@
 
     <header class="topbar">
         <div class="topbar-left">
-            <a href="/" class="btn-back">← Volver al Inicio</a>
-            <h1>Ecosistema de Inventario Privado</h1>
+            <a href="/" class="btn-back">← Volver</a>
+            <div class="logo-container">
+                <img src="{% static 'images/logo_biofit.png' %}" alt="BIO-FIT">
+            </div>
+            <h1>Inventario de Equipos</h1>
         </div>
         <div class="topbar-right">
-            <span class="badge-gym">Sede Activa: {{ gym_id }}</span>
+            <span class="badge-gym">Sede Activa: {{ gym_nombre }}</span>
         </div>
     </header>
 
@@ -139,7 +253,7 @@
                     <tbody>
                         {% for equipo in inventario %}
                             <tr>
-                                <td style="font-weight: 600;">{{ equipo.nombre }}</td>
+                                <td style="font-weight: 600; color: #fff;">{{ equipo.nombre }}</td>
                                 <td>{{ equipo.tipo }}</td>
                                 <td>{{ equipo.ubicacion }}</td>
                                 <td>{{ equipo.fecha_adquisicion }}</td>
@@ -239,155 +353,4 @@
                 </div>
                 <div class="form-group">
                     <label>Ubicación de Sala</label>
-                    <input type="text" id="edit_ubicacion" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Fecha de Adquisición</label>
-                    <input type="date" id="edit_fecha" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Estado del Activo</label>
-                    <select id="edit_estado" class="form-control" required>
-                        <option value="operativo">Operativo</option>
-                        <option value="mantenimiento">En Mantenimiento</option>
-                        <option value="fuera_de_servicio">Fuera de Servicio</option>
-                    </select>
-                </div>
-                <div class="error-message" id="editError"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-action" onclick="closeModal('editModal')">Cancelar</button>
-                    <button type="submit" class="btn-add" style="box-shadow:none; background:#3b82f6;">Actualizar Registro</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        const csrfToken = "{{ csrf_token }}";
-
-        // MÓDULO VISUAL MODALES
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-        function showSpinner() { document.getElementById('loadingSpinner').style.display = 'block'; }
-        function hideSpinner() { document.getElementById('loadingSpinner').style.display = 'none'; }
-
-        function showError(elementId, text) {
-            const err = document.getElementById(elementId);
-            err.textContent = text;
-            err.style.display = 'block';
-        }
-
-        // CREATE OPERATION HANDLER
-        document.getElementById('addForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            showSpinner();
-            
-            const payload = {
-                nombre: document.getElementById('add_nombre').value,
-                tipo: document.getElementById('add_tipo').value,
-                ubicacion: document.getElementById('add_ubicacion').value,
-                fecha_adquisicion: document.getElementById('add_fecha').value,
-                estado: document.getElementById('add_estado').value
-            };
-
-            try {
-                const res = await fetch("{% url 'inventory:api_equipos_list_create' %}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                hideSpinner();
-
-                if (res.ok && data.success) {
-                    window.location.reload();
-                } else {
-                    showError('addError', data.error || 'Error al persistir el registro.');
-                }
-            } catch (err) {
-                hideSpinner();
-                showError('addError', 'Error crítico de red.');
-            }
-        });
-
-        // POPULATE & OPEN EDIT MODAL
-        function openEditModal(id, nombre, tipo, ubicacion, fecha, estado) {
-            document.getElementById('edit_id').value = id;
-            document.getElementById('edit_nombre').value = nombre;
-            document.getElementById('edit_tipo').value = tipo;
-            document.getElementById('edit_ubicacion').value = ubicacion;
-            document.getElementById('edit_estado').value = estado;
-            
-            // Formatear fecha para el input HTML tipo date (YYYY-MM-DD)
-            if (fecha) {
-                try {
-                    const d = new Date(fecha);
-                    if(!isNaN(d.getTime())) {
-                        document.getElementById('edit_fecha').value = d.toISOString().split('T')[0];
-                    }
-                } catch(e) {}
-            }
-            openModal('editModal');
-        }
-
-        // UPDATE OPERATION HANDLER
-        document.getElementById('editForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            showSpinner();
-            const id = document.getElementById('edit_id').value;
-
-            const payload = {
-                nombre: document.getElementById('edit_nombre').value,
-                tipo: document.getElementById('edit_tipo').value,
-                ubicacion: document.getElementById('edit_ubicacion').value,
-                fecha_adquisicion: document.getElementById('edit_fecha').value,
-                estado: document.getElementById('edit_estado').value
-            };
-
-            try {
-                const res = await fetch(`/inventory/api/equipos/${id}/`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                hideSpinner();
-
-                if (res.ok && data.success) {
-                    window.location.reload();
-                } else {
-                    showError('editError', data.error || 'Error al actualizar el registro.');
-                }
-            } catch (err) {
-                hideSpinner();
-                showError('editError', 'Error de red en actualización.');
-            }
-        });
-
-        // DELETE OPERATION HANDLER
-        async function deleteEquipo(id) {
-            if (!confirm('¿Confirmas la eliminación permanente de este activo en la subcolección de tu sede?')) return;
-            showSpinner();
-
-            try {
-                const res = await fetch(`/inventory/api/equipos/${id}/eliminar/`, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRFToken': csrfToken }
-                });
-                const data = await res.json();
-                hideSpinner();
-
-                if (res.ok && data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.error || 'Fallo al eliminar registro.');
-                }
-            } catch (err) {
-                hideSpinner();
-                alert('Fallo de red al solicitar eliminación.');
-            }
-        }
-    </script>
-</body>
-</html>
+                    <input type="text" id="edit_ubicacion" class="form-

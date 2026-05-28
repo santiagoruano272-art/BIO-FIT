@@ -156,7 +156,6 @@ def generate_routine_api(request):
         return JsonResponse({'status': 'error', 'error': 'Método no permitido'}, status=405)
 
     try:
-diego
         data = json.loads(request.body)
 
         request.session['ultimo_nivel'] = data.get('nivel', '')

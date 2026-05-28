@@ -7,51 +7,61 @@
 <style>
     .routine-results { margin-top: 30px; text-align: left; }
     .day-container { 
-        background: #ffffff; 
+        background: linear-gradient(145deg, #111c30, #0d1b2e);
         border-radius: 15px; 
         padding: 20px; 
         margin-bottom: 25px; 
-        border-left: 5px solid #2d7a4f; 
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border-left: 4px solid #2a5298;
+        border: 1px solid rgba(96, 165, 250, 0.12);
+        border-left: 4px solid #4a7fc1;
+        box-shadow: 0 4px 20px rgba(8, 15, 30, 0.5);
     }
-    .day-title { color: #0d2e1e; font-family: 'Syne', sans-serif; margin-bottom: 15px; }
+    .day-title { color: #c4d4e8; font-family: 'Syne', sans-serif; margin-bottom: 15px; }
     .exercise-card {
-        background: #f9fdfb;
-        border: 1px solid #e0eee6;
+        background: rgba(8, 15, 30, 0.5);
+        border: 1px solid rgba(96, 165, 250, 0.1);
         border-radius: 10px;
         padding: 15px;
         margin-bottom: 10px;
+        transition: border-color 0.2s;
     }
+    .exercise-card:hover { border-color: rgba(96, 165, 250, 0.25); }
     .btn-save-routine {
-        background-color: #2d7a4f;
-        color: white;
+        background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+        color: #93c5fd;
         padding: 12px 24px;
-        border: none;
+        border: 1px solid rgba(96, 165, 250, 0.2);
         border-radius: 8px;
         cursor: pointer;
-        font-weight: bold;
+        font-weight: 700;
+        font-family: 'Syne', sans-serif;
         margin-bottom: 25px;
-        transition: background-color 0.3s;
+        transition: all 0.3s;
+        box-shadow: 0 4px 16px rgba(42, 82, 152, 0.3);
     }
     .btn-save-routine:hover {
-        background-color: #1e5335;
+        background: linear-gradient(135deg, #2a5298 0%, #3b6fd4 100%);
+        color: #bfdbfe;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(42, 82, 152, 0.45);
     }
 </style>
 
+<div style="min-height: 100vh; background: #080f1e; padding: 1px 0;">
 <div style="max-width: 800px; margin: 50px auto; padding: 20px; text-align: center;">
-    <h1 style="color: #0d2e1e; font-family: 'Syne', sans-serif; font-size: 36px; margin-bottom: 10px;">
+    <h1 style="color: #c4d4e8; font-family: 'Syne', sans-serif; font-size: 36px; margin-bottom: 10px;">
         Generador de Rutinas Inteligente
     </h1>
-    <p style="color: #555; font-size: 16px; margin-bottom: 40px;">
+    <p style="color: #5a7a9f; font-size: 16px; margin-bottom: 40px;">
         Configura tus preferencias y nuestro BioFit Coach creará un plan de entrenamiento estructurado y adaptado a tus objetivos.
     </p>
 
-    <form id="routineForm" onsubmit="procesarGeneracion(event)" style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: left;">
+    <form id="routineForm" onsubmit="procesarGeneracion(event)" style="background: linear-gradient(145deg, #111c30, #0d1b2e); border: 1px solid rgba(96,165,250,0.12); padding: 30px; border-radius: 20px; box-shadow: 0 16px 48px rgba(8,15,30,0.7); text-align: left;">
         {% csrf_token %}
         
         <div style="margin-bottom: 20px;">
-            <label for="level" style="display: block; font-weight: bold; margin-bottom: 8px; color: #0d2e1e;">Nivel de Experiencia:</label>
-            <select id="level" name="level" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;">
+            <label for="level" style="display: block; font-weight: 600; margin-bottom: 8px; color: #8ba3c7; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;">Nivel de Experiencia:</label>
+            <select id="level" name="level" style="width: 100%; padding: 12px; border: 1.5px solid rgba(96,165,250,0.15); border-radius: 8px; font-size: 15px; background: rgba(8,15,30,0.6); color: #c4d4e8; font-family: 'DM Sans', sans-serif;">
                 <option value="principiante">Principiante (Menos de 6 meses)</option>
                 <option value="intermedio">Intermedio (6 meses a 2 años)</option>
                 <option value="avanzado">Avanzado (Más de 2 años)</option>
@@ -59,8 +69,8 @@
         </div>
 
         <div style="margin-bottom: 20px;">
-            <label for="goal" style="display: block; font-weight: bold; margin-bottom: 8px; color: #0d2e1e;">Objetivo Principal:</label>
-            <select id="goal" name="goal" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;">
+            <label for="goal" style="display: block; font-weight: 600; margin-bottom: 8px; color: #8ba3c7; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;">Objetivo Principal:</label>
+            <select id="goal" name="goal" style="width: 100%; padding: 12px; border: 1.5px solid rgba(96,165,250,0.15); border-radius: 8px; font-size: 15px; background: rgba(8,15,30,0.6); color: #c4d4e8; font-family: 'DM Sans', sans-serif;">
                 <option value="perder_peso">Perder Peso / Definición</option>
                 <option value="ganar_musculo">Ganar Masa Muscular (Hipertrofia)</option>
                 <option value="fuerza">Aumento de Fuerza Máxima</option>
@@ -69,8 +79,8 @@
         </div>
 
         <div style="margin-bottom: 30px;">
-            <label for="days" style="display: block; font-weight: bold; margin-bottom: 8px; color: #0d2e1e;">Días de Entrenamiento por Semana:</label>
-            <select id="days" name="days" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;">
+            <label for="days" style="display: block; font-weight: 600; margin-bottom: 8px; color: #8ba3c7; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;">Días de Entrenamiento por Semana:</label>
+            <select id="days" name="days" style="width: 100%; padding: 12px; border: 1.5px solid rgba(96,165,250,0.15); border-radius: 8px; font-size: 15px; background: rgba(8,15,30,0.6); color: #c4d4e8; font-family: 'DM Sans', sans-serif;">
                 <option value="3">3 Días a la semana</option>
                 <option value="4">4 Días a la semana</option>
                 <option value="5">5 Días a la semana</option>
@@ -78,17 +88,18 @@
         </div>
 
         <!-- Badge de contexto: gimnasio asignado o modo casa -->
-        <div id="gym-context-badge" style="display:flex; align-items:center; gap:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px 15px; margin-bottom:20px; font-size:13.5px; color:#15803d;">
+        <div id="gym-context-badge" style="display:flex; align-items:center; gap:10px; background:rgba(42,82,152,0.1); border:1px solid rgba(96,165,250,0.2); border-radius:10px; padding:12px 15px; margin-bottom:20px; font-size:13.5px; color:#8ba3c7;">
             <span style="font-size:20px;" id="gym-badge-icon">⏳</span>
             <span id="gym-badge-text">Consultando tu gimnasio asignado…</span>
         </div>
 
-        <button type="submit" id="btnSubmit" style="width: 100%; background: #2d7a4f; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.3s;">
+        <button type="submit" id="btnSubmit" style="width: 100%; background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%); color: #93c5fd; padding: 15px; border: 1px solid rgba(96,165,250,0.2); border-radius: 8px; font-weight: 700; font-family: 'Syne', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.3s; letter-spacing: 0.04em; box-shadow: 0 4px 20px rgba(42,82,152,0.3);">
             ✨ Generar Mi Plan Personalizado
         </button>
     </form>
 
     <div id="routineContent" class="routine-results"></div>
+</div>
 </div>
 
 <script>
@@ -105,22 +116,22 @@
             if (data.gym_id && data.gym_nombre) {
                 icon.textContent = '🏋️';
                 text.innerHTML   = `Rutina adaptada al inventario de <strong>${data.gym_nombre}</strong> — solo se usarán los equipos disponibles allí.`;
-                badge.style.background = '#f0fdf4';
-                badge.style.borderColor = '#bbf7d0';
-                badge.style.color = '#15803d';
+                badge.style.background = 'rgba(42,82,152,0.12)';
+                badge.style.borderColor = 'rgba(96,165,250,0.25)';
+                badge.style.color = '#93c5fd';
             } else {
                 icon.textContent = '🏠';
                 text.textContent = 'No tienes un gimnasio asignado — tu rutina usará ejercicios con peso corporal.';
-                badge.style.background = '#fffbeb';
-                badge.style.borderColor = '#fde68a';
-                badge.style.color = '#92400e';
+                badge.style.background = 'rgba(180,130,30,0.1)';
+                badge.style.borderColor = 'rgba(250,200,80,0.2)';
+                badge.style.color = '#fbbf24';
             }
         } catch (_) {
             icon.textContent = '⚠️';
             text.textContent = 'No se pudo verificar tu gimnasio. La rutina se generará con equipamiento general.';
-            badge.style.background = '#fef2f2';
-            badge.style.borderColor = '#fecaca';
-            badge.style.color = '#991b1b';
+            badge.style.background = 'rgba(239,68,68,0.08)';
+            badge.style.borderColor = 'rgba(239,68,68,0.2)';
+            badge.style.color = '#fca5a5';
         }
     }
     cargarContextoGimnasio();
@@ -143,7 +154,7 @@
         btn.disabled = true;
         content.innerHTML = `
             <div style="text-align: center; padding: 40px;">
-                <p style="color: #666; font-size: 16px;">Generando tu estructura de entrenamiento de forma inteligente, por favor espera...</p>
+                <p style="color: #5a7a9f; font-size: 16px;">Generando tu estructura de entrenamiento de forma inteligente, por favor espera...</p>
             </div>
         `;
 
@@ -170,7 +181,7 @@
                 renderRutina(data.rutina);
             } else {
                 content.innerHTML = `
-                    <div style="background: #fdf2f2; border: 1px solid #f8b4b4; padding: 15px; border-radius: 10px; color: #9b1c1c;">
+                    <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); padding: 15px; border-radius: 10px; color: #fca5a5;">
                         ⚠️ <strong>Error del servidor:</strong> ${data.error || 'No se recibió un objeto de rutina válido.'}
                     </div>
                 `;
@@ -178,7 +189,7 @@
         } catch (err) {
             console.error(err);
             content.innerHTML = `
-                <div style="background: #fdf2f2; border: 1px solid #f8b4b4; padding: 15px; border-radius: 10px; color: #9b1c1c;">
+                <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); padding: 15px; border-radius: 10px; color: #fca5a5;">
                     ⚠️ Ocurrió un problema de red al procesar o renderizar los datos de tu rutina.
                 </div>
             `;
@@ -210,18 +221,18 @@
                 ejercicios.forEach(ej => {
                     html += `
                         <div class="exercise-card">
-                            <h4 style="color: #2d7a4f; margin: 0 0 10px 0; font-size: 18px;">${ej.ejercicio}</h4>
-                            <p style="margin: 5px 0; color: #444; font-size: 14px;">
+                            <h4 style="color: #60a5fa; margin: 0 0 10px 0; font-size: 18px;">${ej.ejercicio}</h4>
+                            <p style="margin: 5px 0; color: #8ba3c7; font-size: 14px;">
                                 <strong>🔢 Series:</strong> ${ej.series} | 
                                 <strong>🔁 Repeticiones:</strong> ${ej.repeticiones} | 
                                 <strong>⏱️ Descanso:</strong> ${ej.descanso}
                             </p>
-                            ${ej.nota ? `<p style="margin: 5px 0 0 0; color: #666; font-size: 13px; font-style: italic; background: #f1f8f4; padding: 8px; border-radius: 5px;">💡 <strong>Nota:</strong> ${ej.nota}</p>` : ''}
+                            ${ej.nota ? `<p style="margin: 5px 0 0 0; color: #8ba3c7; font-size: 13px; font-style: italic; background: rgba(42,82,152,0.1); padding: 8px; border-radius: 5px; border-left: 3px solid #2a5298;">💡 <strong>Nota:</strong> ${ej.nota}</p>` : ''}
                         </div>
                     `;
                 });
             } else {
-                html += `<p style="color: #888;">No hay ejercicios especificados para esta fase.</p>`;
+                html += `<p style="color: #4a6a8f;">No hay ejercicios especificados para esta fase.</p>`;
             }
 
             html += `</div>`;

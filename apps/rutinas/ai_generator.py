@@ -38,7 +38,6 @@ Cada bloque contiene una lista de objetos. Cada ejercicio es un objeto con EXACT
 """
 
 def _build_user_prompt(user_data: dict) -> str:
-diego
     """Construye el mensaje del usuario con sus datos específicos."""
     nivel      = user_data.get("nivel", "intermedio")
     objetivo   = user_data.get("objetivo", "salud_general")
@@ -154,23 +153,22 @@ class RoutineGeneratorAI:
         self.client = Groq(api_key=settings.GROQ_API_KEY)
         # llama-3.3-70b-versatile sigue instrucciones JSON mucho mejor que 8b
         self.model_name = getattr(settings, 'GROQ_MODEL', 'llama-3.3-70b-versatile')
-=======
-    """
-    Extrae de forma dinámica y rigurosa los datos del formulario de BIO-FIT.
-    Introduce un token de entropía aleatoria para romper el caché estático del modelo de Groq.
-    """
-    nivel = str(user_data.get('nivel', 'principiante')).strip().lower()
-    objetivo = str(user_data.get('objetivo', 'salud_general')).strip().lower()
-    dias = str(user_data.get('dias', '3')).strip()
+        """
+        Extrae de forma dinámica y rigurosa los datos del formulario de BIO-FIT.
+        Introduce un token de entropía aleatoria para romper el caché estático del modelo de Groq.
+        """
+        nivel = str(user_data.get('nivel', 'principiante')).strip().lower()
+        objetivo = str(user_data.get('objetivo', 'salud_general')).strip().lower()
+        dias = str(user_data.get('dias', '3')).strip()
 
 
-    # Reemplazar guiones bajos por espacios legibles para mejor contexto semántico de la IA
-    objetivo_limpio = objetivo.replace('_', ' ')
-    
-    # Generador de entropía interna para obligar al modelo a recalcular la respuesta desde cero
-    seed_id = random.randint(1000, 9999)
+        # Reemplazar guiones bajos por espacios legibles para mejor contexto semántico de la IA
+        objetivo_limpio = objetivo.replace('_', ' ')
+        
+        # Generador de entropía interna para obligar al modelo a recalcular la respuesta desde cero
+        seed_id = random.randint(1000, 9999)
 
-    return f"""Genera un plan de entrenamiento totalmente inédito y específico en formato JSON (Request ID: {seed_id}).
+        return f"""Genera un plan de entrenamiento totalmente inédito y específico en formato JSON (Request ID: {seed_id}).
 
 PARÁMETROS DEL CLIENTE BIO-FIT:
 - Nivel de experiencia real: {nivel}
