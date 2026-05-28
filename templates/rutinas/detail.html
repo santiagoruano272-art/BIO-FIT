@@ -5,7 +5,6 @@
 
 {% block content %}
 <style>
-  /* ── Contenedor General ── */
   .biofit-detail-wrap {
     max-width: 1000px;
     margin: 40px auto;
@@ -13,182 +12,177 @@
     font-family: 'DM Sans', sans-serif;
   }
 
-  /* ── Banner de Motivación ── */
   .health-banner {
-    background: linear-gradient(135deg, #0a1628 0%, #1e3a5f 60%, #0d1b2e 100%);
-    color: #c4d4e8;
+    background: linear-gradient(135deg, #0d2e1e 0%, #2d7a4f 100%);
+    color: #ffffff;
     border-radius: 24px;
     padding: 40px;
     text-align: center;
-    box-shadow: 0 12px 40px rgba(8, 15, 30, 0.7), 0 0 0 1px rgba(96,165,250,0.1) inset;
+    box-shadow: 0 12px 30px rgba(13,46,30,0.15);
     margin-bottom: 40px;
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(96, 165, 250, 0.12);
   }
   .health-banner::after {
     content: '';
     position: absolute;
-    top: -50%;
-    right: -20%;
-    width: 300px;
-    height: 300px;
-    background: rgba(96, 165, 250, 0.05);
+    top: -50%; right: -20%;
+    width: 300px; height: 300px;
+    background: rgba(168,224,99,0.1);
     border-radius: 50%;
   }
   .health-banner h1 {
     font-family: 'Syne', sans-serif;
-    color: #93c5fd;
+    color: #4a8659;
     font-size: 2.5rem;
     margin: 0 0 10px 0;
     font-weight: 800;
   }
   .health-banner p {
-    font-size: 1.2rem;
-    opacity: 0.9;
-    color: #5a7a9f;
+    font-size: 1.1rem;
+    color: #a4a5a4;
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.6;
   }
 
-  /* ── Tarjeta Contenedor de Plan ── */
   .routine-container-card {
-    background: linear-gradient(145deg, #111c30, #0d1b2e);
+    background: #ffffff;
     border-radius: 24px;
     padding: 30px;
     margin-bottom: 40px;
-    box-shadow: 0 10px 30px rgba(8, 15, 30, 0.6);
-    border: 1px solid rgba(96, 165, 250, 0.1);
+    box-shadow: 0 10px 30px rgba(13,46,30,0.04);
+    border: 1px solid #eaf2ed;
   }
 
-  /* Meta información */
   .routine-meta-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 15px;
-    background: rgba(8, 15, 30, 0.4);
+    background: #f4faf6;
     padding: 15px 25px;
     border-radius: 16px;
-    margin-bottom: 30px;
-    border: 1px solid rgba(96, 165, 250, 0.1);
+    margin-bottom: 25px;
+    border: 1px solid #e3ede7;
   }
-  .meta-item {
-    font-size: 0.95rem;
-    color: #8ba3c7;
-  }
-  .meta-item strong {
-    color: #93c5fd;
-    text-transform: capitalize;
-  }
+  .meta-item { font-size: 0.95rem; color: #444; }
+  .meta-item strong { color: #0d2e1e; text-transform: capitalize; }
   .meta-date {
-    font-size: 0.95rem;
-    color: #5a7a9f;
-    background: rgba(8, 15, 30, 0.5);
-    padding: 4px 12px;
-    border-radius: 20px;
-    border: 1px solid rgba(96, 165, 250, 0.1);
+    font-size: 0.9rem; color: #666;
+    background: #fff; padding: 4px 12px;
+    border-radius: 20px; border: 1px solid #e3ede7;
   }
 
-  /* ── Bloques de Fases ── */
-  .phase-section {
-    margin-bottom: 35px;
+  /* ── Pestañas de días ── */
+  .day-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
   }
+  .day-tab-btn {
+    padding: 9px 18px;
+    border: 2px solid #2d7a4f;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    background: #e8f5ee;
+    color: #2d7a4f;
+    transition: all .2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .day-tab-btn.active, .day-tab-btn:hover {
+    background: #2d7a4f;
+    color: #fff;
+  }
+
+  .day-panel { display: none; }
+  .day-panel.active { display: block; }
+
+  .day-enfoque {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+    margin-bottom: 20px;
+  }
+  .day-enfoque strong { color: #2d7a4f; }
+
+  .phase-section { margin-bottom: 30px; }
   .phase-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid rgba(96, 165, 250, 0.1);
-    padding-bottom: 10px;
+    gap: 10px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #f0f7f3;
+    padding-bottom: 8px;
   }
   .phase-icon {
-    font-size: 1.6rem;
-    background: rgba(96, 165, 250, 0.08);
-    padding: 6px 10px;
-    border-radius: 12px;
-    line-height: 1;
-    border: 1px solid rgba(96, 165, 250, 0.12);
+    font-size: 1.4rem;
+    background: #f0f7f3;
+    padding: 5px 9px;
+    border-radius: 10px;
   }
   .phase-title {
     font-family: 'Syne', sans-serif;
-    font-size: 1.4rem;
-    color: #c4d4e8;
+    font-size: 1.2rem;
+    color: #0d2e1e;
     margin: 0;
   }
 
-  /* ── Grid de Ejercicios ── */
   .exercises-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 16px;
   }
 
-  /* ── Tarjeta de Ejercicio ── */
   .exercise-card {
-    background: rgba(8, 15, 30, 0.5);
-    border: 1px solid rgba(96, 165, 250, 0.1);
-    border-radius: 16px;
-    padding: 20px;
-    transition: all 0.3s ease;
+    background: #fafcfb;
+    border: 1px solid #e3ede7;
+    border-radius: 14px;
+    padding: 18px;
+    transition: all 0.25s ease;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
   }
   .exercise-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 24px rgba(8, 15, 30, 0.7);
-    border-color: rgba(96, 165, 250, 0.28);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(45,122,79,0.08);
+    border-color: #2d7a4f;
   }
   .exercise-name {
-    font-size: 1.1rem;
-    color: #c4d4e8;
+    font-size: 1.05rem;
+    color: #0d2e1e;
     font-weight: 700;
-    margin: 0 0 15px 0;
+    margin: 0 0 12px 0;
     line-height: 1.4;
   }
-
-  /* ── Stats ── */
   .stats-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    background: rgba(8, 15, 30, 0.4);
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(96, 165, 250, 0.08);
+    gap: 6px;
+    background: #fff;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid #f0f4f1;
     text-align: center;
   }
-  .stat-pill {
-    display: flex;
-    flex-direction: column;
-    font-size: 0.78rem;
-    color: #4a6a8f;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .stat-pill span {
-    font-weight: 700;
-    color: #60a5fa;
-    font-size: 0.95rem;
-    margin-top: 2px;
-  }
-
-  /* ── Coach Note ── */
+  .stat-pill { display: flex; flex-direction: column; font-size: 0.78rem; color: #666; }
+  .stat-pill span { font-weight: 700; color: #2d7a4f; font-size: 0.9rem; margin-top: 2px; }
   .coach-note {
-    margin-top: 15px;
-    background: rgba(42, 82, 152, 0.1);
-    border-left: 3px solid #2a5298;
-    padding: 10px 12px;
-    border-radius: 0 10px 10px 0;
-    font-size: 0.85rem;
-    color: #8ba3c7;
+    margin-top: 12px;
+    background: #f4faf6;
+    border-left: 4px solid #2d7a4f;
+    padding: 8px 11px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.82rem;
+    color: #444;
     line-height: 1.4;
   }
 
-  /* ── Botones de Acción ── */
   .actions-area {
     display: flex;
     justify-content: center;
@@ -197,139 +191,194 @@
     flex-wrap: wrap;
   }
   .btn-primary-fit {
-    background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
-    color: #93c5fd;
-    padding: 14px 28px;
-    border-radius: 12px;
-    font-weight: 700;
-    font-family: 'Syne', sans-serif;
-    text-decoration: none;
-    transition: all 0.3s;
-    box-shadow: 0 4px 16px rgba(42, 82, 152, 0.3);
-    border: 1px solid rgba(96, 165, 250, 0.2);
-    letter-spacing: 0.03em;
+    background: #2d7a4f; color: #fff;
+    padding: 14px 28px; border-radius: 12px;
+    font-weight: 700; text-decoration: none;
+    transition: background 0.3s;
+    box-shadow: 0 4px 12px rgba(45,122,79,0.2);
   }
-  .btn-primary-fit:hover {
-    background: linear-gradient(135deg, #2a5298 0%, #3b6fd4 100%);
-    color: #bfdbfe;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(42, 82, 152, 0.45);
-  }
+  .btn-primary-fit:hover { background: #1e5335; }
   .btn-secondary-fit {
-    background: transparent;
-    color: #60a5fa;
-    border: 1.5px solid rgba(96, 165, 250, 0.3);
-    padding: 13px 26px;
-    border-radius: 12px;
-    font-weight: 700;
-    font-family: 'Syne', sans-serif;
-    text-decoration: none;
+    background: transparent; color: #2d7a4f;
+    border: 2px solid #2d7a4f;
+    padding: 12px 26px; border-radius: 12px;
+    font-weight: 700; text-decoration: none;
     transition: all 0.3s;
-    letter-spacing: 0.03em;
   }
-  .btn-secondary-fit:hover {
-    background: rgba(96, 165, 250, 0.08);
-    border-color: rgba(96, 165, 250, 0.5);
-    color: #93c5fd;
-  }
+  .btn-secondary-fit:hover { background: #f0f7f3; }
 
-  /* Responsivo */
   @media (max-width: 600px) {
     .health-banner { padding: 30px 20px; }
     .health-banner h1 { font-size: 1.8rem; }
-    .routine-meta-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .routine-meta-bar { flex-direction: column; align-items: flex-start; }
     .exercises-grid { grid-template-columns: 1fr; }
   }
 </style>
 
-<div style="min-height: 100vh; background: #080f1e; padding: 1px 0;">
 <div class="biofit-detail-wrap">
 
   {% if sin_rutinas %}
-    <div style="background: linear-gradient(145deg, #111c30, #0d1b2e); border: 1px solid rgba(96,165,250,0.12); padding: 50px 30px; border-radius: 24px; text-align: center; box-shadow: 0 16px 48px rgba(8,15,30,0.7);">
-      <span style="font-size: 3.5rem;">🌱</span>
-      <h2 style="font-family: 'Syne', sans-serif; color: #c4d4e8; margin-top: 15px;">¡Comienza tu transformación saludable!</h2>
-      <p style="color: #4a6a8f; max-width: 500px; margin: 10px auto 30px auto; line-height: 1.6;">Aún no tienes rutinas guardadas en tu cuenta de BIO-FIT.</p>
+    <div style="background:#fff; border:1px solid #eaf2ed; padding:50px 30px; border-radius:24px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.02);">
+      <span style="font-size:3.5rem;">🌱</span>
+      <h2 style="font-family:'Syne',sans-serif; color:#0d2e1e; margin-top:15px;">¡Comienza tu transformación!</h2>
+      <p style="color:#666; max-width:500px; margin:10px auto 30px auto; line-height:1.6;">Aún no tienes rutinas guardadas en BIO-FIT.</p>
       <a href="{% url 'routines:generate' %}" class="btn-primary-fit">✨ Crear mi Plan con Coach IA</a>
     </div>
+
+  {% elif error %}
+    <div style="background:#fef2f2; border:1px solid #fecaca; padding:30px; border-radius:16px; text-align:center; color:#991b1b;">
+      <strong>⚠️ Error:</strong> {{ error }}
+    </div>
+
   {% else %}
 
     <div class="health-banner">
       <h1>Tu Historial de Bienestar</h1>
-      <p>Planes diseñados a tu medida para optimizar tu energía, salud y rendimiento físico. ¡Cada sesión cuenta en tu camino hacia un estilo de vida más saludable!</p>
+      <p>Planes diseñados a tu medida para optimizar tu energía, salud y rendimiento físico.</p>
     </div>
 
     {% for rutina_obj in rutinas %}
+      {% with rid=forloop.counter0 %}
       <div class="routine-container-card">
-        
+
+        <!-- Meta bar -->
         <div class="routine-meta-bar">
           <div class="meta-item">🎯 Objetivo: <strong>{{ rutina_obj.objetivo }}</strong></div>
           <div class="meta-item">⚡ Nivel: <strong>{{ rutina_obj.nivel }}</strong></div>
+          <div class="meta-item">📆 Días/semana: <strong>{{ rutina_obj.dias_semana }}</strong></div>
           {% if rutina_obj.fecha %}
             <div class="meta-date">📅 {{ rutina_obj.fecha }}</div>
           {% endif %}
         </div>
 
-        {% for bloque, ejercicios in rutina_obj.bloques.items %}
-          <div class="phase-section">
-            
-            <div class="phase-header">
-              <div class="phase-icon">
-                {% if "calentamiento" in bloque.lower or "warm" in bloque.lower %}🔥
-                {% elif "principal" in bloque.lower or "workout" in bloque.lower or "rutina" in bloque.lower %}⚡
-                {% else %}🧘{% endif %}
-              </div>
-              <h2 class="phase-title">{{ bloque }}</h2>
-            </div>
-
-            {% if ejercicios %}
-              <div class="exercises-grid">
-                {% for ej in ejercicios %}
-                  <div class="exercise-card">
-                    <div>
-                      <h3 class="exercise-name">{{ ej.ejercicio }}</h3>
-                      
-                      <div class="stats-row">
-                        <div class="stat-pill">
-                          Series
-                          <span>{{ ej.series }}</span>
-                        </div>
-                        <div class="stat-pill">
-                          Reps
-                          <span>{{ ej.repeticiones }}</span>
-                        </div>
-                        <div class="stat-pill">
-                          Descanso
-                          <span>{{ ej.descanso }}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {% if ej.nota %}
-                      <div class="coach-note">
-                        <strong>💡 Tip Saludable:</strong> {{ ej.nota }}
-                      </div>
-                    {% endif %}
-                  </div>
-                {% endfor %}
-              </div>
-            {% else %}
-              <p style="color: #4a6a8f; font-style: italic; margin-left: 10px;">No hay ejercicios registrados para esta fase.</p>
-            {% endif %}
-
+        <!-- Pestañas de días -->
+        {% if rutina_obj.dias %}
+          <div class="day-tabs">
+            {% for dia in rutina_obj.dias %}
+              <button class="day-tab-btn {% if forloop.first %}active{% endif %}"
+                      onclick="mostrarDia('r{{ rid }}', {{ forloop.counter0 }}, this)">
+                {{ dia.dia }}
+              </button>
+            {% endfor %}
           </div>
-        {% endfor %}
 
-      </div>
+          {% for dia in rutina_obj.dias %}
+            <div id="r{{ rid }}-dia-{{ forloop.counter0 }}"
+                 class="day-panel {% if forloop.first %}active{% endif %}">
+
+              {% if dia.enfoque %}
+                <p class="day-enfoque">🎯 Enfoque del día: <strong>{{ dia.enfoque }}</strong></p>
+              {% endif %}
+
+              <!-- Calentamiento -->
+              {% if dia.calentamiento %}
+              <div class="phase-section">
+                <div class="phase-header">
+                  <div class="phase-icon">🔥</div>
+                  <h2 class="phase-title">Calentamiento</h2>
+                </div>
+                <div class="exercises-grid">
+                  {% for ej in dia.calentamiento %}
+                    <div class="exercise-card">
+                      <div>
+                        <h3 class="exercise-name">{{ ej.ejercicio }}</h3>
+                        <div class="stats-row">
+                          <div class="stat-pill">Series<span>{{ ej.series }}</span></div>
+                          <div class="stat-pill">Reps<span>{{ ej.repeticiones }}</span></div>
+                          <div class="stat-pill">Descanso<span>{{ ej.descanso }}</span></div>
+                        </div>
+                      </div>
+                      {% if ej.nota %}<div class="coach-note"><strong>💡 Tip:</strong> {{ ej.nota }}</div>{% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Entrenamiento Principal -->
+              {% if dia.entrenamiento_principal %}
+              <div class="phase-section">
+                <div class="phase-header">
+                  <div class="phase-icon">💪</div>
+                  <h2 class="phase-title">Entrenamiento Principal</h2>
+                </div>
+                <div class="exercises-grid">
+                  {% for ej in dia.entrenamiento_principal %}
+                    <div class="exercise-card">
+                      <div>
+                        <h3 class="exercise-name">{{ ej.ejercicio }}</h3>
+                        <div class="stats-row">
+                          <div class="stat-pill">Series<span>{{ ej.series }}</span></div>
+                          <div class="stat-pill">Reps<span>{{ ej.repeticiones }}</span></div>
+                          <div class="stat-pill">Descanso<span>{{ ej.descanso }}</span></div>
+                        </div>
+                      </div>
+                      {% if ej.nota %}<div class="coach-note"><strong>💡 Tip:</strong> {{ ej.nota }}</div>{% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Estiramiento -->
+              {% if dia.estiramiento %}
+              <div class="phase-section">
+                <div class="phase-header">
+                  <div class="phase-icon">🧘</div>
+                  <h2 class="phase-title">Estiramiento</h2>
+                </div>
+                <div class="exercises-grid">
+                  {% for ej in dia.estiramiento %}
+                    <div class="exercise-card">
+                      <div>
+                        <h3 class="exercise-name">{{ ej.ejercicio }}</h3>
+                        <div class="stats-row">
+                          <div class="stat-pill">Series<span>{{ ej.series }}</span></div>
+                          <div class="stat-pill">Reps<span>{{ ej.repeticiones }}</span></div>
+                          <div class="stat-pill">Descanso<span>{{ ej.descanso }}</span></div>
+                        </div>
+                      </div>
+                      {% if ej.nota %}<div class="coach-note"><strong>💡 Tip:</strong> {{ ej.nota }}</div>{% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+
+            </div><!-- /day-panel -->
+          {% endfor %}
+
+        {% else %}
+          <p style="color:#888; text-align:center; padding:20px;">No se encontraron días en esta rutina.</p>
+        {% endif %}
+
+      </div><!-- /routine-container-card -->
+      {% endwith %}
     {% endfor %}
 
     <div class="actions-area">
-      <a href="{% url 'routines:generate' %}" class="btn-secondary-fit">➕ Generar Nueva Rutina con IA</a>
-      <a href="/inicio/" class="btn-primary-fit">🏠 Ir a mi Panel General</a>
+      <a href="{% url 'routines:generate' %}" class="btn-secondary-fit">➕ Generar Nueva Rutina</a>
+      <a href="/inicio/" class="btn-primary-fit">🏠 Ir a mi Panel</a>
     </div>
 
   {% endif %}
 
 </div>
-</div>
+
+<script>
+function mostrarDia(routineId, diaIdx, btnEl) {
+    // Ocultar todos los paneles de esa rutina
+    document.querySelectorAll(`[id^="${routineId}-dia-"]`).forEach(panel => {
+        panel.classList.remove('active');
+    });
+    // Desactivar todos los botones de esa rutina
+    btnEl.closest('.routine-container-card')
+         .querySelectorAll('.day-tab-btn')
+         .forEach(btn => btn.classList.remove('active'));
+    // Mostrar el panel seleccionado
+    document.getElementById(`${routineId}-dia-${diaIdx}`).classList.add('active');
+    btnEl.classList.add('active');
+}
+</script>
+
 {% endblock %}

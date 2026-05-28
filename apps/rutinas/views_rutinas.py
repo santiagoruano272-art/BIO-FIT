@@ -1,11 +1,46 @@
 import json
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .ai_generator import routine_generator
 from services.firebase_client import FirebaseClient
+from apps.conexion.auth import login_user
 
 firebase = FirebaseClient()
+
+
+def _get_uid(request) -> str | None:
+    """
+    Obtiene el user_uid de Firebase de forma robusta.
+    Primero busca en sesión (rápido), luego intenta reconstruirla
+    desde el username de Django (que guardamos como el email del usuario).
+    """
+    uid = request.session.get('user_uid')
+    if uid:
+        return uid
+
+    # Fallback: el usuario está autenticado en Django pero la sesión
+    # de Firebase expiró (ej: reinicio del servidor en desarrollo).
+    # Reconstruimos buscando el perfil por email en Firestore.
+    if request.user.is_authenticated:
+        email = request.user.username  # guardamos email como username en login_view
+        try:
+            docs = firebase.db.collection('users').where('email', '==', email).limit(1).stream()
+            for doc in docs:
+                uid = doc.id
+                # Restaurar sesión completa para próximas peticiones
+                perfil = doc.to_dict() or {}
+                request.session['user_uid'] = uid
+                request.session['user_rol'] = perfil.get('rol', 'atleta')
+                gym_id = perfil.get('gym_id')
+                if gym_id:
+                    request.session['gym_id'] = gym_id
+                request.session.modified = True
+                return uid
+        except Exception as e:
+            print(f"[BIO-FIT] Error reconstruyendo sesión: {e}")
+
+    return None
 
 # ── Claves aceptadas para el nombre del ejercicio ──────────────────────────────
 _CLAVES_NOMBRE = [
@@ -30,7 +65,6 @@ _MAPEO_BLOQUES = {
     'cooldown':                  'Estiramiento y Enfriamiento',
     'cool_down':                 'Estiramiento y Enfriamiento',
     'enfriamiento':              'Estiramiento y Enfriamiento',
-    'vuelta_a_la_calma':         'Estiramiento y Enfriamiento',
 }
 
 
@@ -99,84 +133,19 @@ def _normalizar_rutina(rutina_raw: dict) -> dict:
     return {'dias': [dia_unico]}
 
 
-# ── Vistas del Servidor Web (Manejo de Renderizado) ───────────────────────────
-
 @login_required
 def routine_generator_view(request):
-    """Muestra la página con el formulario/asistente de IA para crear rutinas."""
+    """Renderiza el formulario del generador de rutinas."""
     return render(request, 'rutinas/generador.html')
 
 
 @login_required
-def routine_detail_view(request):
-    """
-    Trae el historial completo de rutinas del usuario autenticado desde Firestore
-    y las renderiza de manera elegante en el template detail.html.
-    """
-    user_uid = request.session.get('user_uid')
-
-    if not user_uid:
-        return render(request, 'rutinas/detail.html', {
-            'sin_rutinas': True,
-            'error': 'No se encontró una sesión activa de Firebase.'
-        })
-
-    try:
-        docs = firebase.get_user_routines(user_uid)
-
-        if not docs:
-            return render(request, 'rutinas/detail.html', {
-                'sin_rutinas': True,
-            })
-
-        # Construir lista de rutinas estructurada para el template
-        rutinas = []
-        for doc in docs:
-            routine_data = doc.get('routine', {})
-            user_inputs  = doc.get('user_inputs', {})
-            created_at   = doc.get('created_at', '')
-
-            # Formatear la fecha/timestamp de Firestore a formato legible
-            if hasattr(created_at, 'strftime'):
-                created_at = created_at.strftime('%d/%m/%Y %H:%M')
-            elif hasattr(created_at, 'isoformat'):
-                created_at = str(created_at)[:16].replace('T', ' ')
-
-            rutinas.append({
-                'id':       doc.get('id', ''),
-                'bloques':  routine_data,
-                'inputs':   user_inputs,
-                'fecha':    created_at,
-                'nivel':    user_inputs.get('nivel', '—'),
-                'objetivo': user_inputs.get('objetivo', '—').replace('_', ' '),
-                'dias':     user_inputs.get('dias', '—'),
-            })
-
-        print(f"[BIO-FIT] {len(rutinas)} rutina(s) cargadas para el usuario {user_uid}")
-
-        return render(request, 'rutinas/detail.html', {
-            'rutinas':     rutinas,
-            'sin_rutinas': False,
-        })
-
-    except Exception as e:
-        print(f"[BIO-FIT] Error al cargar el historial desde Firestore: {e}")
-        return render(request, 'rutinas/detail.html', {
-            'sin_rutinas': True,
-            'error': 'Hubo un inconveniente temporal al consultar tus planes.'
-        })
-
-
-# ── Endpoints del Servidor (APIs Asíncronas JSON) ─────────────────────────────
-
-@login_required
 def generate_routine_api(request):
-    """API que procesa la solicitud del frontend y llama a la IA de Groq."""
+    """API dedicada que procesa la IA (POST asíncrono)."""
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'error': 'Método no permitido'}, status=405)
 
     try:
-
         data = json.loads(request.body)
 
         request.session['ultimo_nivel'] = data.get('nivel', '')
@@ -186,6 +155,7 @@ def generate_routine_api(request):
         # ── Inyectar inventario real del gimnasio del usuario ────────────────
         # Si el usuario tiene un gym_id en sesión, consultamos sus equipos en
         # Firebase y se los pasamos a la IA para que solo use lo disponible.
+        _get_uid(request)  # asegura que la sesión esté reconstruida
         gym_id = request.session.get('gym_id')
         lugar  = data.get('lugar', 'gimnasio')
 
@@ -221,18 +191,16 @@ def generate_routine_api(request):
 
 @login_required
 def save_routine_api(request):
-    """API que recibe la rutina ya formateada y la almacena en Firestore."""
+    """Guarda la rutina generada en Firestore."""
     if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido.'}, status=405)
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
 
     try:
         body = json.loads(request.body)
-        user_uid = request.session.get('user_uid')
-
+        user_uid = _get_uid(request)
         if not user_uid:
             return JsonResponse({'error': 'Sesión inválida. Inicia sesión de nuevo.'}, status=401)
 
-        # Si el frontend envía un objeto envoltorio o la rutina directa, lo manejamos de forma segura
         if 'rutina' in body and isinstance(body['rutina'], dict):
             routine_data = body['rutina']
             user_inputs  = body.get('inputs', {})
@@ -240,12 +208,10 @@ def save_routine_api(request):
             routine_data = body
             user_inputs  = {}
 
-        # Seteamos valores por defecto usando los datos que guardamos previamente en sesión
         user_inputs.setdefault('nivel',    request.session.get('ultimo_nivel', ''))
         user_inputs.setdefault('objetivo', request.session.get('ultimo_objetivo', ''))
         user_inputs.setdefault('dias',     request.session.get('ultimo_dias', ''))
 
-        # Envío a los servicios de FirebaseClient
         firebase.save_routine(
             user_id=user_uid,
             routine_data=routine_data,
@@ -257,5 +223,64 @@ def save_routine_api(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Datos inválidos.'}, status=400)
     except Exception as e:
-        print(f"[BIO-FIT] Error al guardar rutina en Firebase: {e}")
+        print(f"[BIO-FIT] Error al guardar rutina: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def routine_detail_view(request):
+    """
+    Recupera TODAS las rutinas del usuario desde la subcolección
+    users/{uid}/routines/ y las muestra en detail.html.
+    """
+    try:
+        user_uid = _get_uid(request)
+        if not user_uid:
+            return redirect('login')
+
+        # ── CORRECCIÓN: leer de la subcolección, NO del perfil ──────────
+        # firebase.get_user_routines() devuelve lista de dicts con:
+        # { 'id': doc_id, 'routine': {...}, 'user_inputs': {...}, 'created_at': ... }
+        docs = firebase.get_user_routines(user_uid, limit=20)
+
+        if not docs:
+            return render(request, 'rutinas/detail.html', {
+                'rutinas': [],
+                'sin_rutinas': True,
+            })
+
+        # Construir lista de rutinas para el template
+        rutinas = []
+        for doc in docs:
+            routine_data = doc.get('routine', {})
+            user_inputs  = doc.get('user_inputs', {})
+            created_at   = doc.get('created_at', '')
+
+            # Formatear fecha si viene como datetime de Firestore
+            if hasattr(created_at, 'strftime'):
+                created_at = created_at.strftime('%d/%m/%Y %H:%M')
+            elif hasattr(created_at, 'isoformat'):
+                created_at = str(created_at)[:16].replace('T', ' ')
+
+            rutinas.append({
+                'id':       doc.get('id', ''),
+                'bloques':  routine_data,
+                'inputs':   user_inputs,
+                'fecha':    created_at,
+                'nivel':    user_inputs.get('nivel', '—'),
+                'objetivo': user_inputs.get('objetivo', '—').replace('_', ' '),
+                'dias':     user_inputs.get('dias', '—'),
+            })
+
+        print(f"[BIO-FIT] {len(rutinas)} rutina(s) cargadas para {user_uid}")
+
+        return render(request, 'rutinas/detail.html', {
+            'rutinas':     rutinas,
+            'sin_rutinas': False,
+        })
+
+    except Exception as e:
+        print(f"[BIO-FIT] Error al cargar rutinas: {e}")
+        return render(request, 'rutinas/detail.html', {
+            'error': f'Ocurrió un error al conectar con tu plan de entrenamiento: {str(e)}'
+        })

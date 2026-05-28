@@ -66,7 +66,7 @@ class FirebaseAuthentication(BaseAuthentication):
     def get_user_routines(self, uid: str):
         try:
             # Accedemos a la sub-colección dentro del documento del usuario
-            docs = firebase.db.collection('usuarios').document(uid).collection('rutinas_generadas').stream()
+            docs = firebase.db.collection('users').document(uid).collection('rutinas_generadas').stream()
             return [{"id": doc.id, **doc.to_dict()} for doc in docs]
         except Exception as e:
             logger.error(f"Error cargando rutinas: {e}")

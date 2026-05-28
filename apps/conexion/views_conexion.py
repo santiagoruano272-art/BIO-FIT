@@ -109,3 +109,5 @@ def login_view(request):
             {"error": f"Falla interna: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+    
+    # original
