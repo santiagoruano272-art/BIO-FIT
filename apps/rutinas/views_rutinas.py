@@ -156,6 +156,36 @@ def generate_routine_api(request):
         return JsonResponse({'status': 'error', 'error': 'Método no permitido'}, status=405)
 
     try:
+diego
+        data = json.loads(request.body)
+
+        request.session['ultimo_nivel'] = data.get('nivel', '')
+        request.session['ultimo_objetivo'] = data.get('objetivo', '')
+        request.session['ultimo_dias'] = data.get('dias', '')
+
+        # ── Inyectar inventario real del gimnasio del usuario ────────────────
+        # Si el usuario tiene un gym_id en sesión, consultamos sus equipos en
+        # Firebase y se los pasamos a la IA para que solo use lo disponible.
+        gym_id = request.session.get('gym_id')
+        lugar  = data.get('lugar', 'gimnasio')
+
+        if gym_id:
+            inventario = firebase.get_all_equipment(gym_id)
+            data['inventario_gimnasio'] = inventario
+            data['lugar'] = 'gimnasio'
+            print(f"[BIO-FIT] Inventario cargado — {len(inventario)} equipo(s) del gimnasio {gym_id}")
+        elif lugar == 'casa' or not gym_id:
+            data['inventario_gimnasio'] = []
+            data['lugar'] = 'casa'
+            print("[BIO-FIT] Sin gimnasio asignado — rutina en casa con peso corporal")
+
+        print(f"[BIO-FIT] Generando rutina — parámetros: nivel={data.get('nivel')} | objetivo={data.get('objetivo')} | lugar={data.get('lugar')}")
+        result = routine_generator.generate_routine(data)
+
+        if result.get('success') and 'routine' in result:
+            rutina_procesada = _normalizar_rutina(result['routine'])
+            print(f"[BIO-FIT] Rutina lista — bloques: {list(rutina_procesada.keys())}")
+
         body = json.loads(request.body)
         
         # 1. Extraemos los parámetros dinámicos enviados por el formulario
@@ -185,6 +215,7 @@ def generate_routine_api(request):
             
             # CORRECCIÓN INTEGRADA: Usamos la función nativa '_normalizar_rutina' de este archivo
             rutina_procesada = _normalizar_rutina(rutina_original)
+
 
             return JsonResponse({'status': 'success', 'rutina': rutina_procesada})
 

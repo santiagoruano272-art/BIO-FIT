@@ -16,3 +16,17 @@ class RegisterSerializer(serializers.Serializer):
             'invalid_choice': 'El rol seleccionado no es válido en el sistema.'
         }
     )
+    gym_id = serializers.CharField(
+        required=False, 
+        allow_blank=True,
+        error_messages={
+            'invalid': 'El identificador del gimnasio no es válido.'
+        }
+    )
+
+    def validate(self, data):
+        if data.get('rol') == 'admin' and not data.get('gym_id'):
+            raise serializers.ValidationError({
+                "gym_id": "Debe seleccionar un gimnasio válido para registrar una cuenta de tipo Administrador."
+            })
+        return data

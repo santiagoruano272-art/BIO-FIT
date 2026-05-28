@@ -1,166 +1,201 @@
 import logging
-import functools
 from django.shortcuts import render, redirect
-from django.contrib import messages
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from services.firebase_client import FirebaseClient
-from .serializers_inventario import EquipmentSerializer
 
 logger = logging.getLogger(__name__)
 firebase = FirebaseClient()
 
-# ── DECORADOR DE PROTECCIÓN PARA VISTAS RENDERIZADAS ──────────────────────
-def admin_required(view_func):
-    """
-    Verifica que el usuario esté logueado en la sesión de Django
-    y que su rol en Firestore sea 'admin'.
-
-    FIX: Se añadió @functools.wraps(view_func) para preservar el nombre
-    y los metadatos de la vista original, necesario para que Django
-    pueda introspectarla correctamente (ej. en el decorador @login_required,
-    en la barra de debug, y en reverse() con name=).
-    """
-    @functools.wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        uid = request.session.get('user_uid')
-        if not uid:
-            messages.error(request, "Debes iniciar sesión para acceder.")
-            return redirect('conexion:login_page')
-
-        # Validar rol en Firebase
-        try:
-            perfil = firebase.get_user_profile(uid) or {}
-        except Exception as e:
-            logger.error(f"[ADMIN_REQUIRED] Error al obtener perfil de Firebase: {e}")
-            messages.error(request, "Error al verificar tus permisos. Intenta de nuevo.")
-            return redirect('conexion:login_page')
-
-        rol = perfil.get('rol')
-
-        # Fallback: si el campo no existe, tratar como usuario sin privilegios
-        if not rol:
-            logger.warning(f"[ADMIN_REQUIRED] UID {uid} no tiene campo 'rol' en Firestore.")
-            messages.error(request, "Tu cuenta no tiene un rol asignado. Contacta al administrador.")
-            return redirect('landing_page')
-
-        if rol != 'admin':
-            messages.error(request, "Acceso denegado. Se requieren permisos de administrador.")
-            return redirect('landing_page')
-
-        return view_func(request, *args, **kwargs)
-    return _wrapped_view
-
-
-# ── VISTA PRINCIPAL (TEMPLATE) ────────────────────────────────────────────
-@admin_required
-def inventory_dashboard_view(request):
-    """Muestra la tabla de inventario y los formularios de gestión."""
-    try:
-        docs = firebase.db.collection('equipamientos').stream()
-        inventario = []
-        for doc in docs:
-            data = doc.to_dict()
-            data['id'] = doc.id
-            inventario.append(data)
-    except Exception as e:
-        logger.error(f"[INVENTARIO] Error al cargar Firestore: {e}")
-        inventario = []
-        messages.error(request, "Error al conectar con la base de datos de inventario.")
-
-    return render(request, 'inventory/dashboard.html', {'inventario': inventario})
-
-
-# ── ENDPOINTS API PARA CONTROL CRUD (DRF) ────────────────────────────────
-
-def _get_admin_uid(request):
-    """
-    Helper interno: devuelve el UID si el usuario autenticado es admin,
-    o None en caso contrario. Centraliza la lógica de autorización API.
-    """
+def get_session_tenant(request):
+    """Valida la sesión del administrador y extrae de forma segura su gym_id asignado."""
     uid = request.session.get('user_uid')
-    if not uid:
+    rol = request.session.get('user_rol')
+    gym_id = request.session.get('gym_id')
+    
+    # Si tiene sesión iniciada pero no tiene el gym_id en las cookies, lo rescatamos de su perfil en Firestore
+    if uid and rol == 'admin' and not gym_id:
+        perfil = firebase.get_user_profile(uid)
+        if perfil and 'gym_id' in perfil:
+            request.session['gym_id'] = perfil['gym_id']
+            request.session.modified = True
+            gym_id = perfil['gym_id']
+
+    if not uid or rol != 'admin' or not gym_id:
         return None
-    try:
-        perfil = firebase.get_user_profile(uid) or {}
-    except Exception:
-        return None
-    return uid if perfil.get('rol') == 'admin' else None
+    return gym_id
 
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def create_equipment_api(request):
-    """Crea una nueva máquina en Firestore."""
-    if not _get_admin_uid(request):
-        return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+# ── VISTAS RENDERIZADAS (HTML) ──────────────────────────────────────────────
 
-    serializer = EquipmentSerializer(data=request.data)
+def admin_dashboard_view(request):
+    gym_id = get_session_tenant(request)
+    if not gym_id:
+        # Si el administrador no tiene una sede registrada aún, lo redirigimos al formulario
+        if request.session.get('user_rol') == 'admin':
+            return redirect('inventory:registrar_gimnasio_view')
+        return redirect('login')
+    
+    # Consulta los equipos directo desde la subcolección interna del gimnasio activo
+    inventario = firebase.get_all_equipment(gym_id)
+    return render(request, 'inventory/dashboard.html', {
+        'inventario': inventario,
+        'gym_id': gym_id
+    })
 
-    # FIX: era serializer.is_validated() — método inexistente en DRF.
-    # El correcto es serializer.is_valid(), que ejecuta la validación
-    # y popula serializer.errors / serializer.validated_data.
-    if serializer.is_valid():
+
+def registrar_gimnasio_page(request):
+    """Renderiza el formulario administrativo de creación de gimnasios."""
+    if request.session.get('user_rol') != 'admin':
+        return redirect('landing')
+    return render(request, 'inventory/registrar_gimnasio.html')
+
+
+# ── ENDPOINTS DE OPERACIONES (API) ──────────────────────────────────────────
+
+class GimnasioCreateAPI(APIView):
+    """API funcional para la creación e inicialización de Gimnasios."""
+    def post(self, request):
+        if request.session.get('user_rol') != 'admin':
+            return Response({"error": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
+            
+        uid = request.session.get('user_uid')
+        nombre = request.data.get('nombre')
+        ubicacion = request.data.get('ubicacion')
+        telefono = request.data.get('telefono')
+
+        if not nombre or not ubicacion:
+            return Response({"error": "Nombre y Ubicación son requeridos"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            ref_doc = firebase.db.collection('equipamientos').document()
-            data = serializer.validated_data
-            data['fecha_adquisicion'] = data['fecha_adquisicion'].isoformat()
-            ref_doc.set(data)
-            return Response(
-                {"success": True, "id": ref_doc.id, "message": "Equipo registrado con éxito."},
-                status=status.HTTP_201_CREATED
-            )
+            payload = {
+                'nombre': nombre,
+                'ubicacion': ubicacion,
+                'telefono': telefono or 'No especificado',
+                'creado_por': uid
+            }
+            # 1. Creamos el gimnasio en la colección principal raíz
+            gym_id = firebase.create_gym(payload)
+            
+            # 2. Vinculación inmediata en cookies de sesión del navegador
+            request.session['gym_id'] = gym_id
+            request.session.modified = True
+            
+            # 3. Vinculación persistente en el documento de perfil del administrador en Firestore
+            if uid:
+                firebase.save_user_profile(uid, {'gym_id': gym_id})
+
+            return Response({
+                "success": True, 
+                "gym_id": gym_id,
+                "message": "Gimnasio creado y sincronizado con éxito."
+            }, status=status.HTTP_201_CREATED)
         except Exception as e:
-            logger.error(f"[INVENTARIO] Error al crear equipo: {e}")
-            return Response(
-                {"error": f"Error de servidor: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['PUT'])
-@permission_classes([AllowAny])
-def update_equipment_api(request, equip_id):
-    """Actualiza una máquina existente."""
-    if not _get_admin_uid(request):
-        return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
-
-    doc_ref = firebase.db.collection('equipamientos').document(equip_id)
-    if not doc_ref.get().exists:
-        return Response({"error": "El equipo no existe."}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = EquipmentSerializer(data=request.data)
-    if serializer.is_valid():
-        try:
-            data = serializer.validated_data
-            data['fecha_adquisicion'] = data['fecha_adquisicion'].isoformat()
-            doc_ref.update(data)
-            return Response({"success": True, "message": "Equipo actualizado correctamente."})
-        except Exception as e:
-            logger.error(f"[INVENTARIO] Error al actualizar equipo {equip_id}: {e}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+class EquiposListCreateAPI(APIView):
+    def post(self, request):
+        gym_id = get_session_tenant(request)
+        if not gym_id:
+            return Response({"error": "No autorizado o gimnasio no inicializado en sesión."}, status=status.HTTP_403_FORBIDDEN)
+
+        data = request.data
+        nombre = data.get('nombre')
+        tipo = data.get('tipo')
+        estado = data.get('estado')
+        fecha = data.get('fecha_adquisicion')
+        ubicacion = data.get('ubicacion')
+
+        if not all([nombre, tipo, estado, fecha, ubicacion]):
+            return Response({"error": "Todos los campos son obligatorios"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            nuevo_equipo = {
+                'nombre': nombre,
+                'tipo': tipo,
+                'estado': estado,
+                'fecha_adquisicion': fecha,
+                'ubicacion': ubicacion
+            }
+            # Guarda de forma limpia en la subcolección interna /gimnasios/{gym_id}/equipamientos/
+            equipo_id = firebase.create_equipment(gym_id, nuevo_equipo)
+            return Response({"success": True, "id": equipo_id}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['DELETE'])
-@permission_classes([AllowAny])
-def delete_equipment_api(request, equip_id):
-    """Elimina una máquina del inventario de forma definitiva."""
-    if not _get_admin_uid(request):
-        return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+class EquipoDetailAPI(APIView):
+    def put(self, request, equipo_id):
+        gym_id = get_session_tenant(request)
+        if not gym_id:
+            return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
 
-    try:
-        doc_ref = firebase.db.collection('equipamientos').document(equip_id)
-        if not doc_ref.get().exists:
-            return Response({"error": "El elemento ya no existe."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            data = request.data
+            firebase.update_equipment(gym_id, equipo_id, {
+                'nombre': data.get('nombre'),
+                'tipo': data.get('tipo'),
+                'estado': data.get('estado'),
+                'fecha_adquisicion': data.get('fecha_adquisicion'),
+                'ubicacion': data.get('ubicacion')
+            })
+            return Response({"success": True})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        doc_ref.delete()
-        return Response({"success": True, "message": "Máquina eliminada del sistema."})
-    except Exception as e:
-        logger.error(f"[INVENTARIO] Error al eliminar equipo {equip_id}: {e}")
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class EquipoDeleteAPI(APIView):
+    def delete(self, request, equipo_id):
+        gym_id = get_session_tenant(request)
+        if not gym_id:
+            return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            firebase.delete_equipment(gym_id, equipo_id)
+            return Response({"success": True})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GimnasiosPublicListAPI(APIView):
+    """
+    Endpoint público que devuelve la lista de gimnasios registrados.
+    Lo consume el selector del formulario de registro de usuarios.
+    No requiere autenticación — sólo expone nombre, ubicación e id.
+    """
+    def get(self, request):
+        try:
+            gyms_raw = firebase.get_all_gyms()  # debe devolver una lista de dicts
+            gimnasios = [
+                {
+                    "id":        g.get("id") or g.get("gym_id"),
+                    "nombre":    g.get("nombre", "Sin nombre"),
+                    "ubicacion": g.get("ubicacion", ""),
+                }
+                for g in (gyms_raw or [])
+            ]
+            return Response({"gimnasios": gimnasios}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error("Error listando gimnasios públicos: %s", e)
+            return Response({"gimnasios": []}, status=status.HTTP_200_OK)
+
+class GimnasioContextoAPI(APIView):
+    """
+    Devuelve el gimnasio activo del usuario en sesión.
+    Lo consume el badge del generador de rutinas para mostrar
+    qué gimnasio/modo está activo antes de generar la rutina.
+    """
+    def get(self, request):
+        gym_id = request.session.get('gym_id')
+        if not gym_id:
+            return Response({"gym_id": None, "gym_nombre": None})
+        try:
+            gyms = firebase.get_all_gyms()
+            gym  = next((g for g in gyms if g.get('id') == gym_id), None)
+            nombre = gym.get('nombre', 'Gimnasio') if gym else 'Gimnasio'
+            return Response({"gym_id": gym_id, "gym_nombre": nombre})
+        except Exception as e:
+            logger.error("Error en contexto de gimnasio: %s", e)
+            return Response({"gym_id": None, "gym_nombre": None})

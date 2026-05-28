@@ -4,902 +4,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIO-FIT — Inventario</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>Panel de Inventario — BIO-FIT</title>
     <style>
-        /* ── VARIABLES ───────────────────────────────── */
-        :root {
-            --bg:        #0d0f0e;
-            --surface:   #161a18;
-            --border:    #252b28;
-            --accent:    #b5f542;
-            --accent-dim:#7aaa1e;
-            --danger:    #ff4d4d;
-            --warn:      #ffb347;
-            --text:      #e8ede9;
-            --muted:     #6b7a6e;
-            --radius:    10px;
-        }
-
-        /* ── RESET & BASE ────────────────────────────── */
+        /* ── RESET & BASE ─────────────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
-            font-family: 'DM Mono', monospace;
-            background: var(--bg);
-            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
             min-height: 100vh;
         }
 
-        /* ── TOPBAR ──────────────────────────────────── */
+        /* ── TOPBAR ───────────────────────────────────────────────── */
         .topbar {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 0 2rem;
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface);
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,.35);
         }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: 0.5px; }
+        .topbar-right { display: flex; align-items: center; gap: 1.5rem; }
+        .badge-gym { background: #2d7a4f; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .btn-back { color: #fff; text-decoration: none; font-size: 0.9rem; transition: color .2s; }
+        .btn-back:hover { color: #3b82f6; }
 
-        .topbar-logo {
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            font-size: 1.3rem;
-            letter-spacing: -0.03em;
-            color: var(--accent);
-        }
-
-        .topbar-logo span { color: var(--text); }
-
-        .topbar-meta {
-            font-size: 0.72rem;
-            color: var(--muted);
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .badge-admin {
-            background: color-mix(in srgb, var(--accent) 15%, transparent);
-            color: var(--accent);
-            border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-            padding: 0.2rem 0.65rem;
-            border-radius: 100px;
-            font-size: 0.68rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        /* ── MAIN LAYOUT ─────────────────────────────── */
-        main {
-            max-width: 1300px;
-            margin: 0 auto;
-            padding: 2.5rem 2rem;
-        }
-
-        /* ── PAGE HEADER ─────────────────────────────── */
-        .page-header {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            margin-bottom: 2.5rem;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .page-header h1 {
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            font-size: clamp(1.8rem, 4vw, 2.8rem);
-            letter-spacing: -0.04em;
-            line-height: 1;
-        }
-
-        .page-header h1 em {
-            font-style: normal;
-            color: var(--accent);
-        }
-
-        .page-header p {
-            font-size: 0.78rem;
-            color: var(--muted);
-            margin-top: 0.35rem;
-        }
-
-        /* ── STATS ROW ───────────────────────────────── */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 1.1rem 1.3rem;
-        }
-
-        .stat-label {
-            font-size: 0.68rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.4rem;
-        }
-
-        .stat-value {
-            font-family: 'Syne', sans-serif;
-            font-size: 1.9rem;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-        }
-
-        .stat-value.accent { color: var(--accent); }
-        .stat-value.warn   { color: var(--warn); }
-        .stat-value.danger { color: var(--danger); }
-
-        /* ── MESSAGES ────────────────────────────────── */
-        .messages-list {
-            list-style: none;
-            margin-bottom: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .messages-list li {
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius);
-            font-size: 0.82rem;
-            border-left: 3px solid;
-        }
-
-        .messages-list .error   { background: #2a1010; border-color: var(--danger); color: #ffaaaa; }
-        .messages-list .success { background: #0f1f0d; border-color: var(--accent); color: var(--accent); }
-        .messages-list .info    { background: #101a2a; border-color: #4d9fff; color: #99ccff; }
-
-        /* ── TOOLBAR (search + add btn) ──────────────── */
-        .toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-            flex-wrap: wrap;
-        }
-
-        .search-wrap {
-            position: relative;
-            flex: 1;
-            min-width: 200px;
-            max-width: 360px;
-        }
-
-        .search-wrap input {
-            width: 100%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 0.6rem 0.9rem 0.6rem 2.3rem;
-            border-radius: var(--radius);
-            font-family: inherit;
-            font-size: 0.82rem;
-            transition: border-color .2s;
-        }
-
-        .search-wrap input:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--muted);
-            font-size: 0.9rem;
-            pointer-events: none;
-        }
-
-        /* ── BUTTONS ─────────────────────────────────── */
-        .btn {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.78rem;
-            font-weight: 500;
-            padding: 0.55rem 1.1rem;
-            border-radius: var(--radius);
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: all .2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #0d0f0e;
-            border-color: var(--accent);
-        }
-
-        .btn-primary:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text);
-            border-color: var(--border);
-        }
-
-        .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-
-        .btn-danger {
-            background: transparent;
-            color: var(--danger);
-            border-color: color-mix(in srgb, var(--danger) 40%, transparent);
-            font-size: 0.72rem;
-            padding: 0.35rem 0.7rem;
-        }
-
-        .btn-danger:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
-
-        .btn-edit {
-            background: transparent;
-            color: var(--accent);
-            border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-            font-size: 0.72rem;
-            padding: 0.35rem 0.7rem;
-        }
-
-        .btn-edit:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-
-        /* ── TABLE ───────────────────────────────────── */
-        .table-wrap {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.82rem;
-        }
-
-        thead {
-            background: color-mix(in srgb, var(--accent) 5%, var(--surface));
-            border-bottom: 1px solid var(--border);
-        }
-
-        th {
-            font-family: 'Syne', sans-serif;
-            font-size: 0.68rem;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--muted);
-            padding: 0.85rem 1rem;
-            text-align: left;
-        }
-
-        tbody tr {
-            border-bottom: 1px solid var(--border);
-            transition: background .15s;
-        }
-
-        tbody tr:last-child { border-bottom: none; }
-        tbody tr:hover { background: color-mix(in srgb, var(--accent) 3%, var(--surface)); }
-
-        td {
-            padding: 0.85rem 1rem;
-            vertical-align: middle;
-        }
-
-        .equip-name {
-            font-family: 'Syne', sans-serif;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .equip-desc {
-            font-size: 0.72rem;
-            color: var(--muted);
-            margin-top: 0.2rem;
-        }
-
-        /* ── STATUS BADGES ───────────────────────────── */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.25rem 0.65rem;
-            border-radius: 100px;
-            font-size: 0.68rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            border: 1px solid;
-        }
-
-        .status-badge::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-
-        .status-excelente    { color: var(--accent);  background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
-        .status-bueno        { color: #4dbbff; background: color-mix(in srgb, #4dbbff 12%, transparent); border-color: color-mix(in srgb, #4dbbff 30%, transparent); }
-        .status-mantenimiento{ color: var(--warn);    background: color-mix(in srgb, var(--warn) 12%, transparent); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
-        .status-fuera_de_servicio{ color: var(--danger);  background: color-mix(in srgb, var(--danger) 12%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
-
-        .actions { display: flex; gap: 0.4rem; }
-
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--muted);
-        }
-
-        .empty-state svg { margin-bottom: 1rem; opacity: 0.35; }
-        .empty-state p { font-size: 0.85rem; }
-
-        /* ── MODAL ───────────────────────────────────── */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.7);
-            backdrop-filter: blur(4px);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-
-        .modal-overlay.open { display: flex; }
-
-        .modal {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            width: 100%;
-            max-width: 540px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: slideUp .25s ease;
-        }
-
-        @keyframes slideUp {
-            from { opacity:0; transform: translateY(20px); }
-            to   { opacity:1; transform: translateY(0); }
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.4rem 1.6rem 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .modal-header h2 {
-            font-family: 'Syne', sans-serif;
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-
-        .modal-close {
-            background: none;
+        /* ── MAIN CONTENT ─────────────────────────────────────────── */
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .header-actions h2 { font-size: 1.75rem; color: #1a1a2e; }
+        
+        .btn-add {
+            background: #2d7a4f;
+            color: #fff;
+            padding: 10px 20px;
             border: none;
-            color: var(--muted);
-            cursor: pointer;
-            font-size: 1.3rem;
-            line-height: 1;
-            transition: color .2s;
-            padding: 0.25rem;
-        }
-
-        .modal-close:hover { color: var(--text); }
-
-        .modal-body { padding: 1.4rem 1.6rem; }
-
-        /* ── FORM ────────────────────────────────────── */
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-        }
-
-        .form-group.full { grid-column: 1 / -1; }
-
-        label {
-            font-size: 0.7rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        input, select, textarea {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 0.6rem 0.8rem;
             border-radius: 8px;
-            font-family: inherit;
-            font-size: 0.82rem;
-            width: 100%;
-            transition: border-color .2s;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        textarea { resize: vertical; min-height: 80px; }
-
-        select option { background: var(--surface); }
-
-        .form-error {
-            font-size: 0.7rem;
-            color: var(--danger);
-            margin-top: 0.2rem;
-        }
-
-        .modal-footer {
+            font-weight: 600;
+            cursor: pointer;
             display: flex;
-            justify-content: flex-end;
-            gap: 0.65rem;
-            padding: 1rem 1.6rem 1.4rem;
-            border-top: 1px solid var(--border);
-        }
-
-        /* ── TOAST ───────────────────────────────────── */
-        .toast-container {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 2px 5px rgba(45,122,79,.3);
+            transition: background .2s;
         }
+        .btn-add:hover { background: #225c3c; }
 
-        .toast {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 0.75rem 1.1rem;
-            font-size: 0.8rem;
-            min-width: 260px;
-            animation: toastIn .3s ease;
-            border-left: 3px solid var(--accent);
-        }
+        /* ── TABLE STYLES ─────────────────────────────────────────── */
+        .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+        th { background: #f8f9fa; padding: 1rem; color: #6c757d; font-weight: 600; border-bottom: 2px solid #dee2e6; }
+        td { padding: 1rem; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        
+        /* Status Badges */
+        .status { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+        .status-operativo { background: #d1e7dd; color: #0f5132; }
+        .status-mantenimiento { background: #fff3cd; color: #664d03; }
+        .status-fuera { background: #f8d7da; color: #842029; }
 
-        .toast.error { border-left-color: var(--danger); }
+        .actions-cell { display: flex; gap: 0.5rem; }
+        .btn-action { padding: 6px 12px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all .2s; }
+        .btn-edit:hover { background: #e3f2fd; color: #0d6efd; border-color: #0d6efd; }
+        .btn-delete:hover { background: #f8d7da; color: #dc3545; border-color: #dc3545; }
 
-        @keyframes toastIn {
-            from { opacity:0; transform: translateX(20px); }
-            to   { opacity:1; transform: translateX(0); }
-        }
+        /* ── MODAL STYLES ─────────────────────────────────────────── */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #fff; padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transform: translateY(-20px); transition: transform .3s ease; }
+        .modal.active .modal-content { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h3 { font-size: 1.25rem; color: #1a1a2e; }
+        .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d; }
+        
+        /* Forms */
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500; color: #495057; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.95rem; transition: border-color .2s; }
+        .form-control:focus { border-color: #2d7a4f; outline: none; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
 
-        /* ── CONFIRM DIALOG ──────────────────────────── */
-        .confirm-dialog .modal { max-width: 380px; }
-        .confirm-body { padding: 1.6rem; text-align: center; }
-        .confirm-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-        .confirm-body h3 { font-family: 'Syne', sans-serif; font-size: 1rem; margin-bottom: 0.5rem; }
-        .confirm-body p  { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.25rem; }
-        .confirm-actions { display: flex; gap: 0.6rem; justify-content: center; }
-
-        @media (max-width: 700px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .page-header { flex-direction: column; align-items: flex-start; }
-        }
+        /* ── UTILITIES ────────────────────────────────────────────── */
+        .empty-state { padding: 3rem; text-align: center; color: #6c757d; }
+        .error-message { color: #dc3545; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
+        
+        /* Spinner */
+        .spinner { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #2d7a4f; animation: spin 1s linear infinite; z-index: 2000; }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<!-- ── TOPBAR ───────────────────────────────────────────── -->
-<header class="topbar">
-    <div class="topbar-logo">BIO<span>-FIT</span></div>
-    <div class="topbar-meta">
-        <span class="badge-admin">&#9679; Admin</span>
-        <span>Inventario de Equipos</span>
-    </div>
-</header>
+    <div class="spinner" id="loadingSpinner"></div>
 
-<!-- ── MAIN ─────────────────────────────────────────────── -->
-<main>
+    <header class="topbar">
+        <div class="topbar-left">
+            <a href="/" class="btn-back">← Volver al Inicio</a>
+            <h1>Ecosistema de Inventario Privado</h1>
+        </div>
+        <div class="topbar-right">
+            <span class="badge-gym">Sede Activa: {{ gym_id }}</span>
+        </div>
+    </header>
 
-    <!-- Django messages -->
-    {% if messages %}
-    <ul class="messages-list">
-        {% for message in messages %}
-        <li class="{{ message.tags }}">{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+    <main class="container">
+        <div class="header-actions">
+            <h2>Inventario de Equipos y Máquinas</h2>
+            <button class="btn-add" onclick="openModal('addModal')">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+                Agregar Activo
+            </button>
+        </div>
 
-    <!-- Encabezado -->
-    <div class="page-header">
-        <div>
-            <h1>Gestión de <em>Inventario</em></h1>
-            <p>Administra los equipos y máquinas del gimnasio.</p>
-        </div>
-    </div>
-
-    <!-- Estadísticas rápidas -->
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-label">Total equipos</div>
-            <div class="stat-value accent" id="stat-total">{{ inventario|length }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Excelente / Bueno</div>
-            <div class="stat-value accent" id="stat-ok">—</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Mantenimiento</div>
-            <div class="stat-value warn" id="stat-mant">—</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Fuera de servicio</div>
-            <div class="stat-value danger" id="stat-fs">—</div>
-        </div>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="toolbar">
-        <div class="search-wrap">
-            <span class="search-icon">&#128269;</span>
-            <input type="text" id="searchInput" placeholder="Buscar equipo, ubicación..." oninput="filterTable()">
-        </div>
-        <button class="btn btn-primary" onclick="openCreateModal()">
-            &#43; Nuevo equipo
-        </button>
-    </div>
-
-    <!-- Tabla de inventario -->
-    <div class="table-wrap">
-        <table id="equipTable">
-            <thead>
-                <tr>
-                    <th>Equipo</th>
-                    <th>Ubicación</th>
-                    <th>Estado</th>
-                    <th>Cantidad</th>
-                    <th>Adquisición</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                {% if inventario %}
-                    {% for equipo in inventario %}
-                    <tr data-id="{{ equipo.id }}"
-                        data-nombre="{{ equipo.nombre|lower }}"
-                        data-ubicacion="{{ equipo.ubicacion|lower }}">
-                        <td>
-                            <div class="equip-name">{{ equipo.nombre }}</div>
-                            {% if equipo.descripcion %}
-                            <div class="equip-desc">{{ equipo.descripcion|truncatechars:60 }}</div>
-                            {% endif %}
-                        </td>
-                        <td>{{ equipo.ubicacion }}</td>
-                        <td>
-                            <span class="status-badge status-{{ equipo.estado }}">
-                                {{ equipo.estado|title|cut:"_" }}
-                            </span>
-                        </td>
-                        <td>{{ equipo.cantidad }}</td>
-                        <td>{{ equipo.fecha_adquisicion }}</td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-edit"
-                                    onclick="openEditModal('{{ equipo.id }}', '{{ equipo.nombre }}', '{{ equipo.descripcion|default:"" }}', '{{ equipo.estado }}', '{{ equipo.fecha_adquisicion }}', '{{ equipo.ubicacion }}', '{{ equipo.cantidad }}')">
-                                    Editar
-                                </button>
-                                <button class="btn btn-danger"
-                                    onclick="confirmDelete('{{ equipo.id }}', '{{ equipo.nombre }}')">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr id="emptyRow">
-                        <td colspan="6">
-                            <div class="empty-state">
-                                <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/>
-                                </svg>
-                                <p>No hay equipos registrados. Agrega el primero con el botón <strong>+ Nuevo equipo</strong>.</p>
-                            </div>
-                        </td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
-</main>
-
-<!-- ── MODAL CREAR / EDITAR ──────────────────────────────── -->
-<div class="modal-overlay" id="equipModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h2 id="modalTitle">Nuevo equipo</h2>
-            <button class="modal-close" onclick="closeModal('equipModal')" aria-label="Cerrar">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div class="form-grid">
-                <div class="form-group full">
-                    <label for="f-nombre">Nombre del equipo *</label>
-                    <input type="text" id="f-nombre" placeholder="Ej. Cinta de correr Technogym">
+        <div class="table-wrapper">
+            {% if inventario %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre del Activo</th>
+                            <th>Tipo de Máquina</th>
+                            <th>Ubicación Interna</th>
+                            <th>Fecha Adquisición</th>
+                            <th>Estado Operativo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipo in inventario %}
+                            <tr>
+                                <td style="font-weight: 600;">{{ equipo.nombre }}</td>
+                                <td>{{ equipo.tipo }}</td>
+                                <td>{{ equipo.ubicacion }}</td>
+                                <td>{{ equipo.fecha_adquisicion }}</td>
+                                <td>
+                                    {% if equipo.estado == 'operativo' %}
+                                        <span class="status status-operativo">Operativo</span>
+                                    {% elif equipo.estado == 'mantenimiento' %}
+                                        <span class="status status-mantenimiento">En Mantenimiento</span>
+                                    {% else %}
+                                        <span class="status status-fuera">Fuera de Servicio</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="actions-cell">
+                                        <button class="btn-action btn-edit" onclick="openEditModal('{{ equipo.id }}', '{{ equipo.nombre }}', '{{ equipo.tipo }}', '{{ equipo.ubicacion }}', '{{ equipo.fecha_adquisicion }}', '{{ equipo.estado }}')">Editar</button>
+                                        <button class="btn-action btn-delete" onclick="deleteEquipo('{{ equipo.id }}')">Eliminar</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No hay activos registrados en esta sede.</p>
+                    <p style="font-size: 0.9rem;">Haz clic en "Agregar Activo" para inicializar tu subcolección en Firestore.</p>
                 </div>
-                <div class="form-group full">
-                    <label for="f-descripcion">Descripción</label>
-                    <textarea id="f-descripcion" placeholder="Modelo, características, observaciones..."></textarea>
+            {% endif %}
+        </div>
+    </main>
+
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Registrar Nuevo Activo</h3>
+                <button class="btn-close" onclick="closeModal('addModal')">&times;</button>
+            </div>
+            <form id="addForm">
+                <div class="form-group">
+                    <label>Nombre del Equipo</label>
+                    <input type="text" id="add_nombre" class="form-control" placeholder="Ej. Caminadora Pro X" required>
                 </div>
                 <div class="form-group">
-                    <label for="f-estado">Estado *</label>
-                    <select id="f-estado">
-                        <option value="">— Seleccionar —</option>
-                        <option value="excelente">Excelente</option>
-                        <option value="bueno">Bueno</option>
-                        <option value="mantenimiento">En mantenimiento</option>
-                        <option value="fuera_de_servicio">Fuera de servicio</option>
+                    <label>Tipo de Maquinaria</label>
+                    <select id="add_tipo" class="form-control" required>
+                        <option value="Cardio">Cardio</option>
+                        <option value="Fuerza / Musculación">Fuerza / Musculación</option>
+                        <option value="Peso Libre">Peso Libre</option>
+                        <option value="Accesorios">Accesorios</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="f-cantidad">Cantidad *</label>
-                    <input type="number" id="f-cantidad" min="1" value="1">
+                    <label>Ubicación de Sala</label>
+                    <input type="text" id="add_ubicacion" class="form-control" placeholder="Ej. Zona de Cardio - Piso 1" required>
                 </div>
                 <div class="form-group">
-                    <label for="f-fecha">Fecha de adquisición *</label>
-                    <input type="date" id="f-fecha">
+                    <label>Fecha de Adquisición</label>
+                    <input type="date" id="add_fecha" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label for="f-ubicacion">Ubicación en el gimnasio *</label>
-                    <input type="text" id="f-ubicacion" placeholder="Ej. Sala cardiovascular">
+                    <label>Estado Inicial</label>
+                    <select id="add_estado" class="form-control" required>
+                        <option value="operativo">Operativo</option>
+                        <option value="mantenimiento">En Mantenimiento</option>
+                        <option value="fuera_de_servicio">Fuera de Servicio</option>
+                    </select>
                 </div>
-            </div>
-            <div id="form-errors" style="margin-top:1rem;"></div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-ghost" onclick="closeModal('equipModal')">Cancelar</button>
-            <button class="btn btn-primary" id="modalSaveBtn" onclick="submitEquipForm()">Guardar equipo</button>
-        </div>
-    </div>
-</div>
-
-<!-- ── MODAL CONFIRMAR ELIMINAR ──────────────────────────── -->
-<div class="modal-overlay confirm-dialog" id="confirmModal">
-    <div class="modal">
-        <div class="confirm-body">
-            <div class="confirm-icon">&#9888;&#65039;</div>
-            <h3>¿Eliminar equipo?</h3>
-            <p id="confirmText">Esta acción no se puede deshacer.</p>
-            <div class="confirm-actions">
-                <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancelar</button>
-                <button class="btn btn-danger" id="confirmDeleteBtn" style="padding:.55rem 1.1rem;">
-                    Sí, eliminar
-                </button>
-            </div>
+                <div class="error-message" id="addError"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-action" onclick="closeModal('addModal')">Cancelar</button>
+                    <button type="submit" class="btn-add" style="box-shadow:none;">Guardar en Firestore</button>
+                </div>
+            </form>
         </div>
     </div>
-</div>
 
-<!-- ── TOAST CONTAINER ───────────────────────────────────── -->
-<div class="toast-container" id="toastContainer"></div>
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Modificar Parámetros de Activo</h3>
+                <button class="btn-close" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="edit_id">
+                <div class="form-group">
+                    <label>Nombre del Equipo</label>
+                    <input type="text" id="edit_nombre" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Maquinaria</label>
+                    <select id="edit_tipo" class="form-control" required>
+                        <option value="Cardio">Cardio</option>
+                        <option value="Fuerza / Musculación">Fuerza / Musculación</option>
+                        <option value="Peso Libre">Peso Libre</option>
+                        <option value="Accesorios">Accesorios</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Ubicación de Sala</label>
+                    <input type="text" id="edit_ubicacion" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Adquisición</label>
+                    <input type="date" id="edit_fecha" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Estado del Activo</label>
+                    <select id="edit_estado" class="form-control" required>
+                        <option value="operativo">Operativo</option>
+                        <option value="mantenimiento">En Mantenimiento</option>
+                        <option value="fuera_de_servicio">Fuera de Servicio</option>
+                    </select>
+                </div>
+                <div class="error-message" id="editError"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-action" onclick="closeModal('editModal')">Cancelar</button>
+                    <button type="submit" class="btn-add" style="box-shadow:none; background:#3b82f6;">Actualizar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<script>
-    // ── ESTADO ────────────────────────────────────────────
-    let editingId = null;
+    <script>
+        const csrfToken = "{{ csrf_token }}";
 
-    // ── ESTADÍSTICAS ──────────────────────────────────────
-    (function calcStats() {
-        const rows = document.querySelectorAll('#tableBody tr[data-id]');
-        let ok = 0, mant = 0, fs = 0;
-        rows.forEach(r => {
-            const badge = r.querySelector('.status-badge');
-            if (!badge) return;
-            const cls = [...badge.classList].find(c => c.startsWith('status-') && c !== 'status-badge');
-            if (cls === 'status-excelente' || cls === 'status-bueno') ok++;
-            else if (cls === 'status-mantenimiento') mant++;
-            else if (cls === 'status-fuera_de_servicio') fs++;
-        });
-        document.getElementById('stat-ok').textContent   = ok;
-        document.getElementById('stat-mant').textContent = mant;
-        document.getElementById('stat-fs').textContent   = fs;
-    })();
+        // MÓDULO VISUAL MODALES
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-    // ── FILTRO DE TABLA ───────────────────────────────────
-    function filterTable() {
-        const q = document.getElementById('searchInput').value.toLowerCase().trim();
-        const rows = document.querySelectorAll('#tableBody tr[data-id]');
-        rows.forEach(r => {
-            const match = !q
-                || r.dataset.nombre.includes(q)
-                || r.dataset.ubicacion.includes(q);
-            r.style.display = match ? '' : 'none';
-        });
-    }
+        function showSpinner() { document.getElementById('loadingSpinner').style.display = 'block'; }
+        function hideSpinner() { document.getElementById('loadingSpinner').style.display = 'none'; }
 
-    // ── MODALES ───────────────────────────────────────────
-    function openCreateModal() {
-        editingId = null;
-        document.getElementById('modalTitle').textContent = 'Nuevo equipo';
-        document.getElementById('modalSaveBtn').textContent = 'Guardar equipo';
-        clearForm();
-        document.getElementById('equipModal').classList.add('open');
-    }
-
-    function openEditModal(id, nombre, descripcion, estado, fecha, ubicacion, cantidad) {
-        editingId = id;
-        document.getElementById('modalTitle').textContent = 'Editar equipo';
-        document.getElementById('modalSaveBtn').textContent = 'Actualizar equipo';
-        document.getElementById('f-nombre').value      = nombre;
-        document.getElementById('f-descripcion').value = descripcion;
-        document.getElementById('f-estado').value      = estado;
-        document.getElementById('f-fecha').value       = fecha;
-        document.getElementById('f-ubicacion').value   = ubicacion;
-        document.getElementById('f-cantidad').value    = cantidad;
-        document.getElementById('form-errors').innerHTML = '';
-        document.getElementById('equipModal').classList.add('open');
-    }
-
-    function closeModal(id) {
-        document.getElementById(id).classList.remove('open');
-    }
-
-    function clearForm() {
-        ['f-nombre','f-descripcion','f-estado','f-fecha','f-ubicacion'].forEach(id => {
-            document.getElementById(id).value = '';
-        });
-        document.getElementById('f-cantidad').value = '1';
-        document.getElementById('form-errors').innerHTML = '';
-    }
-
-    // Cerrar modal al hacer clic fuera
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-        overlay.addEventListener('click', e => {
-            if (e.target === overlay) overlay.classList.remove('open');
-        });
-    });
-
-    // ── ENVÍO DEL FORMULARIO ──────────────────────────────
-    async function submitEquipForm() {
-        const payload = {
-            nombre:            document.getElementById('f-nombre').value.trim(),
-            descripcion:       document.getElementById('f-descripcion').value.trim(),
-            estado:            document.getElementById('f-estado').value,
-            fecha_adquisicion: document.getElementById('f-fecha').value,
-            ubicacion:         document.getElementById('f-ubicacion').value.trim(),
-            cantidad:          parseInt(document.getElementById('f-cantidad').value, 10) || 1,
-        };
-
-        // Validación básica en frontend
-        const required = ['nombre','estado','fecha_adquisicion','ubicacion'];
-        const missing = required.filter(k => !payload[k]);
-        if (missing.length) {
-            showFormErrors({ general: ['Completa todos los campos obligatorios (*).'] });
-            return;
+        function showError(elementId, text) {
+            const err = document.getElementById(elementId);
+            err.textContent = text;
+            err.style.display = 'block';
         }
 
-        const btn = document.getElementById('modalSaveBtn');
-        btn.disabled = true;
-        btn.textContent = 'Guardando…';
+        // CREATE OPERATION HANDLER
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showSpinner();
+            
+            const payload = {
+                nombre: document.getElementById('add_nombre').value,
+                tipo: document.getElementById('add_tipo').value,
+                ubicacion: document.getElementById('add_ubicacion').value,
+                fecha_adquisicion: document.getElementById('add_fecha').value,
+                estado: document.getElementById('add_estado').value
+            };
 
-        try {
-            const isEdit = !!editingId;
-            const url    = isEdit
-                ? `/inventory/api/editar/${editingId}/`
-                : '/inventory/api/crear/';
-            const method = isEdit ? 'PUT' : 'POST';
-
-            const res  = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-                body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-
-            if (res.ok && data.success) {
-                closeModal('equipModal');
-                showToast(data.message || 'Operación exitosa.');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showFormErrors(data.errors || { general: [data.error || 'Error desconocido.'] });
-            }
-        } catch (err) {
-            showFormErrors({ general: ['Error de conexión. Intenta de nuevo.'] });
-        } finally {
-            btn.disabled = false;
-            btn.textContent = editingId ? 'Actualizar equipo' : 'Guardar equipo';
-        }
-    }
-
-    function showFormErrors(errors) {
-        const container = document.getElementById('form-errors');
-        const msgs = Object.values(errors).flat();
-        container.innerHTML = msgs.map(m =>
-            `<p class="form-error">&#x26A0; ${m}</p>`
-        ).join('');
-    }
-
-    // ── ELIMINAR ──────────────────────────────────────────
-    function confirmDelete(id, nombre) {
-        document.getElementById('confirmText').textContent =
-            `¿Seguro que quieres eliminar "${nombre}"? Esta acción no se puede deshacer.`;
-
-        const btn = document.getElementById('confirmDeleteBtn');
-        btn.onclick = async () => {
-            btn.disabled = true;
-            btn.textContent = 'Eliminando…';
             try {
-                const res  = await fetch(`/inventory/api/eliminar/${id}/`, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                const res = await fetch("{% url 'inventory:api_equipos_list_create' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json();
+                hideSpinner();
+
                 if (res.ok && data.success) {
-                    closeModal('confirmModal');
-                    showToast(data.message || 'Equipo eliminado.');
-                    const row = document.querySelector(`tr[data-id="${id}"]`);
-                    if (row) row.remove();
-                    updateTotalStat();
+                    window.location.reload();
                 } else {
-                    showToast(data.error || 'No se pudo eliminar.', true);
+                    showError('addError', data.error || 'Error al persistir el registro.');
                 }
-            } catch {
-                showToast('Error de conexión.', true);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Sí, eliminar';
+            } catch (err) {
+                hideSpinner();
+                showError('addError', 'Error crítico de red.');
             }
-        };
+        });
 
-        document.getElementById('confirmModal').classList.add('open');
-    }
+        // POPULATE & OPEN EDIT MODAL
+        function openEditModal(id, nombre, tipo, ubicacion, fecha, estado) {
+            document.getElementById('edit_id').value = id;
+            document.getElementById('edit_nombre').value = nombre;
+            document.getElementById('edit_tipo').value = tipo;
+            document.getElementById('edit_ubicacion').value = ubicacion;
+            document.getElementById('edit_estado').value = estado;
+            
+            // Formatear fecha para el input HTML tipo date (YYYY-MM-DD)
+            if (fecha) {
+                try {
+                    const d = new Date(fecha);
+                    if(!isNaN(d.getTime())) {
+                        document.getElementById('edit_fecha').value = d.toISOString().split('T')[0];
+                    }
+                } catch(e) {}
+            }
+            openModal('editModal');
+        }
 
-    function updateTotalStat() {
-        const rows = document.querySelectorAll('#tableBody tr[data-id]');
-        document.getElementById('stat-total').textContent = rows.length;
-    }
+        // UPDATE OPERATION HANDLER
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showSpinner();
+            const id = document.getElementById('edit_id').value;
 
-    // ── TOASTS ────────────────────────────────────────────
-    function showToast(msg, isError = false) {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = 'toast' + (isError ? ' error' : '');
-        toast.textContent = msg;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 3500);
-    }
+            const payload = {
+                nombre: document.getElementById('edit_nombre').value,
+                tipo: document.getElementById('edit_tipo').value,
+                ubicacion: document.getElementById('edit_ubicacion').value,
+                fecha_adquisicion: document.getElementById('edit_fecha').value,
+                estado: document.getElementById('edit_estado').value
+            };
 
-    // ── CSRF HELPER ───────────────────────────────────────
-    function getCookie(name) {
-        const match = document.cookie.match(new RegExp('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)'));
-        return match ? match.pop() : '';
-    }
-</script>
+            try {
+                const res = await fetch(`/inventory/api/equipos/${id}/`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                hideSpinner();
 
+                if (res.ok && data.success) {
+                    window.location.reload();
+                } else {
+                    showError('editError', data.error || 'Error al actualizar el registro.');
+                }
+            } catch (err) {
+                hideSpinner();
+                showError('editError', 'Error de red en actualización.');
+            }
+        });
+
+        // DELETE OPERATION HANDLER
+        async function deleteEquipo(id) {
+            if (!confirm('¿Confirmas la eliminación permanente de este activo en la subcolección de tu sede?')) return;
+            showSpinner();
+
+            try {
+                const res = await fetch(`/inventory/api/equipos/${id}/eliminar/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                const data = await res.json();
+                hideSpinner();
+
+                if (res.ok && data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Fallo al eliminar registro.');
+                }
+            } catch (err) {
+                hideSpinner();
+                alert('Fallo de red al solicitar eliminación.');
+            }
+        }
+    </script>
 </body>
 </html>
