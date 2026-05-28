@@ -33,42 +33,69 @@ _MAPEO_BLOQUES = {
 }
 
 
+def _normalizar_ejercicios(lista: list) -> list:
+    """Normaliza una lista de ejercicios crudos de la IA."""
+    resultado = []
+    for ej in lista:
+        if not isinstance(ej, dict):
+            continue
+        nombre = "Ejercicio sin nombre"
+        for k in _CLAVES_NOMBRE:
+            if k in ej:
+                nombre = ej[k]
+                break
+        resultado.append({
+            'ejercicio':    nombre,
+            'series':       str(ej.get('series', '3')),
+            'repeticiones': str(ej.get('repeticiones', '10')),
+            'descanso':     str(ej.get('descanso', '60 seg')),
+            'nota':         ej.get('nota', ej.get('recomendacion', '')),
+        })
+    return resultado
+
+
 def _normalizar_rutina(rutina_raw: dict) -> dict:
     """
-    Toma el JSON crudo de la IA y devuelve un diccionario con bloques fijos
-    y campos de ejercicio estandarizados en español.
+    Soporta dos formatos de respuesta de la IA:
+    - NUEVO (multi-día): {"dias": [{"dia": "Día 1", "enfoque": "...", "calentamiento": [...], ...}]}
+    - LEGACY (un solo día): {"calentamiento": [...], "entrenamiento_principal": [...], ...}
+    Devuelve siempre {"dias": [...]} para que el template itere de forma uniforme.
     """
-    rutina_normalizada = {
-        'Calentamiento': [],
-        'Entrenamiento Principal': [],
-        'Estiramiento y Enfriamiento': []
-    }
-
     if not isinstance(rutina_raw, dict):
-        return rutina_normalizada
+        return {'dias': []}
 
-    for bloque_key, ejercicios in rutina_raw.items():
-        bloque_normalizado = _MAPEO_BLOQUES.get(bloque_key.lower().strip(), 'Entrenamiento Principal')
-        
-        if isinstance(ejercicios, list):
-            for ej in ejercicios:
-                if isinstance(ej, dict):
-                    nombre_ejercicio = "Ejercicio sin nombre"
-                    for k in _CLAVES_NOMBRE:
-                        if k in ej:
-                            nombre_ejercicio = ej[k]
-                            break
-                    
-                    ejercicio_limpio = {
-                        'ejercicio': nombre_ejercicio,
-                        'series': str(ej.get('series', '3')),
-                        'repeticiones': str(ej.get('repeticiones', '10')),
-                        'descanso': str(ej.get('descanso', '60s')),
-                        'nota': ej.get('nota', ej.get('recomendacion', ''))
-                    }
-                    rutina_normalizada[bloque_normalizado].append(ejercicio_limpio)
-                    
-    return rutina_normalizada
+    # ── Formato nuevo: multi-día ──────────────────────────────────────────────
+    if 'dias' in rutina_raw and isinstance(rutina_raw['dias'], list):
+        dias_normalizados = []
+        for dia in rutina_raw['dias']:
+            if not isinstance(dia, dict):
+                continue
+            dias_normalizados.append({
+                'dia':                    dia.get('dia', 'Día'),
+                'enfoque':                dia.get('enfoque', ''),
+                'calentamiento':          _normalizar_ejercicios(dia.get('calentamiento', [])),
+                'entrenamiento_principal': _normalizar_ejercicios(
+                    dia.get('entrenamiento_principal', dia.get('entrenamiento principal', []))
+                ),
+                'estiramiento':           _normalizar_ejercicios(
+                    dia.get('estiramiento', dia.get('estiramiento_y_enfriamiento', []))
+                ),
+            })
+        return {'dias': dias_normalizados}
+
+    # ── Formato legacy: un solo día ───────────────────────────────────────────
+    dia_unico = {
+        'dia':    'Día 1',
+        'enfoque': 'Entrenamiento Completo',
+        'calentamiento':           _normalizar_ejercicios(rutina_raw.get('calentamiento', [])),
+        'entrenamiento_principal': _normalizar_ejercicios(
+            rutina_raw.get('entrenamiento_principal', rutina_raw.get('main_workout', []))
+        ),
+        'estiramiento':            _normalizar_ejercicios(
+            rutina_raw.get('estiramiento', rutina_raw.get('cooldown', []))
+        ),
+    }
+    return {'dias': [dia_unico]}
 
 
 @login_required
@@ -111,7 +138,8 @@ def generate_routine_api(request):
 
         if result.get('success') and 'routine' in result:
             rutina_procesada = _normalizar_rutina(result['routine'])
-            print(f"[BIO-FIT] Rutina lista — bloques: {list(rutina_procesada.keys())}")
+            n_dias = len(rutina_procesada.get('dias', []))
+            print(f"[BIO-FIT] Rutina lista — {n_dias} día(s) generados")
             return JsonResponse({'status': 'success', 'rutina': rutina_procesada})
 
         error_msg = result.get('error', 'La IA no devolvió un formato válido.')

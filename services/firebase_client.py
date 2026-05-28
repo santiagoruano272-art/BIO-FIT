@@ -52,6 +52,26 @@ class FirebaseClient:
             logger.error(f"Error guardando rutina para {user_id}: {e}")
             raise
 
+
+    def get_user_routines(self, user_id: str, limit: int = 20) -> list:
+        """
+        Recupera las rutinas guardadas del usuario desde su subcoleccion
+        users/{user_id}/routines/, ordenadas por fecha descendente.
+        """
+        try:
+            docs = (
+                db.collection("users")
+                .document(user_id)
+                .collection("routines")
+                .order_by("created_at", direction=firestore.Query.DESCENDING)
+                .limit(limit)
+                .stream()
+            )
+            return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+        except Exception as e:
+            logger.error(f"Error obteniendo rutinas de {user_id}: {e}")
+            return []
+
     # ── GIMNASIOS (NUEVA COLECCIÓN PRINCIPAL) ──────────────────────────────────
 
     def create_gym(self, data: dict) -> str:
