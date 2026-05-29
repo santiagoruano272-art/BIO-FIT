@@ -28,7 +28,7 @@ def _get_uid(request) -> str | None:
             docs = firebase.db.collection('users').where('email', '==', email).limit(1).stream()
             for doc in docs:
                 uid = doc.id
-                # Restaurar sesión completa para próximas peticiones
+                # Restaurar sesión completa para próximas 
                 perfil = doc.to_dict() or {}
                 request.session['user_uid'] = uid
                 request.session['user_rol'] = perfil.get('rol', 'atleta')
