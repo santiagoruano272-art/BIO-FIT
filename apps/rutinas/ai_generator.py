@@ -1,304 +1,172 @@
-# apps/rutinas/ai_generator.py
-# ============================================================
-#  BIO-FIT — Motor de Generación de Rutinas con IA (Groq)
-#  CORRECCIÓN: RoutineGeneratorAI eliminada (código muerto/roto).
-#  _build_user_prompt incorpora el inventario real del gimnasio.
-# ============================================================
-
 import json
+import re
 import random
 from groq import Groq
 from django.conf import settings
 
+SYSTEM_PROMPT = """Eres un entrenador personal de élite, experto y certificado con más de 15 años de experiencia en diseño de programas biomecánicos para gimnasio y calistenia.
 
-# ── Prompt del sistema ────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """Eres un entrenador personal certificado NSCA-CSCS con experiencia en periodización del entrenamiento para atletas recreacionales y de alto rendimiento.
+Tu única tarea es generar planes de entrenamiento SEMANALES completos, DETALLADOS y 100% PERSONALIZADOS en español.
 
-Tu única función es generar rutinas de ejercicio en formato JSON, siguiendo las instrucciones del usuario con precisión científica.
+═══════════════════════════════════════════════════════════
+REGLAS DE CONTENIDO — NUNCA LAS VIOLES:
+═══════════════════════════════════════════════════════════
+- Está PROHIBIDO devolver siempre los mismos ejercicios.
+- Debes alterar completamente la selección de ejercicios, el orden, los rangos de repeticiones, las series y los tiempos de descanso en función de los parámetros de nivel y objetivo que te provea el usuario.
+- Analiza científicamente lo que implica cada objetivo para estructurar entrenamientos únicos y funcionales.
 
-═══════════════════════════════════════════════════════════════════
-PRINCIPIOS OBLIGATORIOS DE DISEÑO:
-═══════════════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════
+REGLAS DE FORMATO — NUNCA LAS VIOLES:
+═══════════════════════════════════════════════════════════
+REGLA 1 — FORMATO DE RESPUESTA:
+Responde ÚNICAMENTE con un objeto JSON válido. Sin texto antes ni después. Sin markdown. Solo JSON puro.
 
-PRINCIPIO 1 — RESTRICCIÓN DE EQUIPAMIENTO (REGLA MÁS IMPORTANTE):
-Si el usuario tiene una lista de equipamiento disponible, SOLO puedes usar ejercicios
-que se ejecuten con ese equipamiento exacto. NUNCA inventes máquinas que no estén en la lista.
-Si el usuario entrena en casa (sin equipamiento), usa ÚNICAMENTE ejercicios con peso corporal.
+REGLA 2 — ESTRUCTURA OBLIGATORIA:
+El JSON debe tener una clave "dias" que contiene una lista de objetos.
+Cada objeto representa UN DÍA de entrenamiento con EXACTAMENTE estas claves:
+  "dia"        → número del día como string: "Día 1", "Día 2", etc.
+  "enfoque"    → grupo muscular o tipo de entrenamiento del día (ej: "Tren Superior", "Cardio y Core")
+  "calentamiento"           → lista de ejercicios
+  "entrenamiento_principal" → lista de ejercicios
+  "estiramiento"            → lista de ejercicios
 
-PRINCIPIO 2 — ESPECIFICIDAD FISIOLÓGICA POR OBJETIVO:
-  • Hipertrofia/ganar músculo : 4-5 series × 8-12 reps | descanso 75-120 seg
-  • Fuerza máxima             : 5-6 series × 1-5 reps  | descanso 3-5 min
-  • Pérdida de grasa          : 3-4 series × 12-20 reps | descanso 30-60 seg
-  • Resistencia               : 2-4 series × 15-25 reps | descanso 20-45 seg
-  • Tonificación/salud general: 3 series × 10-15 reps   | descanso 60-90 seg
+REGLA 3 — ESTRUCTURA DE CADA EJERCICIO:
+Cada ejercicio tiene EXACTAMENTE estas 5 claves:
+  "ejercicio"     → nombre real y específico (NUNCA genérico)
+  "series"        → string (ej. "4")
+  "repeticiones"  → string (ej. "12", "12-15", "30 seg")
+  "descanso"      → string (ej. "60 seg", "90 seg")
+  "nota"          → tip técnico breve en español
 
-PRINCIPIO 3 — DIFERENCIACIÓN POR NIVEL:
-  • Principiante : SOLO máquinas guiadas, cables con guía o peso corporal. NUNCA barra libre.
-  • Intermedio   : Mancuernas, cables libres, máquinas. Puede incluir superseries.
-  • Avanzado     : Barra olímpica, movimientos complejos, técnicas de intensidad (drop sets, rest-pause).
+REGLA 4 — EQUIPAMIENTO:
+SOLO usa ejercicios con el equipamiento listado. Sin excepciones.
 
-PRINCIPIO 4 — VARIABILIDAD:
-Genera una rutina diferente en cada solicitud. Rota patrones de movimiento,
-orden de grupos musculares y métodos de entrenamiento.
+REGLA 5 — DISTRIBUCIÓN MUSCULAR:
+Distribuye los grupos musculares de forma inteligente para asegurar recuperación adecuada entre días.
+Ejemplo para 3 días: Día1=Tren Superior Empuje | Día2=Tren Inferior | Día3=Tren Superior Jale+Core
+Ejemplo para 4 días: Día1=Pecho+Tríceps | Día2=Espalda+Bíceps | Día3=Piernas | Día4=Hombros+Core
+Ejemplo para 5 días: Día1=Pecho | Día2=Espalda | Día3=Piernas | Día4=Hombros | Día5=Brazos+Core
 
-═══════════════════════════════════════════════════════════════════
-FORMATO DE RESPUESTA — REGLAS ABSOLUTAS:
-═══════════════════════════════════════════════════════════════════
-
-REGLA 1: Responde ÚNICAMENTE con JSON válido. Sin texto antes ni después. Sin bloques markdown.
-
-REGLA 2: El JSON debe tener EXACTAMENTE estas 3 claves en minúsculas:
-  "calentamiento"
-  "entrenamiento_principal"
-  "estiramiento"
-
-REGLA 3: Cada ejercicio es un objeto con EXACTAMENTE estas 5 claves:
-  "ejercicio"     → Nombre técnico completo. NUNCA genérico. Ej: "Press inclinado con mancuernas agarre neutro"
-  "series"        → String numérico. Ej: "4"
-  "repeticiones"  → Rango o número. Ej: "8-10", "12", "30 seg"
-  "descanso"      → Tiempo preciso. Ej: "90 seg", "2 min"
-  "nota"          → Instrucción técnica concreta en formato "[PUNTO CLAVE]: [acción]"
-                    Ej: "ACTIVACIÓN: Contrae el glúteo en la posición superior antes de bajar"
-                    NUNCA escribas notas genéricas como "Mantén buena postura".
+REGLA 6 — CANTIDAD POR DÍA:
+  - calentamiento: 3 ejercicios
+  - entrenamiento_principal: 5 a 7 ejercicios
+  - estiramiento: 3 ejercicios
 """
-
-
-# ── Mapas de contexto científico por objetivo ─────────────────────────────────
-_OBJETIVO_CONTEXTO = {
-    'ganar_musculo': {
-        'metodo':   'hipertrofia sarcomérica y sarcoplásmica',
-        'series':   '4-5', 'reps': '6-12', 'descanso': '75-120 seg',
-        'enfoque':  'tensión mecánica máxima, rango completo de movimiento, conexión mente-músculo',
-        'tecnica':  'tempo controlado 3-1-1 (excéntrico-pausa-concéntrico)',
-    },
-    'perder_peso': {
-        'metodo':   'déficit calórico por alta densidad metabólica',
-        'series':   '3-4', 'reps': '12-20', 'descanso': '30-60 seg',
-        'enfoque':  'circuitos metabólicos, ejercicios multiarticulares, mínimo descanso',
-        'tecnica':  'movimientos explosivos controlados, transiciones rápidas',
-    },
-    'fuerza': {
-        'metodo':   'adaptación neuromuscular y reclutamiento de unidades motoras',
-        'series':   '5-6', 'reps': '1-5', 'descanso': '3-5 min',
-        'enfoque':  'movimientos compuestos pesados, técnica impecable bajo carga máxima',
-        'tecnica':  'bracing abdominal total, path de barra consistente',
-    },
-    'resistencia': {
-        'metodo':   'adaptaciones cardiovasculares y musculares de resistencia',
-        'series':   '2-4', 'reps': '15-25 o 30-60 seg', 'descanso': '20-45 seg',
-        'enfoque':  'trabajo aeróbico-anaeróbico mixto, resistencia muscular local',
-        'tecnica':  'respiración rítmica, cadencia constante, postura dinámica eficiente',
-    },
-    'tonificar': {
-        'metodo':   'recomposición corporal moderada',
-        'series':   '3-4', 'reps': '12-15', 'descanso': '45-75 seg',
-        'enfoque':  'definición muscular con preservación de masa, trabajo cardiovascular integrado',
-        'tecnica':  'contracción isométrica en el punto de máxima tensión, fase excéntrica lenta',
-    },
-    'salud_general': {
-        'metodo':   'acondicionamiento físico integral y funcional',
-        'series':   '3', 'reps': '10-15', 'descanso': '60-90 seg',
-        'enfoque':  'patrones de movimiento funcionales (empuje, jalón, bisagra, sentadilla, rotación)',
-        'tecnica':  'calidad de movimiento sobre cantidad, progresión gradual',
-    },
-    'flexibilidad': {
-        'metodo':   'movilidad articular y elongación muscular progresiva',
-        'series':   '2-3', 'reps': '30-60 seg por lado', 'descanso': '20-30 seg',
-        'enfoque':  'rango de movimiento activo, movilidad articular, liberación miofascial',
-        'tecnica':  'respiración diafragmática profunda, relajación progresiva',
-    },
-}
-
-_NIVEL_CONTEXTO = {
-    'principiante': {
-        'equipo':      'SOLO máquinas guiadas, poleas con guía o peso corporal. PROHIBIDO barra libre.',
-        'volumen':     'no más de 10-12 ejercicios en total',
-        'extra':       'Nota de seguridad obligatoria en TODOS los ejercicios. Priorizar aprendizaje motor.',
-    },
-    'intermedio': {
-        'equipo':      'mancuernas, cables libres, barra con técnica establecida, máquinas',
-        'volumen':     '12-16 ejercicios en total',
-        'extra':       'Puede incluir superseries y técnicas básicas de intensidad.',
-    },
-    'avanzado': {
-        'equipo':      'barra olímpica, movimientos olímpicos, kettlebells, todos los equipos',
-        'volumen':     '14-20 ejercicios en total',
-        'extra':       'OBLIGATORIO incluir al menos una técnica de intensidad: drop set, rest-pause o cluster set.',
-    },
-}
-
-# Patrones de movimiento rotatorios para garantizar variedad estructural
-_PATRONES = [
-    "empuje horizontal → jalón vertical → bisagra de cadera → sentadilla",
-    "empuje vertical → jalón horizontal → sentadilla unilateral → empuje accesorio",
-    "jalón vertical neutro → empuje inclinado → bisagra unilateral → circuito metabólico",
-    "empuje en cable → remo horizontal → sentadilla frontal → hip thrust",
-    "press unilateral → jalón en polea baja → peso muerto → step-up compuesto",
-]
-
-
-def _formatear_inventario(inventario: list) -> str:
-    """
-    Convierte la lista de documentos de Firestore en un texto legible
-    para el prompt de la IA, agrupando por nombre y tipo.
-    """
-    if not inventario:
-        return "Sin equipamiento de gimnasio (usar solo peso corporal)"
-
-    lineas = []
-    for equipo in inventario:
-        nombre = equipo.get('nombre', '').strip()
-        tipo   = equipo.get('tipo',   '').strip()
-        estado = equipo.get('estado', 'disponible').strip()
-        cant   = equipo.get('cantidad', 1)
-
-        # Solo incluir equipos disponibles en buen estado
-        if estado in ('fuera_de_servicio',):
-            continue
-
-        linea = f"  • {nombre}"
-        if tipo:
-            linea += f" ({tipo})"
-        if cant and int(cant) > 1:
-            linea += f" × {cant} unidades"
-        if estado == 'mantenimiento':
-            linea += " [en mantenimiento — usa con precaución]"
-        lineas.append(linea)
-
-    return "\n".join(lineas) if lineas else "Sin equipamiento operativo disponible"
 
 
 def _build_user_prompt(user_data: dict) -> str:
-    """
-    Construye el prompt de usuario con todos los parámetros del perfil
-    e inyecta el inventario real del gimnasio para que la IA solo
-    prescriba ejercicios con equipos que realmente existen.
-    """
-    nivel    = str(user_data.get('nivel',    'principiante')).strip().lower()
-    objetivo = str(user_data.get('objetivo', 'salud_general')).strip().lower()
-    dias     = str(user_data.get('dias',     '3')).strip()
-    lugar    = str(user_data.get('lugar',    'gimnasio')).strip().lower()
-    lesiones = str(user_data.get('lesiones', 'ninguna')).strip()
-    edad     = str(user_data.get('edad',     '')).strip()
-    peso     = str(user_data.get('peso',     '')).strip()
-    genero   = str(user_data.get('genero',   '')).strip()
+    """Construye el mensaje del usuario con sus datos específicos."""
+    nivel    = str(user_data.get("nivel", "intermedio")).strip().lower()
+    objetivo = str(user_data.get("objetivo", "salud_general")).strip().lower()
+    dias     = int(user_data.get("dias", 3))
+    lugar    = user_data.get("lugar", "gimnasio")
+    lesiones = user_data.get("lesiones", "ninguna")
+    edad     = user_data.get("edad", "")
+    peso     = user_data.get("peso", "")
+    genero   = user_data.get("genero", "")
 
-    objetivo_limpio = objetivo.replace('_', ' ')
+    # ── Equipamiento real del gimnasio ────────────────────────────────────────
+    inventario = user_data.get("inventario_gimnasio", [])
+    if inventario:
+        nombres = [e.get("nombre", "").strip() for e in inventario if e.get("nombre")]
+        equipo  = ", ".join(nombres) if nombres else "equipamiento completo de gimnasio"
+        lugar   = "gimnasio"
+    elif lugar == "casa" or not inventario:
+        equipo = "peso corporal y colchoneta únicamente (SIN máquinas)"
+    else:
+        equipo = "equipamiento completo de gimnasio"
 
-    # Contexto científico del objetivo y nivel
-    ctx_obj = _OBJETIVO_CONTEXTO.get(objetivo, _OBJETIVO_CONTEXTO['salud_general'])
-    ctx_niv = _NIVEL_CONTEXTO.get(nivel,       _NIVEL_CONTEXTO['principiante'])
+    objetivos_map = {
+        'perder_peso':   'Pérdida de grasa y definición muscular',
+        'ganar_musculo': 'Hipertrofia y ganancia de masa muscular',
+        'resistencia':   'Resistencia cardiovascular y capacidad aeróbica',
+        'fuerza':        'Fuerza máxima y potencia',
+        'tonificar':     'Tonificación y mejora estética',
+        'salud_general': 'Salud general y bienestar',
+        'mantenimiento': 'Mantenimiento del estado físico actual',
+    }
+    objetivo_desc = objetivos_map.get(objetivo, objetivo.replace('_', ' '))
 
+    adaptacion_nivel = {
+        'principiante': "Máquinas guiadas, poleas o peso corporal. Descansos amplios. Movimientos simples.",
+        'intermedio':   "Pesos libres combinados con máquinas. Superseries simples. Compuestos moderados.",
+        'avanzado':     "Pesos libres, superseries, poliarticulares complejos, sobrecarga progresiva.",
+    }
+    adaptacion = adaptacion_nivel.get(nivel, adaptacion_nivel['intermedio'])
 
-    # Inventario real del gimnasio (o texto de fallback para casa)
-    inventario_raw  = user_data.get('inventario_gimnasio', [])
-    inventario_texto = _formatear_inventario(inventario_raw)
+    # Token de entropía para evitar respuestas en caché
+    seed_id = random.randint(1000, 9999)
 
-    # Variedad estructural
-    patron_sesion = random.choice(_PATRONES)
-    seed_id       = random.randint(10000, 99999)
+    perfil = f"Nivel: {nivel} | Objetivo: {objetivo_desc} | Días/semana: {dias} | Lugar: {lugar}"
+    if edad:   perfil += f" | Edad: {edad} años"
+    if peso:   perfil += f" | Peso: {peso} kg"
+    if genero: perfil += f" | Género: {genero}"
 
-    # Construir líneas de perfil opcionales
-    perfil_extra = []
-    if edad:    perfil_extra.append(f"Edad: {edad} años")
-    if peso:    perfil_extra.append(f"Peso: {peso} kg")
-    if genero:  perfil_extra.append(f"Género: {genero}")
-    perfil_extra_txt = " | ".join(perfil_extra) if perfil_extra else "No especificado"
+    return f"""Genera un plan de entrenamiento semanal de EXACTAMENTE {dias} DÍAS (Request ID: {seed_id}).
 
-    return f"""SOLICITUD BIO-FIT · ID:{seed_id}
+PERFIL DEL USUARIO:
+{perfil}
+Lesiones o limitaciones: {lesiones}
 
-════════════════════════════════════════
-PERFIL DEL ATLETA
-════════════════════════════════════════
-Nivel de experiencia : {nivel}
-Objetivo principal   : {objetivo_limpio}
-Días disponibles     : {dias} días/semana
-Lugar de entrenamiento: {lugar}
-Lesiones/Limitaciones: {lesiones}
-Datos adicionales    : {perfil_extra_txt}
+EQUIPAMIENTO DISPONIBLE (OBLIGATORIO — usa SOLO estos):
+{equipo}
 
-════════════════════════════════════════
-EQUIPAMIENTO DISPONIBLE EN EL GIMNASIO
-════════════════════════════════════════
-{inventario_texto}
+ORIENTACIÓN SEGÚN NIVEL:
+{adaptacion}
 
-⚠️  RESTRICCIÓN CRÍTICA: Solo puedes prescribir ejercicios que se realicen
-    con el equipamiento listado arriba. Si el campo dice "peso corporal",
-    usa ÚNICAMENTE ejercicios sin ningún equipo adicional.
+ORIENTACIÓN SEGÚN OBJETIVO:
+- Objetivo: {objetivo_desc}
+- Si es pérdida de peso/resistencia: alta densidad metabólica, 12-15 reps, descansos 45-60 seg.
+- Si es hipertrofia/fuerza: 6-10 reps, series pesadas, descansos 90 seg - 3 min.
+- Si es salud general/tonificación: rango mixto 10-15 reps, descansos moderados 60-90 seg.
 
-════════════════════════════════════════
-PARÁMETROS CIENTÍFICOS PARA ESTE OBJETIVO
-════════════════════════════════════════
-Método de entrenamiento : {ctx_obj['metodo']}
-Series prescritas       : {ctx_obj['series']} por ejercicio
-Rango de repeticiones   : {ctx_obj['reps']}
-Descanso entre series   : {ctx_obj['descanso']}
-Enfoque principal       : {ctx_obj['enfoque']}
-Técnica específica      : {ctx_obj['tecnica']}
+INSTRUCCIONES CRÍTICAS:
+1. USA nombres de ejercicios REALES Y ESPECÍFICOS.
+2. El entrenamiento principal debe incluir ejercicios COMPUESTOS e ISOLACIÓN.
+3. Adapta series/repeticiones al nivel "{nivel}" y objetivo "{objetivo_desc}".
+4. Responde SOLO con el JSON, sin texto adicional.
+5. EQUIPAMIENTO OBLIGATORIO: usa ÚNICAMENTE los ejercicios realizables con el equipo listado.
 
-════════════════════════════════════════
-RESTRICCIONES POR NIVEL: {nivel.upper()}
-════════════════════════════════════════
-Equipamiento autorizado : {ctx_niv['equipo']}
-Volumen total sesión    : {ctx_niv['volumen']}
-Consideración especial  : {ctx_niv['extra']}
-
-════════════════════════════════════════
-ESTRUCTURA DE MOVIMIENTO PARA ESTA SESIÓN
-════════════════════════════════════════
-Patrón asignado: {patron_sesion}
-
-════════════════════════════════════════
-INSTRUCCIÓN FINAL
-════════════════════════════════════════
-Genera UNA rutina completa para UN solo día de entrenamiento.
-— Respeta todos los parámetros científicos y el equipamiento disponible.
-— Cada "nota" debe seguir el formato: "[PUNTO CLAVE]: [instrucción concreta]".
-— NUNCA uses nombres de ejercicio genéricos.
-— Genera una rutina diferente a cualquier respuesta anterior.
-"""
-
-
-# ── Claves de validación estructural ─────────────────────────────────────────
-_REQUIRED_ROOT_KEYS = {'calentamiento', 'entrenamiento_principal', 'estiramiento'}
-_REQUIRED_EXER_KEYS = {'ejercicio', 'series', 'repeticiones', 'descanso', 'nota'}
+FORMATO JSON REQUERIDO (ejemplo de estructura):
+{{
+  "dias": [
+    {{
+      "dia": "Día 1",
+      "enfoque": "Tren Superior — Empuje",
+      "calentamiento": [
+        {{"ejercicio": "Trote suave", "series": "1", "repeticiones": "5 min", "descanso": "0 seg", "nota": "Ritmo ligero para elevar temperatura"}},
+        {{"ejercicio": "Rotaciones de hombros", "series": "2", "repeticiones": "15", "descanso": "20 seg", "nota": "Circular completo"}},
+        {{"ejercicio": "Sentadillas sin peso", "series": "2", "repeticiones": "12", "descanso": "20 seg", "nota": "Profundidad completa"}}
+      ],
+      "entrenamiento_principal": [
+        {{"ejercicio": "Press de banca con barra", "series": "4", "repeticiones": "10", "descanso": "90 seg", "nota": "Baja controlado en 3 seg"}},
+        {{"ejercicio": "Press militar con mancuernas", "series": "3", "repeticiones": "12", "descanso": "75 seg", "nota": "Codos a 90° en la bajada"}},
+        {{"ejercicio": "Fondos en paralelas", "series": "3", "repeticiones": "10", "descanso": "60 seg", "nota": "Tronco ligeramente inclinado"}},
+        {{"ejercicio": "Elevaciones laterales", "series": "3", "repeticiones": "15", "descanso": "45 seg", "nota": "Sube hasta paralelo al suelo"}},
+        {{"ejercicio": "Extensión de tríceps en polea", "series": "3", "repeticiones": "14", "descanso": "60 seg", "nota": "Codos fijos al costado"}}
+      ],
+      "estiramiento": [
+        {{"ejercicio": "Estiramiento de pectoral", "series": "1", "repeticiones": "30 seg", "descanso": "10 seg", "nota": "Antebrazo en marco de puerta"}},
+        {{"ejercicio": "Estiramiento de tríceps", "series": "1", "repeticiones": "30 seg por lado", "descanso": "10 seg", "nota": "Codo apuntando al techo"}},
+        {{"ejercicio": "Estiramiento de hombros cruzado", "series": "1", "repeticiones": "30 seg por lado", "descanso": "10 seg", "nota": "Brazo cruzado al pecho"}}
+      ]
+    }}
+  ]
+}}
 
 Ahora genera la rutina REAL de {dias} días para el usuario. Usa ejercicios específicos y variados."""
 
 
-
 class RoutineGenerator:
-    """
-    Clase principal del motor de IA de BIO-FIT.
-    Genera rutinas de entrenamiento personalizadas usando Groq (LLaMA 3.3 70B).
-    """
-
     def __init__(self):
         api_key = getattr(settings, "GROQ_API_KEY", None)
-
-
-        self.client     = Groq(api_key=api_key) if api_key else None
+        self.client = Groq(api_key=api_key) if api_key else None
         self.model_name = getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile")
-        print(f"[BIO-FIT] Motor IA inicializado — modelo: {self.model_name}")
+        print(f"[BIO-FIT] Motor de IA cargado: {self.model_name}")
 
     def generate_routine(self, user_data: dict) -> dict:
-        """
-        Genera una rutina completa de entrenamiento.
-
-        Args:
-            user_data: dict con nivel, objetivo, dias, lugar, lesiones,
-                       inventario_gimnasio (lista de Firestore), y datos opcionales.
-
-        Returns:
-            {'success': True, 'routine': {...}}  si todo va bien.
-            {'success': False, 'error': '...'}  si hay algún problema.
-        """
         if not self.client:
-            print("[BIO-FIT] ERROR: GROQ_API_KEY no configurada.")
             return {'success': False, 'error': 'La API Key de Groq no está configurada.'}
-
-        content = None
-
         try:
             user_msg = _build_user_prompt(user_data)
 
@@ -310,48 +178,41 @@ class RoutineGenerator:
                 print(f"[BIO-FIT] Sin inventario — modo: {user_data.get('lugar', 'desconocido')}")
 
             response = self.client.chat.completions.create(
-                model    = self.model_name,
-                messages = [
+                model=self.model_name,
+                messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": user_msg},
                 ],
-
-
-                # 0.85: máxima variedad en selección de ejercicios
-                # manteniendo coherencia en el formato JSON.
-                temperature     = 0.85,
-                max_tokens      = 3500,
-                response_format = {"type": "json_object"},
-
+                temperature=0.75,
+                max_tokens=6000,
+                response_format={"type": "json_object"},
             )
 
-            content       = response.choices[0].message.content
+            content = response.choices[0].message.content
             if not content:
                 return {'success': False, 'error': 'La IA no devolvió contenido.'}
 
             content_limpio = self._limpiar_json(content)
             routine_json   = json.loads(content_limpio)
 
-            # Validar estructura antes de devolver
-            error_estructura = self._validar_estructura(routine_json)
-            if error_estructura:
-                print(f"[BIO-FIT] Estructura inválida: {error_estructura}")
-                return {'success': False, 'error': f'Estructura de rutina inválida: {error_estructura}'}
-
             return {'success': True, 'routine': routine_json}
 
         except json.JSONDecodeError as e:
-
-
-            snippet = content[:500] if content else "vacío"
-            print(f"[BIO-FIT] JSON inválido de Groq: {e} | Contenido: {snippet}")
-
+            print(f"[BIO-FIT] JSON inválido de Groq: {e}")
             return {'success': False, 'error': 'La IA devolvió un formato inesperado. Inténtalo de nuevo.'}
         except Exception as e:
             print(f"[BIO-FIT] Error crítico en Groq: {e}")
             return {'success': False, 'error': f'Error de conexión con el motor de IA: {str(e)}'}
 
     def _limpiar_json(self, texto: str) -> str:
+        texto = texto.strip()
+        texto = re.sub(r'^```(?:json)?\s*', '', texto, flags=re.MULTILINE)
+        texto = re.sub(r'\s*```$', '', texto, flags=re.MULTILINE)
+        inicio = texto.find('{')
+        fin    = texto.rfind('}')
+        if inicio != -1 and fin != -1:
+            return texto[inicio:fin+1]
+        return texto
 
 
         """Elimina residuos de markdown que puedan romper el parseo."""

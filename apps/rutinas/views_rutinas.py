@@ -1,10 +1,3 @@
-# apps/rutinas/views_rutinas.py
-# ============================================================
-#  BIO-FIT — Vistas de Rutinas
-#  CORRECCIÓN: generate_routine_api unificado en un solo flujo.
-#  El inventario del gimnasio se inyecta correctamente a la IA.
-# ============================================================
-
 import json
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
@@ -21,19 +14,19 @@ _CLAVES_NOMBRE = [
     'nombre_ejercicio', 'exercise_name', 'actividad',
 ]
 
-# ── Mapeo de nombres de bloques de la IA a nombres oficiales ──────────────────
+# ── Claves de mapeo de bloques ─────────────────────────────────────────────────
 _MAPEO_BLOQUES = {
-    'calentamiento':               'Calentamiento',
-    'warmup':                      'Calentamiento',
-    'warm_up':                     'Calentamiento',
-    'warm up':                     'Calentamiento',
-    'entrenamiento_principal':     'Entrenamiento Principal',
-    'entrenamiento principal':     'Entrenamiento Principal',
-    'main_workout':                'Entrenamiento Principal',
-    'main_routine':                'Entrenamiento Principal',
-    'workout':                     'Entrenamiento Principal',
-    'rutina_principal':            'Entrenamiento Principal',
-    'estiramiento':                'Estiramiento y Enfriamiento',
+    'calentamiento':             'Calentamiento',
+    'warmup':                    'Calentamiento',
+    'warm_up':                   'Calentamiento',
+    'warm up':                   'Calentamiento',
+    'entrenamiento_principal':   'Entrenamiento Principal',
+    'entrenamiento principal':   'Entrenamiento Principal',
+    'main_workout':              'Entrenamiento Principal',
+    'main_routine':              'Entrenamiento Principal',
+    'workout':                   'Entrenamiento Principal',
+    'rutina_principal':          'Entrenamiento Principal',
+    'estiramiento':              'Estiramiento y Enfriamiento',
     'estiramiento y enfriamiento': 'Estiramiento y Enfriamiento',
     'cooldown':                    'Estiramiento y Enfriamiento',
     'cool_down':                   'Estiramiento y Enfriamiento',
@@ -181,20 +174,15 @@ def generate_routine_api(request):
     6. Normaliza y devuelve la rutina.
     """
     if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'error': 'Método no permitido.'}, status=405)
+        return JsonResponse({'status': 'error', 'error': 'Método no permitido'}, status=405)
 
     try:
         # ── 1. Parseo único del body ──────────────────────────────────────────
         body = json.loads(request.body)
 
-        nivel    = body.get('nivel',    'principiante')
-        objetivo = body.get('objetivo', 'salud_general')
-        dias     = body.get('dias',     '3')
-        lugar    = body.get('lugar',    'gimnasio')
-        lesiones = body.get('lesiones', 'ninguna')
-        edad     = body.get('edad',     '')
-        peso     = body.get('peso',     '')
-        genero   = body.get('genero',   '')
+        request.session['ultimo_nivel'] = data.get('nivel', '')
+        request.session['ultimo_objetivo'] = data.get('objetivo', '')
+        request.session['ultimo_dias'] = data.get('dias', '')
 
         # ── 2. Persistir en sesión (para save_routine_api) ───────────────────
         request.session['ultimo_nivel']    = nivel
@@ -207,14 +195,14 @@ def generate_routine_api(request):
         inventario = []
 
         if gym_id:
-            # Usuario pertenece a un gimnasio registrado → carga el inventario real
             inventario = firebase.get_all_equipment(gym_id)
-            lugar      = 'gimnasio'
-            print(f"[BIO-FIT] Inventario cargado — {len(inventario)} equipo(s) del gym {gym_id}")
-        else:
-            # Sin gimnasio asignado → entrenamiento en casa con peso corporal
-            lugar = 'casa'
-            print("[BIO-FIT] Sin gym_id en sesión — modo casa/peso corporal activado.")
+            data['inventario_gimnasio'] = inventario
+            data['lugar'] = 'gimnasio'
+            print(f"[BIO-FIT] Inventario cargado — {len(inventario)} equipo(s) del gimnasio {gym_id}")
+        elif lugar == 'casa' or not gym_id:
+            data['inventario_gimnasio'] = []
+            data['lugar'] = 'casa'
+            print("[BIO-FIT] Sin gimnasio asignado — rutina en casa con peso corporal")
 
         # ── 4. Construir user_data completo para la IA ───────────────────────
         user_data = {
@@ -252,7 +240,7 @@ def generate_routine_api(request):
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'error': 'JSON de solicitud inválido.'}, status=400)
     except Exception as e:
-        print(f"[BIO-FIT] Excepción crítica en generate_routine_api: {e}")
+        print(f"[BIO-FIT] Excepción crítica: {e}")
         return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
 
@@ -279,17 +267,12 @@ def save_routine_api(request):
         # Rellenar inputs vacíos con los datos guardados en sesión al generar
         user_inputs.setdefault('nivel',    request.session.get('ultimo_nivel',    ''))
         user_inputs.setdefault('objetivo', request.session.get('ultimo_objetivo', ''))
-        user_inputs.setdefault('dias',     request.session.get('ultimo_dias',     ''))
-
-        # Guardar también el gym_id si está disponible (para auditoría / historial)
-        gym_id = request.session.get('gym_id')
-        if gym_id:
-            user_inputs.setdefault('gym_id', gym_id)
+        user_inputs.setdefault('dias',     request.session.get('ultimo_dias', ''))
 
         firebase.save_routine(
-            user_id      = user_uid,
-            routine_data = routine_data,
-            user_inputs  = user_inputs,
+            user_id=user_uid,
+            routine_data=routine_data,
+            user_inputs=user_inputs,
         )
 
         return JsonResponse({'success': True, 'message': 'Rutina guardada correctamente.'})
