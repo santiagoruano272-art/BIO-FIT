@@ -135,7 +135,6 @@
     <div class="nav-links" id="nav-links">
         {% if request.session.user_rol == 'admin' %}
             <a href="/">Inicio</a>
-            <a href="{% url 'inventory:registrar_gimnasio_view' %}">Registrar</a>
             <a href="{% url 'inventory:admin_dashboard' %}">Inventario</a>
             <a onclick="logout()" class="btn-logout-nav">Cerrar Sesión</a>
         {% else %}
