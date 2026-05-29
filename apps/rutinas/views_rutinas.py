@@ -289,3 +289,5 @@ def routine_detail_view(request):
         return render(request, 'rutinas/detail.html', {
             'error': f'Ocurrió un error al conectar con tu plan de entrenamiento: {str(e)}'
         })
+    
+    # este es el views rutinas funcional
