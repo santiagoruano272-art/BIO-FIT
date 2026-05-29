@@ -9,9 +9,15 @@ SYSTEM_PROMPT = """Eres un entrenador personal de élite, experto y certificado 
 Tu única tarea es generar planes de entrenamiento SEMANALES completos, DETALLADOS y 100% PERSONALIZADOS en español.
 
 ═══════════════════════════════════════════════════════════
+REGLAS DE CONTENIDO — NUNCA LAS VIOLES:
+═══════════════════════════════════════════════════════════
+- Está PROHIBIDO devolver siempre los mismos ejercicios.
+- Debes alterar completamente la selección de ejercicios, el orden, los rangos de repeticiones, las series y los tiempos de descanso en función de los parámetros de nivel y objetivo que te provea el usuario.
+- Analiza científicamente lo que implica cada objetivo para estructurar entrenamientos únicos y funcionales.
+
+═══════════════════════════════════════════════════════════
 REGLAS DE FORMATO — NUNCA LAS VIOLES:
 ═══════════════════════════════════════════════════════════
-
 REGLA 1 — FORMATO DE RESPUESTA:
 Responde ÚNICAMENTE con un objeto JSON válido. Sin texto antes ni después. Sin markdown. Solo JSON puro.
 
@@ -20,7 +26,7 @@ El JSON debe tener una clave "dias" que contiene una lista de objetos.
 Cada objeto representa UN DÍA de entrenamiento con EXACTAMENTE estas claves:
   "dia"        → número del día como string: "Día 1", "Día 2", etc.
   "enfoque"    → grupo muscular o tipo de entrenamiento del día (ej: "Tren Superior", "Cardio y Core")
-  "calentamiento"          → lista de ejercicios
+  "calentamiento"           → lista de ejercicios
   "entrenamiento_principal" → lista de ejercicios
   "estiramiento"            → lista de ejercicios
 
@@ -49,6 +55,7 @@ REGLA 6 — CANTIDAD POR DÍA:
 
 
 def _build_user_prompt(user_data: dict) -> str:
+    """Construye el mensaje del usuario con sus datos específicos."""
     nivel    = str(user_data.get("nivel", "intermedio")).strip().lower()
     objetivo = str(user_data.get("objetivo", "salud_general")).strip().lower()
     dias     = int(user_data.get("dias", 3))
@@ -64,13 +71,10 @@ def _build_user_prompt(user_data: dict) -> str:
         nombres = [e.get("nombre", "").strip() for e in inventario if e.get("nombre")]
         equipo  = ", ".join(nombres) if nombres else "equipamiento completo de gimnasio"
         lugar   = "gimnasio"
-        fuente_equipo = "equipos REALES registrados en el gimnasio del usuario"
-    elif lugar == "casa":
+    elif lugar == "casa" or not inventario:
         equipo = "peso corporal y colchoneta únicamente (SIN máquinas)"
-        fuente_equipo = "entrenamiento en casa"
     else:
         equipo = "equipamiento completo de gimnasio"
-        fuente_equipo = "gimnasio genérico"
 
     objetivos_map = {
         'perder_peso':   'Pérdida de grasa y definición muscular',
@@ -90,6 +94,7 @@ def _build_user_prompt(user_data: dict) -> str:
     }
     adaptacion = adaptacion_nivel.get(nivel, adaptacion_nivel['intermedio'])
 
+    # Token de entropía para evitar respuestas en caché
     seed_id = random.randint(1000, 9999)
 
     perfil = f"Nivel: {nivel} | Objetivo: {objetivo_desc} | Días/semana: {dias} | Lugar: {lugar}"
@@ -97,41 +102,59 @@ def _build_user_prompt(user_data: dict) -> str:
     if peso:   perfil += f" | Peso: {peso} kg"
     if genero: perfil += f" | Género: {genero}"
 
-    # Construir ejemplo de estructura JSON con N días
-    dias_ejemplo = "\n    ".join([
-        f'{{"dia": "Día {i+1}", "enfoque": "...", "calentamiento": [...], "entrenamiento_principal": [...], "estiramiento": [...]}}'
-        for i in range(dias)
-    ])
-
     return f"""Genera un plan de entrenamiento semanal de EXACTAMENTE {dias} DÍAS (Request ID: {seed_id}).
 
 PERFIL DEL USUARIO:
 {perfil}
 Lesiones o limitaciones: {lesiones}
 
-EQUIPAMIENTO DISPONIBLE ({fuente_equipo}):
+EQUIPAMIENTO DISPONIBLE (OBLIGATORIO — usa SOLO estos):
 {equipo}
 
-⚠️ RESTRICCIÓN CRÍTICA: Usa EXCLUSIVAMENTE ejercicios realizables con el equipamiento listado arriba.
-
-ADAPTACIÓN POR NIVEL ({nivel}):
+ORIENTACIÓN SEGÚN NIVEL:
 {adaptacion}
 
-OBJETIVO ({objetivo_desc}):
-Adapta la intensidad, series, repeticiones y descansos al objetivo indicado.
+ORIENTACIÓN SEGÚN OBJETIVO:
+- Objetivo: {objetivo_desc}
+- Si es pérdida de peso/resistencia: alta densidad metabólica, 12-15 reps, descansos 45-60 seg.
+- Si es hipertrofia/fuerza: 6-10 reps, series pesadas, descansos 90 seg - 3 min.
+- Si es salud general/tonificación: rango mixto 10-15 reps, descansos moderados 60-90 seg.
 
-INSTRUCCIONES:
-1. Genera EXACTAMENTE {dias} días de entrenamiento — ni más, ni menos.
-2. Cada día debe tener un enfoque muscular distinto para permitir recuperación adecuada.
-3. Usa nombres de ejercicios REALES, ESPECÍFICOS y VARIADOS entre días.
-4. Responde SOLO con el JSON puro.
+INSTRUCCIONES CRÍTICAS:
+1. USA nombres de ejercicios REALES Y ESPECÍFICOS.
+2. El entrenamiento principal debe incluir ejercicios COMPUESTOS e ISOLACIÓN.
+3. Adapta series/repeticiones al nivel "{nivel}" y objetivo "{objetivo_desc}".
+4. Responde SOLO con el JSON, sin texto adicional.
+5. EQUIPAMIENTO OBLIGATORIO: usa ÚNICAMENTE los ejercicios realizables con el equipo listado.
 
-ESTRUCTURA JSON REQUERIDA:
+FORMATO JSON REQUERIDO (ejemplo de estructura):
 {{
   "dias": [
-    {dias_ejemplo}
+    {{
+      "dia": "Día 1",
+      "enfoque": "Tren Superior — Empuje",
+      "calentamiento": [
+        {{"ejercicio": "Trote suave", "series": "1", "repeticiones": "5 min", "descanso": "0 seg", "nota": "Ritmo ligero para elevar temperatura"}},
+        {{"ejercicio": "Rotaciones de hombros", "series": "2", "repeticiones": "15", "descanso": "20 seg", "nota": "Circular completo"}},
+        {{"ejercicio": "Sentadillas sin peso", "series": "2", "repeticiones": "12", "descanso": "20 seg", "nota": "Profundidad completa"}}
+      ],
+      "entrenamiento_principal": [
+        {{"ejercicio": "Press de banca con barra", "series": "4", "repeticiones": "10", "descanso": "90 seg", "nota": "Baja controlado en 3 seg"}},
+        {{"ejercicio": "Press militar con mancuernas", "series": "3", "repeticiones": "12", "descanso": "75 seg", "nota": "Codos a 90° en la bajada"}},
+        {{"ejercicio": "Fondos en paralelas", "series": "3", "repeticiones": "10", "descanso": "60 seg", "nota": "Tronco ligeramente inclinado"}},
+        {{"ejercicio": "Elevaciones laterales", "series": "3", "repeticiones": "15", "descanso": "45 seg", "nota": "Sube hasta paralelo al suelo"}},
+        {{"ejercicio": "Extensión de tríceps en polea", "series": "3", "repeticiones": "14", "descanso": "60 seg", "nota": "Codos fijos al costado"}}
+      ],
+      "estiramiento": [
+        {{"ejercicio": "Estiramiento de pectoral", "series": "1", "repeticiones": "30 seg", "descanso": "10 seg", "nota": "Antebrazo en marco de puerta"}},
+        {{"ejercicio": "Estiramiento de tríceps", "series": "1", "repeticiones": "30 seg por lado", "descanso": "10 seg", "nota": "Codo apuntando al techo"}},
+        {{"ejercicio": "Estiramiento de hombros cruzado", "series": "1", "repeticiones": "30 seg por lado", "descanso": "10 seg", "nota": "Brazo cruzado al pecho"}}
+      ]
+    }}
   ]
-}}"""
+}}
+
+Ahora genera la rutina REAL de {dias} días para el usuario. Usa ejercicios específicos y variados."""
 
 
 class RoutineGenerator:
@@ -161,7 +184,7 @@ class RoutineGenerator:
                     {"role": "user",   "content": user_msg},
                 ],
                 temperature=0.75,
-                max_tokens=6000,  # Aumentado para soportar múltiples días
+                max_tokens=6000,
                 response_format={"type": "json_object"},
             )
 
