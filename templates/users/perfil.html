@@ -402,9 +402,9 @@
    ENDPOINTS
    ───────────────────────────────────────────────────────── */
 const API = {
-    perfil:    '/api/perfil/',
-    gimnasio:  '/api/perfil/gimnasio/',
-    gimnasios: (q) => `/api/gimnasios/?q=${encodeURIComponent(q)}`,
+    perfil:    '/perfil/api/',
+    gimnasio:  '/perfil/api/gym/',
+    gimnasios: (q) => `/perfil/api/gimnasios/?q=${encodeURIComponent(q)}`,
 };
 
 const $ = id => document.getElementById(id);
