@@ -368,11 +368,11 @@ class RoutineGenerator:
         """
         Valida que el JSON tenga las claves raíz correctas y que cada
         ejercicio contenga los 5 campos requeridos.
-
+        """
         Returns:
             None si la estructura es válida.
             Mensaje de error descriptivo si algo falla.
-        """
+        
         # Verificar claves raíz
         faltantes_raiz = _REQUIRED_ROOT_KEYS - set(data.keys())
         if faltantes_raiz:
