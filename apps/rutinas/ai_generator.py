@@ -156,7 +156,7 @@ FORMATO JSON REQUERIDO (ejemplo de estructura):
 
 Ahora genera la rutina REAL de {dias} días para el usuario. Usa ejercicios específicos y variados."""
 
-
+# erik es mk
 class RoutineGenerator:
     def __init__(self):
         api_key = getattr(settings, "GROQ_API_KEY", None)
