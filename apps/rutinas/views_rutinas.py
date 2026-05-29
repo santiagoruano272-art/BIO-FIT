@@ -262,14 +262,19 @@ def routine_detail_view(request):
             elif hasattr(created_at, 'isoformat'):
                 created_at = str(created_at)[:16].replace('T', ' ')
 
+            # routine_data puede venir como {"dias": [...]} (formato nuevo)
+            # Normalizamos siempre para garantizar la clave 'dias' con la lista completa.
+            rutina_normalizada  = _normalizar_rutina(routine_data)
+            dias_entrenamiento  = rutina_normalizada.get('dias', [])
+
             rutinas.append({
-                'id':       doc.get('id', ''),
-                'bloques':  routine_data,
-                'inputs':   user_inputs,
-                'fecha':    created_at,
-                'nivel':    user_inputs.get('nivel', '—'),
-                'objetivo': user_inputs.get('objetivo', '—').replace('_', ' '),
-                'dias':     user_inputs.get('dias', '—'),
+                'id':          doc.get('id', ''),
+                'dias':        dias_entrenamiento,
+                'inputs':      user_inputs,
+                'fecha':       created_at,
+                'nivel':       user_inputs.get('nivel', '—'),
+                'objetivo':    user_inputs.get('objetivo', '—').replace('_', ' '),
+                'dias_semana': user_inputs.get('dias', '—'),
             })
 
         print(f"[BIO-FIT] {len(rutinas)} rutina(s) cargadas para {user_uid}")
