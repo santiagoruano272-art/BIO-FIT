@@ -8,7 +8,41 @@ from apps.conexion.auth import login_user
 
 firebase = FirebaseClient()
 
-# ── Claves aceptadas para el nombre del ejercicio ─────────────────────────────
+
+def _get_uid(request) -> str | None:
+    """
+    Obtiene el user_uid de Firebase de forma robusta.
+    Primero busca en sesión (rápido), luego intenta reconstruirla
+    desde el username de Django (que guardamos como el email del usuario).
+    """
+    uid = request.session.get('user_uid')
+    if uid:
+        return uid
+
+    # Fallback: el usuario está autenticado en Django pero la sesión
+    # de Firebase expiró (ej: reinicio del servidor en desarrollo).
+    # Reconstruimos buscando el perfil por email en Firestore.
+    if request.user.is_authenticated:
+        email = request.user.username  # guardamos email como username en login_view
+        try:
+            docs = firebase.db.collection('users').where('email', '==', email).limit(1).stream()
+            for doc in docs:
+                uid = doc.id
+                # Restaurar sesión completa para próximas 
+                perfil = doc.to_dict() or {}
+                request.session['user_uid'] = uid
+                request.session['user_rol'] = perfil.get('rol', 'atleta')
+                gym_id = perfil.get('gym_id')
+                if gym_id:
+                    request.session['gym_id'] = gym_id
+                request.session.modified = True
+                return uid
+        except Exception as e:
+            print(f"[BIO-FIT] Error reconstruyendo sesión: {e}")
+
+    return None
+
+# ── Claves aceptadas para el nombre del ejercicio ──────────────────────────────
 _CLAVES_NOMBRE = [
     'ejercicio', 'nombre', 'exercise', 'name',
     'nombre_ejercicio', 'exercise_name', 'actividad',
