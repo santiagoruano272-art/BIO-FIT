@@ -1,7 +1,6 @@
 import json
 import re
 import random
-import random
 from groq import Groq
 from django.conf import settings
 
@@ -10,7 +9,7 @@ SYSTEM_PROMPT = """Eres un entrenador personal de élite, experto y certificado 
 Tu única tarea es generar planes de entrenamiento SEMANALES completos, DETALLADOS y 100% PERSONALIZADOS en español.
 
 ═══════════════════════════════════════════════════════════
-REGLAS DE FORMATO — NUNCA LAS VIOLES:
+REGLAS DE CONTENIDO — NUNCA LAS VIOLES:
 ═══════════════════════════════════════════════════════════
 - Está PROHIBIDO devolver siempre los mismos ejercicios.
 - Debes alterar completamente la selección de ejercicios, el orden, los rangos de repeticiones, las series y los tiempos de descanso en función de los parámetros de nivel y objetivo que te provea el usuario.
@@ -27,7 +26,7 @@ El JSON debe tener una clave "dias" que contiene una lista de objetos.
 Cada objeto representa UN DÍA de entrenamiento con EXACTAMENTE estas claves:
   "dia"        → número del día como string: "Día 1", "Día 2", etc.
   "enfoque"    → grupo muscular o tipo de entrenamiento del día (ej: "Tren Superior", "Cardio y Core")
-  "calentamiento"          → lista de ejercicios
+  "calentamiento"           → lista de ejercicios
   "entrenamiento_principal" → lista de ejercicios
   "estiramiento"            → lista de ejercicios
 
@@ -57,14 +56,14 @@ REGLA 6 — CANTIDAD POR DÍA:
 
 def _build_user_prompt(user_data: dict) -> str:
     """Construye el mensaje del usuario con sus datos específicos."""
-    nivel      = user_data.get("nivel", "intermedio")
-    objetivo   = user_data.get("objetivo", "salud_general")
-    dias       = user_data.get("dias", 3)
-    lugar      = user_data.get("lugar", "gimnasio")
-    lesiones   = user_data.get("lesiones", "ninguna")
-    edad       = user_data.get("edad", "")
-    peso       = user_data.get("peso", "")
-    genero     = user_data.get("genero", "")
+    nivel    = str(user_data.get("nivel", "intermedio")).strip().lower()
+    objetivo = str(user_data.get("objetivo", "salud_general")).strip().lower()
+    dias     = int(user_data.get("dias", 3))
+    lugar    = user_data.get("lugar", "gimnasio")
+    lesiones = user_data.get("lesiones", "ninguna")
+    edad     = user_data.get("edad", "")
+    peso     = user_data.get("peso", "")
+    genero   = user_data.get("genero", "")
 
     # ── Equipamiento real del gimnasio ────────────────────────────────────────
     inventario = user_data.get("inventario_gimnasio", [])
@@ -72,13 +71,10 @@ def _build_user_prompt(user_data: dict) -> str:
         nombres = [e.get("nombre", "").strip() for e in inventario if e.get("nombre")]
         equipo  = ", ".join(nombres) if nombres else "equipamiento completo de gimnasio"
         lugar   = "gimnasio"
-        fuente_equipo = "equipos REALES registrados en el gimnasio del usuario"
-    elif lugar == "casa":
+    elif lugar == "casa" or not inventario:
         equipo = "peso corporal y colchoneta únicamente (SIN máquinas)"
-        fuente_equipo = "entrenamiento en casa"
     else:
         equipo = "equipamiento completo de gimnasio"
-        fuente_equipo = "gimnasio genérico"
 
     objetivos_map = {
         'perder_peso':   'Pérdida de grasa y definición muscular',
@@ -98,6 +94,7 @@ def _build_user_prompt(user_data: dict) -> str:
     }
     adaptacion = adaptacion_nivel.get(nivel, adaptacion_nivel['intermedio'])
 
+    # Token de entropía para evitar respuestas en caché
     seed_id = random.randint(1000, 9999)
 
     perfil = f"Nivel: {nivel} | Objetivo: {objetivo_desc} | Días/semana: {dias} | Lugar: {lugar}"
@@ -105,88 +102,59 @@ def _build_user_prompt(user_data: dict) -> str:
     if peso:   perfil += f" | Peso: {peso} kg"
     if genero: perfil += f" | Género: {genero}"
 
-    # Construir ejemplo de estructura JSON con N días
-    dias_ejemplo = "\n    ".join([
-        f'{{"dia": "Día {i+1}", "enfoque": "...", "calentamiento": [...], "entrenamiento_principal": [...], "estiramiento": [...]}}'
-        for i in range(dias)
-    ])
-
     return f"""Genera un plan de entrenamiento semanal de EXACTAMENTE {dias} DÍAS (Request ID: {seed_id}).
 
 PERFIL DEL USUARIO:
 {perfil}
 Lesiones o limitaciones: {lesiones}
 
-ORIENTACIÓN DE EJERCICIOS PARA ESTE OBJETIVO:
-{ejercicios_sugeridos}
+EQUIPAMIENTO DISPONIBLE (OBLIGATORIO — usa SOLO estos):
+{equipo}
+
+ORIENTACIÓN SEGÚN NIVEL:
+{adaptacion}
+
+ORIENTACIÓN SEGÚN OBJETIVO:
+- Objetivo: {objetivo_desc}
+- Si es pérdida de peso/resistencia: alta densidad metabólica, 12-15 reps, descansos 45-60 seg.
+- Si es hipertrofia/fuerza: 6-10 reps, series pesadas, descansos 90 seg - 3 min.
+- Si es salud general/tonificación: rango mixto 10-15 reps, descansos moderados 60-90 seg.
 
 INSTRUCCIONES CRÍTICAS:
-1. USA nombres de ejercicios REALES Y ESPECÍFICOS (ver ejemplos en tus instrucciones de sistema).
-2. El entrenamiento principal debe incluir una mezcla de ejercicios COMPUESTOS e AISLAMIENTO.
-3. Adapta las series/repeticiones al nivel "{nivel}" y objetivo "{objetivo_desc}".
+1. USA nombres de ejercicios REALES Y ESPECÍFICOS.
+2. El entrenamiento principal debe incluir ejercicios COMPUESTOS e ISOLACIÓN.
+3. Adapta series/repeticiones al nivel "{nivel}" y objetivo "{objetivo_desc}".
 4. Responde SOLO con el JSON, sin texto adicional.
-5. EQUIPAMIENTO OBLIGATORIO: SOLO puedes usar ejercicios que se realicen con el equipamiento listado arriba. NO inventes ni uses máquinas o implementos que no estén en la lista. Si el usuario entrena en casa, usa únicamente ejercicios con peso corporal.
+5. EQUIPAMIENTO OBLIGATORIO: usa ÚNICAMENTE los ejercicios realizables con el equipo listado.
 
-FORMATO JSON REQUERIDO (ejemplo de estructura — usa ejercicios reales, no estos):
+FORMATO JSON REQUERIDO (ejemplo de estructura):
 {{
-  "calentamiento": [
-    {{"ejercicio": "Trote suave en cinta", "series": "1", "repeticiones": "5 min", "descanso": "0 seg", "nota": "Ritmo ligero para elevar temperatura corporal"}},
-    {{"ejercicio": "Rotaciones de hombros con banda", "series": "2", "repeticiones": "15", "descanso": "20 seg", "nota": "Movimiento circular completo, adelante y atrás"}},
-    {{"ejercicio": "Sentadillas sin peso", "series": "2", "repeticiones": "12", "descanso": "20 seg", "nota": "Profundidad completa, rodillas alineadas con pies"}}
-  ],
-  "entrenamiento_principal": [
-    {{"ejercicio": "Press de banca con barra plana", "series": "4", "repeticiones": "10", "descanso": "90 seg", "nota": "Baja la barra hasta el pecho de forma controlada en 3 segundos"}},
-    {{"ejercicio": "Remo con barra pronado", "series": "4", "repeticiones": "10", "descanso": "90 seg", "nota": "Codo al cuerpo, aprieta la espalda en el punto de contracción"}},
-    {{"ejercicio": "Sentadilla trasera con barra", "series": "4", "repeticiones": "8", "descanso": "120 seg", "nota": "Cadera por debajo de rodillas, core activado todo el recorrido"}},
-    {{"ejercicio": "Prensa de pierna 45 grados", "series": "3", "repeticiones": "12", "descanso": "75 seg", "nota": "No bloquees las rodillas al extender, pies al ancho de hombros"}},
-    {{"ejercicio": "Curl de bíceps con mancuerna alternado", "series": "3", "repeticiones": "12", "descanso": "60 seg", "nota": "Supina la muñeca en el punto de máxima contracción"}},
-    {{"ejercicio": "Extensión de tríceps en polea alta con cuerda", "series": "3", "repeticiones": "14", "descanso": "60 seg", "nota": "Codos fijos al costado, extiende completamente al fondo"}},
-    {{"ejercicio": "Elevaciones laterales con mancuernas", "series": "3", "repeticiones": "15", "descanso": "45 seg", "nota": "Codos ligeramente flexionados, sube hasta paralelo al suelo"}}
-  ],
-  "estiramiento": [
-    {{"ejercicio": "Estiramiento de cuádriceps de pie", "series": "1", "repeticiones": "30 seg por pierna", "descanso": "10 seg", "nota": "Apoya una mano en la pared para equilibrio"}},
-    {{"ejercicio": "Estiramiento de pectoral en marco de puerta", "series": "1", "repeticiones": "30 seg", "descanso": "10 seg", "nota": "Antebrazo apoyado en el marco, rota el tronco suavemente"}},
-    {{"ejercicio": "Estiramiento de isquiotibiales sentado", "series": "1", "repeticiones": "30 seg por pierna", "descanso": "10 seg", "nota": "Columna recta, inclina el tronco desde la cadera"}}
+  "dias": [
+    {{
+      "dia": "Día 1",
+      "enfoque": "Tren Superior — Empuje",
+      "calentamiento": [
+        {{"ejercicio": "Trote suave", "series": "1", "repeticiones": "5 min", "descanso": "0 seg", "nota": "Ritmo ligero para elevar temperatura"}},
+        {{"ejercicio": "Rotaciones de hombros", "series": "2", "repeticiones": "15", "descanso": "20 seg", "nota": "Circular completo"}},
+        {{"ejercicio": "Sentadillas sin peso", "series": "2", "repeticiones": "12", "descanso": "20 seg", "nota": "Profundidad completa"}}
+      ],
+      "entrenamiento_principal": [
+        {{"ejercicio": "Press de banca con barra", "series": "4", "repeticiones": "10", "descanso": "90 seg", "nota": "Baja controlado en 3 seg"}},
+        {{"ejercicio": "Press militar con mancuernas", "series": "3", "repeticiones": "12", "descanso": "75 seg", "nota": "Codos a 90° en la bajada"}},
+        {{"ejercicio": "Fondos en paralelas", "series": "3", "repeticiones": "10", "descanso": "60 seg", "nota": "Tronco ligeramente inclinado"}},
+        {{"ejercicio": "Elevaciones laterales", "series": "3", "repeticiones": "15", "descanso": "45 seg", "nota": "Sube hasta paralelo al suelo"}},
+        {{"ejercicio": "Extensión de tríceps en polea", "series": "3", "repeticiones": "14", "descanso": "60 seg", "nota": "Codos fijos al costado"}}
+      ],
+      "estiramiento": [
+        {{"ejercicio": "Estiramiento de pectoral", "series": "1", "repeticiones": "30 seg", "descanso": "10 seg", "nota": "Antebrazo en marco de puerta"}},
+        {{"ejercicio": "Estiramiento de tríceps", "series": "1", "repeticiones": "30 seg por lado", "descanso": "10 seg", "nota": "Codo apuntando al techo"}},
+        {{"ejercicio": "Estiramiento de hombros cruzado", "series": "1", "repeticiones": "30 seg por lado", "descanso": "10 seg", "nota": "Brazo cruzado al pecho"}}
+      ]
+    }}
   ]
 }}
 
-Ahora genera la rutina REAL para el usuario. Usa ejercicios específicos y variados."""
-
-
-class RoutineGeneratorAI:
-    def __init__(self):
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
-        # llama-3.3-70b-versatile sigue instrucciones JSON mucho mejor que 8b
-        self.model_name = getattr(settings, 'GROQ_MODEL', 'llama-3.3-70b-versatile')
-        """
-        Extrae de forma dinámica y rigurosa los datos del formulario de BIO-FIT.
-        Introduce un token de entropía aleatoria para romper el caché estático del modelo de Groq.
-        """
-        nivel = str(user_data.get('nivel', 'principiante')).strip().lower()
-        objetivo = str(user_data.get('objetivo', 'salud_general')).strip().lower()
-        dias = str(user_data.get('dias', '3')).strip()
-
-
-        # Reemplazar guiones bajos por espacios legibles para mejor contexto semántico de la IA
-        objetivo_limpio = objetivo.replace('_', ' ')
-        
-        # Generador de entropía interna para obligar al modelo a recalcular la respuesta desde cero
-        seed_id = random.randint(1000, 9999)
-
-        return f"""Genera un plan de entrenamiento totalmente inédito y específico en formato JSON (Request ID: {seed_id}).
-
-PARÁMETROS DEL CLIENTE BIO-FIT:
-- Nivel de experiencia real: {nivel}
-- Objetivo principal: {objetivo_limpio}
-- Días disponibles a la semana: {dias} días
-
-REQUERIMIENTOS EXCLUSIVOS DE ADAPTACIÓN BIOMECÁNICA:
-1. Si el nivel es 'principiante', prescribe ejercicios en máquinas guiadas, poleas fijas o peso corporal controlado para mitigar riesgos de lesión, con descansos amplios.
-2. Si el nivel es 'intermedio' o 'avanzado', prescribe variantes avanzadas utilizando pesos libres (barras, mancuernas), superseries, movimientos compuestos poliarticulares complejos y técnicas de sobrecarga progresiva.
-3. Si el objetivo es 'perder peso' o 'resistencia', el entrenamiento principal debe enfocarse en alta densidad metabólica (ejercicios multiarticulares combinados, repeticiones altas entre 12 y 15, y descansos cortos de 45-60 seg).
-4. Si el objetivo es 'ganar musculo' (hipertrofia) o 'fuerza', enfócate en rangos pesados o moderados (6-10 repeticiones), con mayor volumen de series y descansos de 90 seg a 3 min.
-
-Adapta el plan de forma estricta a un usuario {nivel} que busca {objetivo_limpio}. No copies respuestas anteriores."""
+Ahora genera la rutina REAL de {dias} días para el usuario. Usa ejercicios específicos y variados."""
 
 
 class RoutineGenerator:
@@ -216,7 +184,7 @@ class RoutineGenerator:
                     {"role": "user",   "content": user_msg},
                 ],
                 temperature=0.75,
-                max_tokens=6000,  # Aumentado para soportar múltiples días
+                max_tokens=6000,
                 response_format={"type": "json_object"},
             )
 
@@ -246,5 +214,46 @@ class RoutineGenerator:
             return texto[inicio:fin+1]
         return texto
 
+
+        """Elimina residuos de markdown que puedan romper el parseo."""
+        t = texto.strip()
+        if t.startswith("```json"):
+            t = t[7:]
+        elif t.startswith("```"):
+            t = t[3:]
+        if t.endswith("```"):
+            t = t[:-3]
+        return t.strip()
+
+    def _validar_estructura(self, data: dict) -> str | None:
+        """
+        Valida que el JSON tenga las claves raíz correctas y que cada
+        ejercicio contenga los 5 campos requeridos.
+        """
+        Returns:
+            None si la estructura es válida.
+            Mensaje de error descriptivo si algo falla.
+        
+        # Verificar claves raíz
+        faltantes_raiz = _REQUIRED_ROOT_KEYS - set(data.keys())
+        if faltantes_raiz:
+            return f"Faltan claves raíz: {faltantes_raiz}"
+
+        # Verificar estructura interna de cada bloque
+        for bloque in _REQUIRED_ROOT_KEYS:
+            ejercicios = data.get(bloque, [])
+            if not isinstance(ejercicios, list):
+                return f"'{bloque}' debe ser una lista, recibido: {type(ejercicios).__name__}"
+            for i, ej in enumerate(ejercicios):
+                if not isinstance(ej, dict):
+                    return f"Ejercicio #{i} en '{bloque}' no es un objeto dict"
+                campos_faltantes = _REQUIRED_EXER_KEYS - set(ej.keys())
+                if campos_faltantes:
+                    return f"Ejercicio #{i} en '{bloque}' le faltan: {campos_faltantes}"
+
+        return None  # Estructura válida ✅
+
+
+# Instancia única reutilizable para toda la aplicación (patrón Singleton)
 
 routine_generator = RoutineGenerator()
