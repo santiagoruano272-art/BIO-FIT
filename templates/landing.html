@@ -57,6 +57,61 @@
         color: #93c5fd;
         font-family: 'Syne', sans-serif;
     }
+
+    /* ── Tarjeta central: gym o casa ── */
+    .stat-card.gym-card {
+        border: 1px solid rgba(96, 165, 250, 0.22);
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card.gym-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(42,82,152,0.12) 0%, transparent 60%);
+        pointer-events: none;
+    }
+    .stat-card.gym-card p {
+        font-size: 1.15rem;   /* nombre de gym puede ser largo */
+        color: #93c5fd;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+    .stat-card.gym-card p.casa {
+        font-size: 1rem;
+        color: #60a5fa;
+        opacity: 0.85;
+    }
+    .gym-ubicacion {
+        margin: 4px 0 0;
+        font-size: 0.75rem;
+        color: #4a6a8f;
+        font-weight: 400;
+        font-family: 'DM Sans', sans-serif;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .gym-badge {
+        display: inline-block;
+        background: rgba(96,165,250,0.12);
+        border: 1px solid rgba(96,165,250,0.2);
+        color: #60a5fa;
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-bottom: 8px;
+    }
+    .gym-badge.casa-badge {
+        background: rgba(74,106,143,0.15);
+        border-color: rgba(74,106,143,0.25);
+        color: #5a7a9f;
+    }
+    /* ────────────────────────────── */
+
     .routine-section {
         background: linear-gradient(135deg, #0d1b2e 0%, #111c30 100%);
         border: 1px solid rgba(96, 165, 250, 0.12);
@@ -72,7 +127,7 @@
         color: #c4d4e8;
     }
     .routine-section p { color: #4a6a8f; margin-bottom: 25px; }
-    
+
     .btn-ai {
         display: inline-block;
         background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
@@ -93,7 +148,7 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 24px rgba(42, 82, 152, 0.45);
     }
-    
+
     .btn-admin {
         display: inline-block;
         background: linear-gradient(135deg, #1e3560 0%, #2d4f9e 100%);
@@ -114,6 +169,24 @@
         box-shadow: 0 8px 24px rgba(45, 79, 158, 0.45);
     }
 
+    /* ── Hint de vinculación ── */
+    .gym-hint {
+        margin-top: 18px;
+        font-size: 0.82rem;
+        color: #4a6a8f;
+    }
+    .gym-hint a {
+        color: #60a5fa;
+        text-decoration: none;
+        font-weight: 600;
+        border-bottom: 1px solid rgba(96,165,250,0.3);
+        transition: color 0.2s, border-color 0.2s;
+    }
+    .gym-hint a:hover {
+        color: #93c5fd;
+        border-color: rgba(96,165,250,0.6);
+    }
+
     @media (max-width: 768px) {
         .grid-stats { grid-template-columns: 1fr; }
         .welcome-header h1 { font-size: 1.8rem; }
@@ -123,8 +196,9 @@
 <div style="min-height: 100vh; background: #080f1e; padding: 1px 0;">
 <div id="biofit-app-root" data-role="{{ request.session.user_rol|default:'atleta' }}">
     <div class="dashboard-container">
-        
+
         {% if request.session.user_rol == 'admin' %}
+        <!-- ════════════════ PANEL ADMIN ════════════════ -->
             <header class="welcome-header">
                 <h1>Panel Administrativo 🛠️</h1>
                 <p>Gestión de infraestructura global de BIO-FIT.</p>
@@ -152,31 +226,59 @@
             </section>
 
         {% else %}
+        <!-- ════════════════ DASHBOARD ATLETA ════════════════ -->
             <header class="welcome-header">
                 <h1>Hola, <span id="user-display-name">Atleta</span> 👋</h1>
                 <p>Tu IA ha preparado el entrenamiento de hoy.</p>
             </header>
 
             <div class="grid-stats">
+
+                <!-- Tarjeta 1: Nivel -->
                 <div class="stat-card">
                     <h3>Nivel actual</h3>
                     <p id="user-level">Principiante</p>
                 </div>
-                <div class="stat-card">
-                    <h3>Ejercicios Completados</h3>
-                    <p>0/20</p>
+
+                <!-- ─────────────────────────────────────────────────
+                     Tarjeta 2: GYM o CASA
+                     FIX: lógica condicional basada en gym_nombre
+                     que viene del contexto de views.py
+                ───────────────────────────────────────────────── -->
+                <div class="stat-card gym-card">
+                    {% if gym_nombre %}
+                        <span class="gym-badge">🏋️ Mi Gimnasio</span>
+                        <p>{{ gym_nombre }}</p>
+                        {% if gym_ubicacion %}
+                            <div class="gym-ubicacion">📍 {{ gym_ubicacion }}</div>
+                        {% endif %}
+                    {% else %}
+                        <span class="gym-badge casa-badge">🏠 Modalidad</span>
+                        <p class="casa">Hace ejercicio<br>desde casa</p>
+                        <div class="gym-hint">
+                            ¿Tienes gimnasio? <a href="/perfil/">Vincúlate aquí</a>
+                        </div>
+                    {% endif %}
                 </div>
+
+                <!-- Tarjeta 3: Estado del plan -->
                 <div class="stat-card">
                     <h3>Estado de Plan</h3>
-                    <p>Active</p>
+                    <p>Activo</p>
                 </div>
+
             </div>
 
             <section class="routine-section">
                 <h2>Tu Rutina Personalizada</h2>
-                <p>Basado en tu perfil de BIO-FIT, aquí tienes tus ejercicios:</p>
+                {% if gym_nombre %}
+                    <p>Rutina adaptada al equipamiento de <strong style="color:#93c5fd;">{{ gym_nombre }}</strong>.</p>
+                {% else %}
+                    <p>Rutina con peso corporal, sin equipamiento. Perfecta para casa.</p>
+                {% endif %}
                 <a href="{% url 'routines:generate' %}" class="btn-ai">Generar nueva rutina con IA</a>
             </section>
+
         {% endif %}
 
     </div>
@@ -186,25 +288,46 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('biofit_token');
-        
+
         if (!token) {
             document.cookie = "sessionid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/login/';
             return;
         }
 
-        const email = localStorage.getItem('biofit_email');
-        const userDisplay = document.getElementById('user-display-name');
-        if (email && userDisplay) {
-            userDisplay.textContent = email.split('@')[0];
+        // ── Mostrar nombre del usuario ──────────────────────────────────────
+        const nombre  = localStorage.getItem('biofit_nombre');
+        const email   = localStorage.getItem('biofit_email');
+        const display = document.getElementById('user-display-name');
+        if (display) {
+            if (nombre && nombre.trim()) {
+                // Usar el nombre real si está guardado (viene del registro/perfil)
+                display.textContent = nombre.trim().split(' ')[0];
+            } else if (email) {
+                display.textContent = email.split('@')[0];
+            }
         }
 
+        // ── Mostrar nivel del usuario ───────────────────────────────────────
+        const nivel     = localStorage.getItem('biofit_nivel');
+        const levelEl   = document.getElementById('user-level');
+        if (nivel && levelEl) {
+            const nivelMap = {
+                'principiante': 'Principiante',
+                'intermedio':   'Intermedio',
+                'avanzado':     'Avanzado',
+            };
+            levelEl.textContent = nivelMap[nivel.toLowerCase()] || nivel;
+        }
+
+        // ── Sincronización de rol: si el rol local es admin pero el servidor
+        //    no lo confirma, redirigir al panel de administración ─────────────
         const appRoot = document.getElementById('biofit-app-root');
         const currentServerRole = appRoot ? appRoot.getAttribute('data-role') : 'atleta';
-        const localBrowserRole = localStorage.getItem('biofit_rol');
+        const localBrowserRole  = localStorage.getItem('biofit_rol');
 
         if (localBrowserRole === 'admin' && currentServerRole !== 'admin') {
-            console.log("[BIO-FIT] Sincronizando e ingresando al panel de administración...");
+            console.log('[BIO-FIT] Sincronizando rol → panel de administración...');
             window.location.href = '/inventory/dashboard/';
         }
     });

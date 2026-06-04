@@ -9,9 +9,7 @@ from rest_framework import status
 from apps.conexion.auth import login_user, confirmar_cambio_password, ROL_MAP
 
 
-# =========================================
-# VISTAS DE PLANTILLAS HTML
-# =========================================
+# ── VISTAS HTML ───────────────────────────────────────────────────────────────
 
 def landing_page(request):
     return render(request, 'landing.html')
@@ -32,87 +30,80 @@ def cambiar_password_page(request):
     return render(request, 'users/cambiar_password.html')
 
 
-# =========================================
-# LOGIN (API)
-# =========================================
+# ── LOGIN (API) ────────────────────────────────────────────────────────────────
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    email    = request.data.get('email', '').strip()
+    email    = request.data.get('email', '').strip().lower()  # FIX: normalizar a minúsculas
     password = request.data.get('password', '')
 
     if not email or not password:
         return Response(
-            {"error": "Email y contraseña son requeridos."},
+            {'error': 'Email y contraseña son requeridos.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     result = login_user(email, password)
 
-    # ── BLOQUEO: contraseña provisional detectada ──────────────────────────
-    # login_user detectó must_change_password=True en el perfil.
-    # Guardamos el uid en sesión para que cambiar_password_page lo use.
-    if result.get("must_change_password"):
-        request.session['uid_pending_password_change']   = result.get("uid")
+    # Contraseña provisional detectada — bloquear y redirigir
+    if result.get('must_change_password'):
+        request.session['uid_pending_password_change']   = result.get('uid')
         request.session['email_pending_password_change'] = email
         return Response(
             {
-                "must_change_password": True,
-                "redirect":             "/cambiar-password/",
-                "error":                result["error"],
+                'must_change_password': True,
+                'redirect':             '/cambiar-password/',
+                'error':                result['error'],
             },
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    if "error" in result:
+    if 'error' in result:
         return Response(
-            {"error": "Credenciales inválidas."},
+            {'error': 'Credenciales inválidas.'},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
     try:
-        # Sincronización con sesión Django
         user, _ = User.objects.get_or_create(
             username=email,
             defaults={'email': email},
         )
 
-        # Normalizar rol legacy ('gym_owner' → 'admin') por si el perfil
-        # en Firestore aún no fue migrado con migrar_rol_gym_owner()
-        rol_raw = result.get("rol", "admin")
+        # Normalizar rol legacy ('gym_owner' → 'admin')
+        rol_raw = result.get('rol', 'admin')
         rol     = ROL_MAP.get(rol_raw, rol_raw)
 
-        request.session['user_uid'] = result["uid"]
+        request.session['user_uid'] = result['uid']
         request.session['user_rol'] = rol
-        request.session['gym_id']   = result.get("gym_id")
+        request.session['gym_id']   = result.get('gym_id')
 
         login(request, user)
 
         return Response(
             {
-                "token":    result.get("idToken"),
-                "uid":      result["uid"],
-                "email":    email,
-                "rol":      rol,
-                "gym_id":   result.get("gym_id"),
-                "redirect": "/inventory/dashboard/",
-                "message":  "Login exitoso",
+                'token':    result.get('idToken'),
+                'uid':      result['uid'],
+                'email':    email,
+                'rol':      rol,
+                'gym_id':   result.get('gym_id'),
+                'redirect': '/inventory/dashboard/',
+                'message':  'Login exitoso',
             },
             status=status.HTTP_200_OK,
         )
 
     except Exception as e:
-        print(f"[BIO-FIT Error] Error en login_view: {e}")
+        import logging
+        logging.getLogger(__name__).error("Error en login_view: %s", e)
         return Response(
-            {"error": "Error interno al procesar la sesión."},
+            {'error': 'Error interno al procesar la sesión.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
-# =========================================
-# CONFIRMAR CAMBIO DE CONTRASEÑA (API)
-# =========================================
+# ── CONFIRMAR CAMBIO DE CONTRASEÑA (API) ──────────────────────────────────────
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -125,7 +116,7 @@ def confirmar_password_view(request):
 
     if not uid:
         return Response(
-            {"error": "No hay una sesión de cambio de contraseña activa."},
+            {'error': 'No hay una sesión de cambio de contraseña activa.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -133,19 +124,18 @@ def confirmar_password_view(request):
 
     if not ok:
         return Response(
-            {"error": "No se pudo actualizar el estado de la contraseña."},
+            {'error': 'No se pudo actualizar el estado de la contraseña.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # Limpiar claves temporales de sesión
     request.session.pop('uid_pending_password_change', None)
     request.session.pop('email_pending_password_change', None)
 
     return Response(
         {
-            "success":  True,
-            "redirect": "/inventory/dashboard/",
-            "message":  "Contraseña actualizada. Ya puedes acceder al panel.",
+            'success':  True,
+            'redirect': '/inventory/dashboard/',
+            'message':  'Contraseña actualizada. Ya puedes acceder al panel.',
         },
         status=status.HTTP_200_OK,
     )

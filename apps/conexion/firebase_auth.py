@@ -7,26 +7,41 @@ from services.firebase_client import FirebaseClient
 logger = logging.getLogger(__name__)
 firebase = FirebaseClient()
 
+
 class FirebaseUser:
+    """
+    Objeto usuario compatible con Django para autenticación via Firebase.
+    FIX: agregados has_perm() y has_module_perms() requeridos por el
+    middleware de Django y el panel de administración.
+    """
     def __init__(self, uid: str, email: str, perfil: dict):
-        self.uid           = uid
-        self.email         = email
-        self.nombre        = perfil.get('nombre', 'Usuario')
-        self.nivel         = perfil.get('nivel', 'principiante')
-        self.objetivo      = perfil.get('objetivo', None)
-        self.is_active     = perfil.get('is_active', True)
+        self.uid              = uid
+        self.email            = email
+        self.nombre           = perfil.get('nombre', 'Usuario')
+        self.nivel            = perfil.get('nivel', 'principiante')
+        self.objetivo         = perfil.get('objetivo', None)
+        self.is_active        = perfil.get('is_active', True)
         self.is_authenticated = True
-        self.is_anonymous  = False
-        self.is_staff      = False
+        self.is_anonymous     = False
+        self.is_staff         = False
+
+    # FIX: métodos requeridos por Django — sin estos el middleware
+    # puede lanzar AttributeError en vistas protegidas o en admin.
+    def has_perm(self, perm, obj=None) -> bool:
+        return False
+
+    def has_module_perms(self, app_label: str) -> bool:
+        return False
 
     def __str__(self):
         return f"FirebaseUser(uid={self.uid}, email={self.email})"
+
 
 class FirebaseAuthentication(BaseAuthentication):
     def authenticate(self, request):
         id_token = self._extraer_token(request)
         if not id_token:
-            return None 
+            return None
 
         decoded_token = self._verificar_token(id_token)
         uid   = decoded_token.get('uid')
@@ -44,10 +59,15 @@ class FirebaseAuthentication(BaseAuthentication):
         return (user, decoded_token)
 
     def _extraer_token(self, request) -> str | None:
-        auth_header = request.META.get('HTTP_AUTHORIZATION') or request.headers.get('Authorization')
-        if not auth_header: return None
+        auth_header = (
+            request.META.get('HTTP_AUTHORIZATION')
+            or request.headers.get('Authorization')
+        )
+        if not auth_header:
+            return None
         partes = auth_header.split()
-        if len(partes) != 2 or partes[0].lower() != 'bearer': return None
+        if len(partes) != 2 or partes[0].lower() != 'bearer':
+            return None
         return partes[1]
 
     def _verificar_token(self, id_token: str) -> dict:
@@ -62,12 +82,10 @@ class FirebaseAuthentication(BaseAuthentication):
         except Exception:
             return {}
 
-    # NUEVO MÉTODO PARA CARGAR HISTORIAL
-    def get_user_routines(self, uid: str):
+    def get_user_routines(self, uid: str) -> list:
+        """Carga el historial de rutinas del usuario desde Firestore."""
         try:
-            # Accedemos a la sub-colección dentro del documento del usuario
-            docs = firebase.db.collection('users').document(uid).collection('rutinas_generadas').stream()
-            return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+            return firebase.get_user_routines(uid)
         except Exception as e:
-            logger.error(f"Error cargando rutinas: {e}")
+            logger.error("Error cargando rutinas de %s: %s", uid, e)
             return []
