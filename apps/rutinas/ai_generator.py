@@ -215,45 +215,4 @@ class RoutineGenerator:
         return texto
 
 
-        """Elimina residuos de markdown que puedan romper el parseo."""
-        t = texto.strip()
-        if t.startswith("```json"):
-            t = t[7:]
-        elif t.startswith("```"):
-            t = t[3:]
-        if t.endswith("```"):
-            t = t[:-3]
-        return t.strip()
-
-    def _validar_estructura(self, data: dict) -> str | None:
-        """
-        Valida que el JSON tenga las claves raíz correctas y que cada
-        ejercicio contenga los 5 campos requeridos.
-        """
-        Returns:
-            None si la estructura es válida.
-            Mensaje de error descriptivo si algo falla.
-        
-        # Verificar claves raíz
-        faltantes_raiz = _REQUIRED_ROOT_KEYS - set(data.keys())
-        if faltantes_raiz:
-            return f"Faltan claves raíz: {faltantes_raiz}"
-
-        # Verificar estructura interna de cada bloque
-        for bloque in _REQUIRED_ROOT_KEYS:
-            ejercicios = data.get(bloque, [])
-            if not isinstance(ejercicios, list):
-                return f"'{bloque}' debe ser una lista, recibido: {type(ejercicios).__name__}"
-            for i, ej in enumerate(ejercicios):
-                if not isinstance(ej, dict):
-                    return f"Ejercicio #{i} en '{bloque}' no es un objeto dict"
-                campos_faltantes = _REQUIRED_EXER_KEYS - set(ej.keys())
-                if campos_faltantes:
-                    return f"Ejercicio #{i} en '{bloque}' le faltan: {campos_faltantes}"
-
-        return None  # Estructura válida ✅
-
-
-# Instancia única reutilizable para toda la aplicación (patrón Singleton)
-
 routine_generator = RoutineGenerator()

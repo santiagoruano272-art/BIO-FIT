@@ -16,7 +16,7 @@ ROL_MAP = {
 }
 
 
-# ── REGISTRO ─────────────────────────────────────────────────────────────────
+# ── REGISTRO ──────────────────────────────────────────────────────────────────
 
 def register_gym(gym_data: dict) -> dict:
     """
@@ -38,24 +38,32 @@ def register_gym(gym_data: dict) -> dict:
         firebase.save_user_profile(user.uid, {
             'email':                email,
             'uid':                  user.uid,
-            'rol':                  'admin',       # siempre 'admin', nunca 'gym_owner'
+            'rol':                  'admin',   # siempre 'admin', nunca 'gym_owner'
             'gym_id':               gym_id,
             'must_change_password': True,
         })
 
-        return {"success": True, "uid": user.uid, "gym_id": gym_id}
+        return {'success': True, 'uid': user.uid, 'gym_id': gym_id}
 
     except Exception as e:
-        return {"error": str(e)}
+        # FIX: si el gimnasio se creó pero falló el perfil, loguear el uid
+        # para poder hacer rollback manual desde el shell de Django.
+        if user:
+            import logging
+            logging.getLogger(__name__).error(
+                "register_gym: usuario Firebase creado (uid=%s) pero perfil falló: %s",
+                user.uid, e,
+            )
+        return {'error': str(e)}
 
 
 def register_user(email: str, password: str) -> dict:
     """Crea un usuario Firebase básico (atleta u otro rol)."""
     try:
         user = firebase_auth.create_user(email=email, password=password)
-        return {"uid": user.uid, "email": email}
+        return {'uid': user.uid, 'email': email}
     except Exception as e:
-        return {"error": str(e)}
+        return {'error': str(e)}
 
 
 # ── LOGIN ─────────────────────────────────────────────────────────────────────
@@ -69,20 +77,21 @@ def login_user(email: str, password: str) -> dict:
     ('gym_owner' → 'admin') antes de devolverlos.
     """
     try:
-        url  = (
+        url = (
             "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
             f"?key={settings.FIREBASE_API_KEY}"
         )
         resp = requests.post(
             url,
-            json={"email": email, "password": password, "returnSecureToken": True},
+            json={'email': email, 'password': password, 'returnSecureToken': True},
+            timeout=10,  # FIX: timeout explícito para evitar colgar el hilo
         )
         data = resp.json()
 
-        if "error" in data:
-            return {"error": data["error"]["message"]}
+        if 'error' in data:
+            return {'error': data['error']['message']}
 
-        uid    = data["localId"]
+        uid    = data['localId']
         perfil = firebase.get_user_profile(uid)
 
         # Fallback: buscar en colección 'gimnasios' si el perfil no existe
@@ -101,17 +110,23 @@ def login_user(email: str, password: str) -> dict:
                     'gym_id': doc.id,
                     'email':  gym_data.get('email'),
                 }
+                # FIX: persistir el perfil reconstruido para que los próximos
+                # logins no vuelvan a caer en este fallback costoso.
+                firebase.save_user_profile(uid, {
+                    **perfil,
+                    'must_change_password': False,
+                })
                 break
 
         if not perfil:
-            return {"error": "Usuario no encontrado"}
+            return {'error': 'Usuario no encontrado'}
 
         # Verificar si debe cambiar la contraseña provisional
         if perfil.get('must_change_password'):
             return {
-                "must_change_password": True,
-                "uid":                  uid,
-                "error":                "Debes cambiar tu contraseña provisional antes de continuar.",
+                'must_change_password': True,
+                'uid':                  uid,
+                'error':                'Debes cambiar tu contraseña provisional antes de continuar.',
             }
 
         # Normalizar rol legacy antes de devolver
@@ -119,14 +134,16 @@ def login_user(email: str, password: str) -> dict:
         rol     = ROL_MAP.get(rol_raw, rol_raw)
 
         return {
-            "uid":     uid,
-            "rol":     rol,
-            "idToken": data["idToken"],
-            "gym_id":  perfil.get("gym_id"),
+            'uid':     uid,
+            'rol':     rol,
+            'idToken': data['idToken'],
+            'gym_id':  perfil.get('gym_id'),
         }
 
+    except requests.Timeout:
+        return {'error': 'El servicio de autenticación no respondió. Intenta de nuevo.'}
     except Exception as e:
-        return {"error": str(e)}
+        return {'error': str(e)}
 
 
 # ── CAMBIO DE CONTRASEÑA ──────────────────────────────────────────────────────
@@ -137,11 +154,11 @@ def confirmar_cambio_password(uid: str) -> bool:
     Devuelve True si la operación fue exitosa.
     """
     try:
-        firebase.db.collection('usuarios').document(uid).update({
+        firebase.db.collection('users').document(uid).update({
             'must_change_password': False,
         })
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -160,7 +177,7 @@ def migrar_rol_gym_owner(uid: str) -> bool:
     try:
         perfil = firebase.get_user_profile(uid)
         if perfil and perfil.get('rol') == 'gym_owner':
-            firebase.db.collection('usuarios').document(uid).update({'rol': 'admin'})
+            firebase.db.collection('users').document(uid).update({'rol': 'admin'})
             return True
         return False
     except Exception:
@@ -174,7 +191,6 @@ def generar_password_provisional() -> str:
     alphabet = string.ascii_letters + string.digits + string.punctuation
     while True:
         password = ''.join(secrets.choice(alphabet) for _ in range(16))
-        # Garantizar al menos una mayúscula, minúscula, dígito y símbolo
         if (
             any(c.isupper() for c in password)
             and any(c.islower() for c in password)

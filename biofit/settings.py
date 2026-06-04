@@ -2,18 +2,16 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Cargar variables de entorno desde el archivo .env
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ── SEGURIDAD ──
+# ── SEGURIDAD ──────────────────────────────────────────────────────────────────
 SECRET_KEY    = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 DEBUG         = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
-# ── APLICACIONES ──
+# ── APLICACIONES ───────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -30,7 +28,7 @@ INSTALLED_APPS = [
     'apps.inventory',
 ]
 
-# ── MIDDLEWARE ──
+# ── MIDDLEWARE ─────────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -43,7 +41,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'biofit.urls_app'
 
-# ── TEMPLATES ──
+# ── TEMPLATES ──────────────────────────────────────────────────────────────────
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -62,7 +60,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'biofit.wsgi.application'
 
-# ── BASE DE DATOS ──
+# ── BASE DE DATOS ──────────────────────────────────────────────────────────────
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -70,43 +68,61 @@ DATABASES = {
     }
 }
 
-# ── SESIONES ──────────────────────────────────────────────────────────────────
-# CRÍTICO: sin estas configuraciones la sesión se destruye entre navegaciones
-# y el admin es redirigido al login aunque ya esté autenticado.
+# ── SESIONES ───────────────────────────────────────────────────────────────────
+# CRÍTICO: sin estas configuraciones la sesión se destruye entre navegaciones.
 SESSION_ENGINE             = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE         = 86400   # 24 horas (en segundos)
-SESSION_SAVE_EVERY_REQUEST = True    # renueva la sesión en cada request
-SESSION_COOKIE_HTTPONLY    = True    # protección XSS
-SESSION_COOKIE_SAMESITE    = 'Lax'  # compatibilidad con navegación interna
-SESSION_COOKIE_SECURE      = False   # cambiar a True en producción (HTTPS)
-# ─────────────────────────────────────────────────────────────────────────────
+SESSION_COOKIE_AGE         = 86400   # 24 horas
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY    = True
+SESSION_COOKIE_SAMESITE    = 'Lax'
+# FIX: leer SESSION_COOKIE_SECURE desde .env para no hardcodear False en producción.
+# En .env de desarrollo: SESSION_COOKIE_SECURE=False
+# En .env de producción:  SESSION_COOKIE_SECURE=True
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
 
-# ── ARCHIVOS ESTÁTICOS (CSS, JS, IMÁGENES) ──
+# ── CSRF ───────────────────────────────────────────────────────────────────────
+# FIX: también controlar CSRF_COOKIE_SECURE desde .env.
+# Las vistas de perfil usan @csrf_exempt pero el login no — esta config
+# protege el token de sesión en producción.
+CSRF_COOKIE_SECURE   = os.getenv('CSRF_COOKIE_SECURE', 'False') == 'True'
+CSRF_COOKIE_HTTPONLY = False   # el frontend JS necesita leer el csrftoken
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# ── REST FRAMEWORK ─────────────────────────────────────────────────────────────
+# FIX: configuración explícita de DRF para que use sesión Django por defecto.
+# Evita que vistas que no declaran authentication_classes caigan al
+# comportamiento de TokenAuthentication inesperado.
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# ── ARCHIVOS ESTÁTICOS ─────────────────────────────────────────────────────────
 STATIC_URL = '/static/'
-
-STATICFILES_DIRS = [
-    BASE_DIR / 'biofit' / 'static',
-]
-
+STATICFILES_DIRS = [BASE_DIR / 'biofit' / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# ── GROQ CLOUD (IA) ──
+# ── GROQ CLOUD (IA) ────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 GROQ_MODEL   = os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')
 
-# ── FIREBASE ──
-FIREBASE_API_KEY             = os.getenv('FIREBASE_API_KEY')
-FIREBASE_CREDENTIALS_PATH    = os.path.join(BASE_DIR, 'bio-fit-serviceAccountKey.json')
+# ── FIREBASE ───────────────────────────────────────────────────────────────────
+FIREBASE_API_KEY          = os.getenv('FIREBASE_API_KEY')
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'bio-fit-serviceAccountKey.json')
 
-# ── LOCALIZACIÓN ──
+# ── LOCALIZACIÓN ───────────────────────────────────────────────────────────────
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE     = 'America/Bogota'
 USE_I18N      = True
 USE_TZ        = True
 
-# ── OTROS ──
+# ── OTROS ──────────────────────────────────────────────────────────────────────
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── REDIRECCIONES DE AUTENTICACIÓN ──
+# ── REDIRECCIONES DE AUTENTICACIÓN ─────────────────────────────────────────────
 LOGIN_URL          = 'login-page'
 LOGIN_REDIRECT_URL = 'landing'

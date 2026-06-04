@@ -46,6 +46,7 @@
     line-height: 1.6;
   }
 
+  /* ── Tarjeta de rutina ── */
   .routine-container-card {
     background: #ffffff;
     border-radius: 24px;
@@ -53,18 +54,33 @@
     margin-bottom: 40px;
     box-shadow: 0 10px 30px rgba(13,46,30,0.04);
     border: 1px solid #eaf2ed;
+    /* FIX: transición suave al eliminar */
+    transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.4s ease;
+  }
+  .routine-container-card.removing {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+    pointer-events: none;
   }
 
-  .routine-meta-bar {
+  /* ── Cabecera de la tarjeta con botón eliminar ── */
+  .card-top-row {
     display: flex;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .routine-meta-bar {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
     align-items: center;
     flex-wrap: wrap;
     gap: 15px;
     background: #f4faf6;
     padding: 15px 25px;
     border-radius: 16px;
-    margin-bottom: 25px;
     border: 1px solid #e3ede7;
   }
   .meta-item { font-size: 0.95rem; color: #444; }
@@ -74,6 +90,153 @@
     background: #fff; padding: 4px 12px;
     border-radius: 20px; border: 1px solid #e3ede7;
   }
+
+  /* ── Botón eliminar ── */
+  .btn-delete-routine {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1.5px solid #fca5a5;
+    color: #ef4444;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: flex-start;
+    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  .btn-delete-routine:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    transform: translateY(-1px);
+  }
+  .btn-delete-routine:active {
+    transform: scale(0.97);
+  }
+  .btn-delete-routine:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── Modal de confirmación ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 46, 30, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+
+  .modal-box {
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 36px 32px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 24px 60px rgba(13, 46, 30, 0.2);
+    text-align: center;
+    animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modalPop {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+
+  .modal-icon { font-size: 2.8rem; margin-bottom: 14px; }
+  .modal-box h3 {
+    font-family: 'Syne', sans-serif;
+    color: #0d2e1e;
+    font-size: 1.3rem;
+    margin: 0 0 10px 0;
+  }
+  .modal-box p {
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0 0 28px 0;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-modal-cancel {
+    background: transparent;
+    border: 2px solid #d1d5db;
+    color: #6b7280;
+    padding: 11px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-modal-cancel:hover {
+    border-color: #9ca3af;
+    color: #374151;
+    background: #f9fafb;
+  }
+  .btn-modal-confirm {
+    background: #ef4444;
+    border: 2px solid #ef4444;
+    color: #fff;
+    padding: 11px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-modal-confirm:hover { background: #dc2626; border-color: #dc2626; }
+  .btn-modal-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ── Toast de feedback ── */
+  .toast-biofit {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 3000;
+    background: #0d2e1e;
+    color: #fff;
+    padding: 13px 20px;
+    border-radius: 14px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 8px 28px rgba(13,46,30,0.25);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 240px;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast-biofit.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .toast-biofit.success { background: #2d7a4f; }
+  .toast-biofit.error   { background: #b91c1c; }
 
   /* ── Pestañas de días ── */
   .day-tabs {
@@ -207,15 +370,30 @@
   }
   .btn-secondary-fit:hover { background: #f0f7f3; }
 
+  /* ── Sin rutinas tras eliminar la última ── */
+  .empty-state {
+    background: #fff;
+    border: 1px solid #eaf2ed;
+    padding: 50px 30px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+    display: none;
+  }
+  .empty-state.visible { display: block; }
+
   @media (max-width: 600px) {
     .health-banner { padding: 30px 20px; }
     .health-banner h1 { font-size: 1.8rem; }
+    .card-top-row { flex-direction: column-reverse; align-items: stretch; }
+    .btn-delete-routine { justify-content: center; }
     .routine-meta-bar { flex-direction: column; align-items: flex-start; }
     .exercises-grid { grid-template-columns: 1fr; }
   }
 </style>
 
-<div class="biofit-detail-wrap">
+<!-- ═══════════════════ CONTENIDO ═══════════════════ -->
+<div class="biofit-detail-wrap" id="biofit-detail-root">
 
   {% if sin_rutinas %}
     <div style="background:#fff; border:1px solid #eaf2ed; padding:50px 30px; border-radius:24px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.02);">
@@ -237,21 +415,43 @@
       <p>Planes diseñados a tu medida para optimizar tu energía, salud y rendimiento físico.</p>
     </div>
 
+    <!-- Estado vacío (se muestra con JS cuando se eliminan todas las rutinas) -->
+    <div class="empty-state" id="empty-state-js">
+      <span style="font-size:3.5rem;">🌱</span>
+      <h2 style="font-family:'Syne',sans-serif; color:#0d2e1e; margin-top:15px;">¡Sin rutinas guardadas!</h2>
+      <p style="color:#666; max-width:500px; margin:10px auto 30px auto; line-height:1.6;">
+        Eliminaste todas tus rutinas. Genera una nueva para continuar.
+      </p>
+      <a href="{% url 'routines:generate' %}" class="btn-primary-fit">✨ Crear mi Plan con Coach IA</a>
+    </div>
+
     {% for rutina_obj in rutinas %}
       {% with rid=forloop.counter0 %}
-      <div class="routine-container-card">
+      <!-- data-routine-id permite al JS identificar qué tarjeta eliminar -->
+      <div class="routine-container-card"
+           id="card-rutina-{{ rid }}"
+           data-routine-id="{{ rutina_obj.id }}">
 
-        <!-- Meta bar -->
-        <div class="routine-meta-bar">
-          <div class="meta-item">🎯 Objetivo: <strong>{{ rutina_obj.objetivo }}</strong></div>
-          <div class="meta-item">⚡ Nivel: <strong>{{ rutina_obj.nivel }}</strong></div>
-          <div class="meta-item">📆 Días/semana: <strong>{{ rutina_obj.dias_semana }}</strong></div>
-          {% if rutina_obj.fecha %}
-            <div class="meta-date">📅 {{ rutina_obj.fecha }}</div>
-          {% endif %}
+        <!-- ── Fila superior: metadatos + botón eliminar ── -->
+        <div class="card-top-row">
+          <div class="routine-meta-bar">
+            <div class="meta-item">🎯 Objetivo: <strong>{{ rutina_obj.objetivo }}</strong></div>
+            <div class="meta-item">⚡ Nivel: <strong>{{ rutina_obj.nivel }}</strong></div>
+            <div class="meta-item">📆 Días/semana: <strong>{{ rutina_obj.dias_semana }}</strong></div>
+            {% if rutina_obj.fecha %}
+              <div class="meta-date">📅 {{ rutina_obj.fecha }}</div>
+            {% endif %}
+          </div>
+
+          <!-- BOTÓN ELIMINAR -->
+          <button class="btn-delete-routine"
+                  aria-label="Eliminar esta rutina"
+                  onclick="solicitarEliminar('{{ rutina_obj.id }}', {{ rid }})">
+            🗑️ Eliminar
+          </button>
         </div>
 
-        <!-- Pestañas de días -->
+        <!-- ── Pestañas de días ── -->
         {% if rutina_obj.dias %}
           <div class="day-tabs">
             {% for dia in rutina_obj.dias %}
@@ -356,29 +556,173 @@
       {% endwith %}
     {% endfor %}
 
-    <div class="actions-area">
+    <div class="actions-area" id="actions-area">
       <a href="{% url 'routines:generate' %}" class="btn-secondary-fit">➕ Generar Nueva Rutina</a>
       <a href="/inicio/" class="btn-primary-fit">🏠 Ir a mi Panel</a>
     </div>
 
   {% endif %}
-
 </div>
 
+<!-- ═══════════════════ MODAL DE CONFIRMACIÓN ═══════════════════ -->
+<div class="modal-overlay" id="modal-eliminar" role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <h3>¿Eliminar esta rutina?</h3>
+    <p>Esta acción es permanente. Tu plan de entrenamiento se borrará de BIO-FIT y no podrás recuperarlo.</p>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="btn-modal-cancel" onclick="cerrarModal()">
+        Cancelar
+      </button>
+      <button class="btn-modal-confirm" id="btn-modal-confirm" onclick="confirmarEliminar()">
+        🗑️ Sí, eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TOAST ═══════════════════ -->
+<div class="toast-biofit" id="toast-biofit" role="status" aria-live="polite"></div>
+
+<!-- ═══════════════════ SCRIPT ═══════════════════ -->
 <script>
+/* ─────────────────────────────────────────────────────────
+   Estado global del módulo de eliminación
+───────────────────────────────────────────────────────── */
+let _pendingRoutineId  = null;   // ID Firestore de la rutina a eliminar
+let _pendingCardIndex  = null;   // índice del card en el DOM (rid)
+let _toastTimer        = null;
+
+/* ─────────────────────────────────────────────────────────
+   Utilidades
+───────────────────────────────────────────────────────── */
+function getCsrf() {
+    return (
+        document.cookie.split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith('csrftoken='))
+            ?.split('=')[1] || ''
+    );
+}
+
+function mostrarToast(msg, tipo = 'success') {
+    const el = document.getElementById('toast-biofit');
+    const iconos = { success: '✅', error: '❌' };
+    el.textContent = `${iconos[tipo] || '•'} ${msg}`;
+    el.className = `toast-biofit ${tipo} show`;
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3500);
+}
+
+/* ─────────────────────────────────────────────────────────
+   Navegación de días (sin cambios)
+───────────────────────────────────────────────────────── */
 function mostrarDia(routineId, diaIdx, btnEl) {
-    // Ocultar todos los paneles de esa rutina
-    document.querySelectorAll(`[id^="${routineId}-dia-"]`).forEach(panel => {
-        panel.classList.remove('active');
-    });
-    // Desactivar todos los botones de esa rutina
+    document.querySelectorAll(`[id^="${routineId}-dia-"]`).forEach(p => p.classList.remove('active'));
     btnEl.closest('.routine-container-card')
          .querySelectorAll('.day-tab-btn')
-         .forEach(btn => btn.classList.remove('active'));
-    // Mostrar el panel seleccionado
+         .forEach(b => b.classList.remove('active'));
     document.getElementById(`${routineId}-dia-${diaIdx}`).classList.add('active');
     btnEl.classList.add('active');
 }
+
+/* ─────────────────────────────────────────────────────────
+   PASO 1 — El usuario hace clic en "Eliminar"
+   Guarda qué rutina se quiere borrar y abre el modal.
+───────────────────────────────────────────────────────── */
+function solicitarEliminar(routineId, cardIndex) {
+    _pendingRoutineId = routineId;
+    _pendingCardIndex = cardIndex;
+    document.getElementById('modal-eliminar').classList.add('active');
+}
+
+/* ─────────────────────────────────────────────────────────
+   Cerrar modal sin hacer nada
+───────────────────────────────────────────────────────── */
+function cerrarModal() {
+    document.getElementById('modal-eliminar').classList.remove('active');
+    _pendingRoutineId = null;
+    _pendingCardIndex = null;
+}
+
+/* ─────────────────────────────────────────────────────────
+   PASO 2 — El usuario confirma en el modal
+   Llama al backend y anima la tarjeta fuera del DOM.
+───────────────────────────────────────────────────────── */
+async function confirmarEliminar() {
+    if (!_pendingRoutineId) return;
+
+    const routineId = _pendingRoutineId;
+    const cardIndex = _pendingCardIndex;
+    const btnConfirm = document.getElementById('btn-modal-confirm');
+
+    // Bloquear doble clic
+    btnConfirm.disabled = true;
+    btnConfirm.textContent = '⏳ Eliminando…';
+
+    cerrarModal();
+
+    try {
+        const resp = await fetch(`/rutinas/api/eliminar/${routineId}/`, {
+            method:  'DELETE',
+            headers: {
+                'X-CSRFToken': getCsrf(),
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+
+        const data = await resp.json().catch(() => ({}));
+
+        if (!resp.ok) {
+            throw new Error(data.error || `Error ${resp.status}`);
+        }
+
+        // ── Animar y remover la tarjeta del DOM ──────────────────────────
+        const card = document.getElementById(`card-rutina-${cardIndex}`);
+        if (card) {
+            card.classList.add('removing');
+            setTimeout(() => {
+                card.remove();
+                _verificarVacio();
+            }, 380);
+        }
+
+        mostrarToast('Rutina eliminada correctamente.', 'success');
+
+    } catch (err) {
+        console.error('[BIO-FIT] Error eliminando rutina:', err);
+        mostrarToast(`No se pudo eliminar: ${err.message}`, 'error');
+    } finally {
+        btnConfirm.disabled = false;
+        btnConfirm.innerHTML = '🗑️ Sí, eliminar';
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Si no quedan tarjetas, mostrar el estado vacío
+───────────────────────────────────────────────────────── */
+function _verificarVacio() {
+    const cards = document.querySelectorAll('.routine-container-card');
+    if (cards.length === 0) {
+        const empty   = document.getElementById('empty-state-js');
+        const actions = document.getElementById('actions-area');
+        if (empty)   empty.classList.add('visible');
+        if (actions) actions.style.display = 'none';
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Cerrar modal al hacer clic fuera de la caja
+───────────────────────────────────────────────────────── */
+document.getElementById('modal-eliminar').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('modal-eliminar')) cerrarModal();
+});
+
+/* Cerrar modal con Escape */
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarModal();
+});
 </script>
 
 {% endblock %}

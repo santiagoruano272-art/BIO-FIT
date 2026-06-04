@@ -167,7 +167,7 @@
     }
     @keyframes modalIn {
         from { transform: scale(.88); opacity: 0; }
-        to   { transform: scale(1); opacity: 1; }
+        to   { transform: scale(1);   opacity: 1; }
     }
     .modal-header {
         padding: 22px 24px 18px; border-bottom: 1px solid var(--border);
@@ -258,6 +258,7 @@
     .gym-not-found.active { display: block; }
 </style>
 
+
 <!-- ════════════ CONTENIDO ════════════ -->
 <div class="perfil-wrapper">
     <h1 class="perfil-title"><span>👤</span> Mi Perfil</h1>
@@ -277,19 +278,23 @@
                     <span class="badge-rol" id="badge-rol">atleta</span>
                 </div>
             </div>
+            <!-- FIX: novalidate en el form para que la validación la controle JS -->
             <form id="form-perfil" novalidate>
                 <div class="field-grid">
                     <div class="field-item">
-                        <label>Nombre completo</label>
-                        <input class="field-input" type="text" id="field-nombre" placeholder="Tu nombre">
+                        <label for="field-nombre">Nombre completo</label>
+                        <input class="field-input" type="text" id="field-nombre"
+                               placeholder="Tu nombre" autocomplete="name">
                     </div>
                     <div class="field-item">
-                        <label>Correo electrónico</label>
-                        <input class="field-input" type="email" id="field-email" placeholder="correo@ejemplo.com">
+                        <label for="field-email">Correo electrónico</label>
+                        <input class="field-input" type="email" id="field-email"
+                               placeholder="correo@ejemplo.com" autocomplete="email">
                     </div>
                     <div class="field-item">
-                        <label>Teléfono</label>
-                        <input class="field-input" type="tel" id="field-telefono" placeholder="+57 300 0000000">
+                        <label for="field-telefono">Teléfono</label>
+                        <input class="field-input" type="tel" id="field-telefono"
+                               placeholder="+57 300 0000000" autocomplete="tel">
                     </div>
                     <div class="field-item">
                         <label>Nivel</label>
@@ -331,13 +336,18 @@
                         <div class="gym-icon">🏢</div>
                         <div>
                             <h3 id="gym-nombre">–</h3>
-                            <!-- ✅ Muestra 'ubicacion', no 'ciudad' -->
                             <span id="gym-ubicacion">–</span>
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-ghost" id="btn-desvincular">
-                        ✕ Desvincularse del gimnasio
-                    </button>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <!-- FIX: botón de cambio de gimnasio agregado explícitamente -->
+                        <button class="btn btn-sm btn-ghost" id="btn-cambiar-gym">
+                            🔄 Cambiar gimnasio
+                        </button>
+                        <button class="btn btn-sm btn-ghost" id="btn-desvincular">
+                            ✕ Desvincularse
+                        </button>
+                    </div>
                 </div>
                 <!-- Confirmación inline -->
                 <div class="confirm-box" id="confirm-desvincular">
@@ -352,9 +362,11 @@
             <!-- Estado: no vinculado -->
             <div id="gym-unlinked-view" class="gym-unlinked" style="display:none;">
                 <p>No estás vinculado a ningún gimnasio. Únete a una sede para acceder a planes exclusivos.</p>
-                <button class="btn btn-primary" id="btn-vincular">
-                    🔗 Vincular a un gimnasio
-                </button>
+                <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                    <button class="btn btn-primary" id="btn-vincular">
+                        🔗 Vincular a un gimnasio
+                    </button>
+                </div>
             </div>
 
         </div>
@@ -363,22 +375,22 @@
 </div><!-- /perfil-wrapper -->
 
 
-<!-- ════════════ MODAL ════════════ -->
-<div class="modal-overlay" id="modal-gimnasio">
+<!-- ════════════ MODAL: BUSCAR GIMNASIO ════════════ -->
+<div class="modal-overlay" id="modal-gimnasio" role="dialog" aria-modal="true" aria-label="Buscar sede BIO-FIT">
     <div class="modal-box">
         <div class="modal-header">
             <h3>🏋️ Buscar Sede BIO-FIT</h3>
-            <button class="modal-close" id="modal-close-btn">✕</button>
+            <button class="modal-close" id="modal-close-btn" aria-label="Cerrar">✕</button>
         </div>
         <div class="modal-body">
-            <!-- Error de Firestore -->
-            <div class="error-banner" id="modal-error-banner"></div>
-
+            <div class="error-banner" id="modal-error-banner" role="alert"></div>
             <div class="search-input-wrap">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="gym-search-input" placeholder="Buscar por nombre o ubicación…">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input type="text" id="gym-search-input"
+                       placeholder="Buscar por nombre o ubicación…"
+                       aria-label="Buscar gimnasio">
             </div>
-            <ul class="gym-list" id="gym-list"></ul>
+            <ul class="gym-list" id="gym-list" role="listbox"></ul>
             <p class="gym-empty" id="gym-empty" style="display:none;">
                 No se encontraron sedes con ese criterio.
             </p>
@@ -392,26 +404,31 @@
     </div>
 </div>
 
-<div class="toast-container" id="toast-container"></div>
-<div class="loading-overlay" id="loading-overlay"><div class="spinner"></div></div>
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
+<div class="loading-overlay" id="loading-overlay" aria-label="Cargando…">
+    <div class="spinner"></div>
+</div>
 
 
 <!-- ════════════ SCRIPT ════════════ -->
 <script>
 /* ─────────────────────────────────────────────────────────
    ENDPOINTS
+   FIX: gimnasio ahora apunta a /api/perfil/gimnasio/ (consistente con urls_app.py)
    ───────────────────────────────────────────────────────── */
 const API = {
-    perfil:    '/perfil/api/',
-    gimnasio:  '/perfil/api/gym/',
-    gimnasios: (q) => `/perfil/api/gimnasios/?q=${encodeURIComponent(q)}`,
+    perfil:    '/api/perfil/',
+    gimnasio:  '/api/perfil/gimnasio/',
+    gimnasios: (q) => `/api/gimnasios/?q=${encodeURIComponent(q)}`,
 };
 
 const $ = id => document.getElementById(id);
 const token = () => localStorage.getItem('biofit_token') || '';
 const getCsrf = () => (
-    document.cookie.split(';').map(c => c.trim())
-        .find(c => c.startsWith('csrftoken='))?.split('=')[1] || ''
+    document.cookie.split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('csrftoken='))
+        ?.split('=')[1] || ''
 );
 
 function showLoading(v) { $('loading-overlay').classList.toggle('active', v); }
@@ -424,10 +441,10 @@ function toast(msg, type = 'success') {
     setTimeout(() => el.remove(), 3500);
 }
 
-/* ── Estado ── */
+/* ── Estado global ── */
 let perfil = {};
 let gimSeleccionado = null;
-let todasLasSedes = [];   // caché de sedes reales de Firestore
+let todasLasSedes = [];
 
 /* ─────────────────────────────────────────────────────────
    CARGAR PERFIL
@@ -436,21 +453,34 @@ async function cargarPerfil() {
     showLoading(true);
     try {
         const r = await fetch(API.perfil, {
-            headers: { 'Authorization': `Bearer ${token()}` }
+            credentials: 'include',   // FIX: 'include' garantiza envío de cookies en todos los contextos
         });
-        if (!r.ok) throw new Error(r.status);
+
+        // FIX: si la sesión expiró redirigir al login en lugar de usar localStorage
+        if (r.status === 401) {
+            window.location.href = '/login/?next=/perfil/';
+            return;
+        }
+
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         perfil = await r.json();
-    } catch {
-        // Fallback a localStorage mientras no hay token válido
+
+    } catch (err) {
+        // FIX: solo usar localStorage como fallback de DATOS VISUALES (no de sesión).
+        // Las acciones de escritura (vincular, guardar) seguirán fallando si no hay
+        // sesión activa — eso es correcto. El usuario verá sus datos cargados del
+        // caché local pero recibirá el error real del servidor al intentar guardar.
+        console.warn('cargarPerfil: usando caché local —', err.message);
         perfil = {
-            nombre:       localStorage.getItem('biofit_nombre') || '',
-            email:        localStorage.getItem('biofit_email')  || '',
-            telefono:     localStorage.getItem('biofit_tel')    || '',
-            nivel:        localStorage.getItem('biofit_nivel')  || 'Principiante',
-            rol:          localStorage.getItem('biofit_rol')    || 'atleta',
-            gym_id:       localStorage.getItem('biofit_gym_id')      || null,
-            gym_nombre:   localStorage.getItem('biofit_gym_nombre')  || null,
+            nombre:        localStorage.getItem('biofit_nombre')        || '',
+            email:         localStorage.getItem('biofit_email')         || '',
+            telefono:      localStorage.getItem('biofit_tel')           || '',
+            nivel:         localStorage.getItem('biofit_nivel')         || 'Principiante',
+            rol:           localStorage.getItem('biofit_rol')           || 'atleta',
+            gym_id:        localStorage.getItem('biofit_gym_id')        || null,
+            gym_nombre:    localStorage.getItem('biofit_gym_nombre')    || null,
             gym_ubicacion: localStorage.getItem('biofit_gym_ubicacion') || null,
+            _sesionRota:   true,   // FIX: marca para bloquear acciones de escritura
         };
     } finally {
         showLoading(false);
@@ -467,37 +497,33 @@ function renderPerfil() {
     $('avatar-name').textContent     = nombre || '–';
     $('avatar-email').textContent    = perfil.email || '–';
     $('badge-rol').textContent       = perfil.rol || 'atleta';
-    $('field-nombre').value          = perfil.nombre || '';
-    $('field-email').value           = perfil.email  || '';
+    $('field-nombre').value          = perfil.nombre   || '';
+    $('field-email').value           = perfil.email    || '';
     $('field-telefono').value        = perfil.telefono || '';
-    $('field-nivel').textContent     = perfil.nivel || '–';
+    $('field-nivel').textContent     = perfil.nivel    || '–';
 
     renderGym();
 }
 
 function renderGym() {
-    const linked    = $('gym-linked-view');
-    const unlinked  = $('gym-unlinked-view');
-    const notFound  = $('gym-not-found');
+    const linked   = $('gym-linked-view');
+    const unlinked = $('gym-unlinked-view');
+    const notFound = $('gym-not-found');
 
-    // Ocultar todos los estados
     linked.style.display   = 'none';
     unlinked.style.display = 'none';
     notFound.classList.remove('active');
     $('confirm-desvincular').classList.remove('active');
 
     if (perfil.gym_id) {
-        // El backend ya indicó si el gym existe o no con el texto del nombre
         const esHuerfano = perfil.gym_nombre &&
             perfil.gym_nombre.startsWith('Gimnasio no encontrado');
 
         if (esHuerfano) {
-            // ✅ gym_id guardado ya no existe en Firestore
             notFound.classList.add('active');
         } else {
             linked.style.display = 'block';
-            $('gym-nombre').textContent   = perfil.gym_nombre   || perfil.gym_id;
-            // ✅ 'ubicacion', no 'ciudad'
+            $('gym-nombre').textContent    = perfil.gym_nombre   || perfil.gym_id;
             $('gym-ubicacion').textContent = perfil.gym_ubicacion || '–';
         }
     } else {
@@ -507,41 +533,49 @@ function renderGym() {
 
 /* ─────────────────────────────────────────────────────────
    GUARDAR PERFIL
+   FIX: validación explícita antes del fetch (no depende del browser)
    ───────────────────────────────────────────────────────── */
 $('form-perfil').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = $('btn-guardar');
+    const btn    = $('btn-guardar');
+    const nombre = $('field-nombre').value.trim();
+    const email  = $('field-email').value.trim();
+    const tel    = $('field-telefono').value.trim();
+
+    if (!nombre) {
+        toast('El nombre no puede estar vacío.', 'error');
+        return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        toast('Correo electrónico no válido.', 'error');
+        return;
+    }
+
+    // FIX: bloquear escritura si la sesión Django no estaba activa al cargar
+    if (perfil._sesionRota) {
+        toast('Tu sesión expiró. Recarga la página o inicia sesión de nuevo.', 'error');
+        return;
+    }
+
     btn.disabled = true;
     btn.innerHTML = '<span>⏳</span> Guardando…';
 
-    const body = {
-        nombre:   $('field-nombre').value.trim(),
-        email:    $('field-email').value.trim(),
-        telefono: $('field-telefono').value.trim(),
-    };
-
-    if (!body.nombre) {
-        toast('El nombre no puede estar vacío.', 'error');
-        btn.disabled = false; btn.innerHTML = '<span>💾</span> Guardar cambios';
-        return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
-        toast('Correo no válido.', 'error');
-        btn.disabled = false; btn.innerHTML = '<span>💾</span> Guardar cambios';
-        return;
-    }
+    const body = { nombre, email, telefono: tel };
 
     try {
         const r = await fetch(API.perfil, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token()}`,
-                'X-CSRFToken': getCsrf(),
+                'X-CSRFToken':  getCsrf(),
             },
+            credentials: 'include',   // FIX: 'include' en lugar de 'same-origin'
             body: JSON.stringify(body),
         });
-        if (!r.ok) throw new Error(await r.text());
+        if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            throw new Error(err.error || r.status);
+        }
         Object.assign(perfil, body);
         localStorage.setItem('biofit_nombre', body.nombre);
         localStorage.setItem('biofit_email',  body.email);
@@ -549,7 +583,7 @@ $('form-perfil').addEventListener('submit', async (e) => {
         renderPerfil();
         toast('Perfil actualizado correctamente.');
     } catch (err) {
-        toast('Error al guardar. Intenta de nuevo.', 'error');
+        toast(`Error al guardar: ${err.message}`, 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<span>💾</span> Guardar cambios';
@@ -571,26 +605,29 @@ $('btn-confirm-ok').addEventListener('click', async () => {
         const r = await fetch(API.gimnasio, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${token()}`,
                 'X-CSRFToken': getCsrf(),
             },
+            credentials: 'include',   // FIX: 'include' para enviar cookie de sesión
         });
-        if (!r.ok) throw new Error(await r.text());
+        if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            throw new Error(err.error || r.status);
+        }
         perfil.gym_id = null; perfil.gym_nombre = null; perfil.gym_ubicacion = null;
         localStorage.removeItem('biofit_gym_id');
         localStorage.removeItem('biofit_gym_nombre');
         localStorage.removeItem('biofit_gym_ubicacion');
         renderGym();
         toast('Te desvinculaste del gimnasio correctamente.');
-    } catch {
-        toast('Error al desvincular. Intenta de nuevo.', 'error');
+    } catch (err) {
+        toast(`Error al desvincular: ${err.message}`, 'error');
     } finally {
         showLoading(false);
     }
 });
 
 /* ─────────────────────────────────────────────────────────
-   MODAL: BUSCAR Y VINCULAR GIMNASIO
+   MODAL: BUSCAR Y VINCULAR / CAMBIAR GIMNASIO
    ───────────────────────────────────────────────────────── */
 function abrirModal() {
     gimSeleccionado = null;
@@ -598,24 +635,33 @@ function abrirModal() {
     $('gym-search-input').value = '';
     $('modal-error-banner').classList.remove('active');
     $('modal-gimnasio').classList.add('active');
-    // Cargar sedes reales de Firestore al abrir
-    cargarSedes('');
+    if (todasLasSedes.length > 0) {
+        renderGymList(todasLasSedes);
+    } else {
+        cargarSedes('');
+    }
     setTimeout(() => $('gym-search-input').focus(), 150);
 }
 function cerrarModal() {
     $('modal-gimnasio').classList.remove('active');
-    gimSeleccionado = null;
 }
 
 $('btn-vincular').addEventListener('click', abrirModal);
 $('btn-vincular-desde-error').addEventListener('click', abrirModal);
+// FIX: botón de cambio de gimnasio también abre el modal
+$('btn-cambiar-gym').addEventListener('click', abrirModal);
 $('modal-close-btn').addEventListener('click', cerrarModal);
 $('modal-cancel-btn').addEventListener('click', cerrarModal);
 $('modal-gimnasio').addEventListener('click', e => {
     if (e.target === $('modal-gimnasio')) cerrarModal();
 });
 
-/* ── Buscar sedes en el backend (datos reales de Firestore) ── */
+/* ── Cerrar modal con Escape ── */
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') cerrarModal();
+});
+
+/* ── Buscar sedes con debounce ── */
 let searchDebounce;
 $('gym-search-input').addEventListener('input', () => {
     clearTimeout(searchDebounce);
@@ -631,11 +677,10 @@ async function cargarSedes(q) {
 
     try {
         const r = await fetch(API.gimnasios(q), {
-            headers: { 'Authorization': `Bearer ${token()}` }
+            credentials: 'include',   // FIX: sin Bearer, solo sesión Django
         });
         const data = await r.json();
 
-        // ✅ El backend devuelve error 503 con {error, sedes:[]} — no datos inventados
         if (!r.ok) {
             $('modal-error-banner').textContent =
                 data.error || 'No se pudo conectar con Firestore. Intenta más tarde.';
@@ -647,7 +692,7 @@ async function cargarSedes(q) {
         todasLasSedes = Array.isArray(data) ? data : [];
         renderGymList(todasLasSedes);
 
-    } catch (err) {
+    } catch {
         $('modal-error-banner').textContent =
             'Error de red al consultar las sedes. Verifica tu conexión.';
         $('modal-error-banner').classList.add('active');
@@ -666,22 +711,32 @@ function renderGymList(lista) {
     }
     empty.style.display = 'none';
 
+    // FIX: guardar mapa id->gym para la delegacion de eventos
+    ul._gymMap = {};
     lista.forEach(g => {
         const li = document.createElement('li');
         li.className = 'gym-list-item' + (gimSeleccionado?.id === g.id ? ' selected' : '');
-        li.dataset.id  = g.id;
-        // ✅ Muestra 'ubicacion' del gym real, no 'ciudad'
+        li.setAttribute('role', 'option');
+        li.dataset.id = g.id;
+        // FIX: pointer-events:none en hijos para que el click siempre llegue al li
         li.innerHTML = `
-            <div class="gym-dot">🏢</div>
-            <div>
+            <div class="gym-dot" style="pointer-events:none">🏢</div>
+            <div style="pointer-events:none">
                 <h4>${g.nombre}</h4>
                 <span>${g.ubicacion || 'Sin ubicación registrada'}</span>
             </div>
-            <span class="check">✓</span>
+            <span class="check" style="pointer-events:none" aria-hidden="true">✓</span>
         `;
-        li.addEventListener('click', () => seleccionarGym(g, li));
+        ul._gymMap[g.id] = { gym: g, el: li };
         ul.appendChild(li);
     });
+    // FIX: un solo listener delegado en el ul en lugar de uno por li
+    ul.onclick = (e) => {
+        const li = e.target.closest('.gym-list-item');
+        if (!li) return;
+        const entry = ul._gymMap[li.dataset.id];
+        if (entry) seleccionarGym(entry.gym, entry.el);
+    };
 }
 
 function seleccionarGym(gym, el) {
@@ -694,6 +749,14 @@ function seleccionarGym(gym, el) {
 /* ── Confirmar vinculación ── */
 $('btn-confirmar-vinculacion').addEventListener('click', async () => {
     if (!gimSeleccionado) return;
+
+    // FIX: bloquear vinculación si la sesión no estaba activa
+    if (perfil._sesionRota) {
+        toast('Tu sesión expiró. Recarga la página o inicia sesión de nuevo.', 'error');
+        cerrarModal();
+        return;
+    }
+
     cerrarModal();
     showLoading(true);
     try {
@@ -701,15 +764,20 @@ $('btn-confirmar-vinculacion').addEventListener('click', async () => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token()}`,
-                'X-CSRFToken': getCsrf(),
+                'X-CSRFToken':  getCsrf(),
             },
+            credentials: 'include',   // FIX: 'include' para enviar cookie de sesión Django
             body: JSON.stringify({ gym_id: gimSeleccionado.id }),
         });
         const data = await r.json();
 
         if (!r.ok) {
-            // ✅ Si el gym_id no existe en Firestore, el backend lo indica claramente
+            // FIX: si el servidor devuelve 401, la sesión expiró — redirigir
+            if (r.status === 401) {
+                toast('Sesión expirada. Redirigiendo al login…', 'error');
+                setTimeout(() => { window.location.href = '/login/?next=/perfil/'; }, 1500);
+                return;
+            }
             toast(data.error || 'Error al vincular el gimnasio.', 'error');
             return;
         }
@@ -725,7 +793,7 @@ $('btn-confirmar-vinculacion').addEventListener('click', async () => {
         renderGym();
         toast(`Vinculado a "${perfil.gym_nombre}" ✅`);
 
-    } catch {
+    } catch (err) {
         toast('Error de red al vincular. Intenta de nuevo.', 'error');
     } finally {
         showLoading(false);
