@@ -221,3 +221,12 @@ tbody tr:hover { background: rgba(59,130,246,.04); }
     .header-actions h2 { font-size: 1.15rem; }
     .btn-add { width: 100%; justify-content: center; }
 }
+
+/* Utilities used by templates to replace inline styles */
+.badge-admin { background: linear-gradient(135deg,#1e3a8a,#1e40af); border-color: rgba(59,130,246,.4); box-shadow: 0 0 12px rgba(59,130,246,.2); }
+.font-600 { font-weight: 600; }
+.empty-title { font-size: 1.1rem; margin-bottom: 0.5rem; }
+.empty-text { font-size: 0.9rem; }
+.no-shadow { box-shadow: none !important; }
+.bg-blue { background: #3b82f6 !important; }
+

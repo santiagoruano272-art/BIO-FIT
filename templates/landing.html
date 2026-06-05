@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<div style="min-height: 100vh; background: #080f1e; padding: 1px 0;">
+<div class="landing-root">
 <div id="biofit-app-root" data-role="{{ request.session.user_rol|default:'atleta' }}">
     <div class="dashboard-container">
 
@@ -17,7 +17,7 @@
             </header>
 
             <div class="grid-stats">
-                <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                <div class="stat-card stat-card--accent">
                     <h3>Tipo de Cuenta</h3>
                     <p>Administrador</p>
                 </div>
@@ -27,11 +27,11 @@
                 </div>
                 <div class="stat-card">
                     <h3>Estado</h3>
-                    <p style="color: #10b981;">Conectado</p>
+                    <p class="text-green">Conectado</p>
                 </div>
             </div>
 
-            <section class="routine-section" style="background: #1e293b;">
+            <section class="routine-section">
                 <h2>Gestión de Máquinas y Equipamiento</h2>
                 <p>Accede al inventario completo para dar de alta nuevas máquinas, cambiar estados de mantenimiento o remover equipos obsoletos.</p>
                 <a href="/inventory/dashboard/" class="btn-admin">Ir al Inventario de Máquinas</a>
@@ -68,7 +68,7 @@
 
                 <div class="stat-card">
                     <h3>Estado de Plan</h3>
-                    <p style="color: #6ee7a0;">Activo</p>
+                    <p class="text-green">Activo</p>
                 </div>
 
             </div>
@@ -83,13 +83,13 @@
                     <div class="metric-chart">
                         <h3>Volumen de Entrenamiento Proyectado<br>Carga Cardiovascular</h3>
                         <div class="chart-container">
-                            <div class="chart-bar" style="height: 40%;"></div>
-                            <div class="chart-bar" style="height: 65%;"></div>
-                            <div class="chart-bar" style="height: 50%;"></div>
-                            <div class="chart-bar" style="height: 75%;"></div>
-                            <div class="chart-bar" style="height: 55%;"></div>
-                            <div class="chart-bar" style="height: 80%;"></div>
-                            <div class="chart-bar" style="height: 60%;"></div>
+                            <div class="chart-bar h-40"></div>
+                            <div class="chart-bar h-65"></div>
+                            <div class="chart-bar h-50"></div>
+                            <div class="chart-bar h-75"></div>
+                            <div class="chart-bar h-55"></div>
+                            <div class="chart-bar h-80"></div>
+                            <div class="chart-bar h-60"></div>
                         </div>
                     </div>
 
@@ -106,7 +106,7 @@
                             <div class="icon">⏱️</div>
                             <div class="label">Tiempo Total Proyectado</div>
                         </div>
-                        <div class="value">{{ rutina_tiempo }} min</div>
+                        <div class="value">{{ rutina_tiempo|add:0|floatformat:0 }} min</div>
                     </div>
                 </div>
 
@@ -160,7 +160,7 @@
             <section class="routine-section">
                 <h2>Tu Rutina Personalizada</h2>
                 {% if gym_nombre %}
-                    <p>Rutina adaptada al equipamiento de <strong style="color:#6ee7a0;">{{ gym_nombre }}</strong>.</p>
+                    <p>Rutina adaptada al equipamiento de <strong class="text-green">{{ gym_nombre }}</strong>.</p>
                 {% else %}
                     <p>Rutina con peso corporal, sin equipamiento. Perfecta para casa.</p>
                 {% endif %}

@@ -169,6 +169,7 @@ class PerfilView(SesionMixin, APIView):
         nombre   = request.data.get('nombre', '').strip()
         email    = request.data.get('email', '').strip().lower()  # FIX: normalizar email
         telefono = request.data.get('telefono', '').strip()
+        nivel    = request.data.get('nivel', '').strip().lower()
 
         if nombre:
             datos['nombre'] = nombre
@@ -178,6 +179,11 @@ class PerfilView(SesionMixin, APIView):
             if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
                 return Response({'error': 'Correo electrónico no válido.'}, status=400)
             datos['email'] = email
+        if nivel:
+            niveles_validos = ['principiante', 'novato', 'experto']
+            if nivel not in niveles_validos:
+                return Response({'error': f'Nivel no válido. Debe ser uno de: {", ".join(niveles_validos)}'}, status=400)
+            datos['nivel'] = nivel
 
         if not datos:
             return Response({'error': 'No se proporcionaron datos para actualizar.'}, status=400)

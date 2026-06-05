@@ -89,7 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const timeEl = document.getElementById('metric-time');
                 if (timeEl) {
                     const valueEl = timeEl.querySelector('.value');
-                    valueEl.textContent = `${data.tiempo} min`;
+                    const tiempoEntero = Number.isFinite(Number(data.tiempo)) ? Math.floor(Number(data.tiempo)) : data.tiempo;
+                    valueEl.textContent = `${tiempoEntero} min`;
                     valueEl.style.animation = 'none';
                     setTimeout(() => { valueEl.style.animation = 'fadeIn 0.5s ease-in'; }, 10);
                 }

@@ -15,7 +15,7 @@ async function cargarContextoGimnasio() {
         const data = await res.json();
         if (data.gym_id && data.gym_nombre) {
             icon.textContent = '🏋️';
-            text.innerHTML = `Rutina adaptada al inventario de <strong>${data.gym_nombre}</strong> — solo se usarán los equipos disponibles allí.`;
+            text.innerHTML = `Rutina adaptada al inventario de — <strong>${data.gym_nombre} </strong> — solo se usarán los equipos disponibles allí.`;
             badge.style.background = 'rgba(42,82,152,0.12)';
             badge.style.borderColor = 'rgba(96,165,250,0.25)';
             badge.style.color = '#93c5fd';
@@ -89,8 +89,10 @@ function renderRutina(rutina) {
         <div class="save-routine-row">
             <button id="btnSave" class="btn-save-routine" onclick="guardarRutina()">💾 Activar y Guardar esta Rutina</button>
         </div>
-        <div class="tab-bar">${tabsBtns}</div>
-        ${diasHtml}
+        <div class="routine-card">
+            <div class="tab-bar">${tabsBtns}</div>
+            ${diasHtml}
+        </div>
     `;
 }
 

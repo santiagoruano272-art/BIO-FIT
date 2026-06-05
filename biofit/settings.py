@@ -23,8 +23,6 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.conexion',
     'apps.rutinas',
-    'apps.asistente',
-    'apps.calories',
     'apps.inventory',
 ]
 

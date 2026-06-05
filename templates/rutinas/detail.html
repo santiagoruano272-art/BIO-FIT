@@ -9,15 +9,15 @@
 <div class="biofit-detail-wrap" id="biofit-detail-root">
 
   {% if sin_rutinas %}
-    <div style="background:#fff; border:1px solid #eaf2ed; padding:50px 30px; border-radius:24px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.02);">
-      <span style="font-size:3.5rem;">🌱</span>
-      <h2 style="font-family:'Syne',sans-serif; color:#0d2e1e; margin-top:15px;">¡Comienza tu transformación!</h2>
-      <p style="color:#666; max-width:500px; margin:10px auto 30px auto; line-height:1.6;">Aún no tienes rutinas guardadas en BIO-FIT.</p>
+    <div class="empty-state visible">
+      <span class="emoji">🌱</span>
+      <h2>¡Comienza tu transformación!</h2>
+      <p>Aún no tienes rutinas guardadas en BIO-FIT.</p>
       <a href="{% url 'routines:generate' %}" class="btn-primary-fit">✨ Crear mi Plan con Coach IA</a>
     </div>
 
   {% elif error %}
-    <div style="background:#fef2f2; border:1px solid #fecaca; padding:30px; border-radius:16px; text-align:center; color:#991b1b;">
+    <div class="error-state">
       <strong>⚠️ Error:</strong> {{ error }}
     </div>
 
@@ -28,9 +28,9 @@
     </div>
 
     <div class="empty-state" id="empty-state-js">
-      <span style="font-size:3rem;">🏋️</span>
-      <h3 style="font-family:'Syne',sans-serif; color:#0d2e1e; margin:15px 0 8px;">Sin rutinas activas</h3>
-      <p style="color:#888; margin-bottom:20px;">Eliminaste todas tus rutinas. Genera un nuevo plan cuando quieras.</p>
+      <span class="emoji">🏋️</span>
+      <h3>Sin rutinas activas</h3>
+      <p>Eliminaste todas tus rutinas. Genera un nuevo plan cuando quieras.</p>
       <a href="{% url 'routines:generate' %}" class="btn-primary-fit">✨ Generar Nueva Rutina</a>
     </div>
 
@@ -144,7 +144,7 @@
           {% endfor %}
 
         {% else %}
-          <p style="color:#888; text-align:center; padding:20px;">No se encontraron días en esta rutina.</p>
+          <p class="empty-text muted-center">No se encontraron días en esta rutina.</p>
         {% endif %}
 
       </div>
