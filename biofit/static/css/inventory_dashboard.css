@@ -22,7 +22,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: 'DM Sans', system-ui, sans-serif;
-    background: var(--navy-deepest);
+    background: transparent;
     color: var(--text-primary);
     min-height: 100vh;
 }
@@ -113,22 +113,22 @@ body {
 .header-actions h2 { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 700; letter-spacing: 0.5px; color: #c4d4e8; }
 
 .btn-add {
-    background: linear-gradient(135deg, var(--accent-green) 0%, #225c3c 100%);
-    color: #fff;
-    padding: 10px 20px;
-    border: 1px solid rgba(45,122,79,.6);
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 0.9rem;
-    letter-spacing: .3px;
+    background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+    color: #ffffff;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 18px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: .08em;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    box-shadow: 0 2px 12px rgba(45,122,79,.35), inset 0 1px 0 rgba(255,255,255,.1);
-    transition: all .2s;
+    box-shadow: 0 14px 30px rgba(37,99,235,0.28);
+    transition: transform .2s, box-shadow .2s, background .25s;
 }
-.btn-add:hover { background: linear-gradient(135deg, #38a169 0%, #2d7a4f 100%); box-shadow: 0 4px 18px rgba(45,122,79,.5); transform: translateY(-1px); }
+.btn-add:hover { background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%); box-shadow: 0 18px 38px rgba(37,99,235,0.38); transform: translateY(-1px); }
 
 .table-wrapper {
     background: var(--navy-mid);
@@ -150,9 +150,10 @@ tbody tr:hover { background: rgba(59,130,246,.04); }
 .status-fuera       { background: rgba(220,38,38,.15); color: #fca5a5; border: 1px solid rgba(220,38,38,.3); }
 
 .actions-cell { display: flex; gap: 0.5rem; }
-.btn-action { padding: 5px 12px; border: 1px solid var(--navy-border); border-radius: var(--radius-sm); background: var(--navy-surface); color: var(--silver-mid); cursor: pointer; font-size: 0.82rem; font-weight: 500; transition: all .2s; }
-.btn-edit:hover   { background: rgba(59,130,246,.15); color: #93c5fd; border-color: rgba(59,130,246,.4); }
-.btn-delete:hover { background: rgba(220,38,38,.15); color: #fca5a5; border-color: rgba(220,38,38,.4); }
+.btn-action { padding: 7px 14px; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; background: rgba(255,255,255,0.06); color: #e2e8f0; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: transform .2s, box-shadow .2s, background .2s; }
+.btn-action:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(59,130,246,0.12); }
+.btn-edit:hover   { background: rgba(59,130,246,.22); color: #eff6ff; border-color: rgba(59,130,246,.5); }
+.btn-delete:hover { background: rgba(220,38,38,.22); color: #fee2e2; border-color: rgba(220,38,38,.5); }
 
 .btn-action:disabled, .btn-add:disabled {
     opacity: 0.35;
