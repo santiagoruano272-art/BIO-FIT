@@ -15,6 +15,12 @@
     --surface-2:    #162035;
     --border:       rgba(96, 165, 250, 0.15);
 
+    --font-primary: 'Poppins', 'DM Sans', sans-serif;
+    --font-heading: 'Syne', sans-serif;
+    --btn-primary: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --btn-primary-hover: linear-gradient(135deg, #2563eb 0%, #1d4db0 100%);
+    --btn-secondary: rgba(255,255,255,0.08);
+
     /* Legacy aliases para compatibilidad con hijos */
     --green-dark:   #0d1b2e;
     --green-main:   #2a5298;
@@ -22,21 +28,35 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+html {
+    min-height: 100%;
+    background: linear-gradient(180deg, rgba(2,10,24,0.88) 0%, rgba(2,10,24,0.74) 35%, rgba(2,10,24,0.90) 100%),
+        url("../images/fondo.png") center/cover no-repeat fixed;
+}
+
 body {
-    background: var(--navy-deep);
+    background: transparent;
     color: var(--silver-light);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-primary);
     min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
 }
 
 nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 5%;
-    background: var(--navy-dark);
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 2px 24px rgba(8, 15, 30, 0.6);
+    padding: 14px 5%;
+    background: linear-gradient(135deg, rgba(8, 24, 52, 0.96) 0%, rgba(14, 34, 71, 0.97) 42%, rgba(25, 58, 105, 0.96) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 16px 70px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(18px);
     position: relative;
 }
 
@@ -44,14 +64,18 @@ nav {
     display: flex;
     align-items: center;
     text-decoration: none;
+    padding: 4px 6px;
+    background: transparent;
+    border-radius: 20px;
+    border: none;
 }
 /* Logo con esquinas redondeadas + sutil glow metálico */
 .nav-logo img {
     height: 56px;
     width: auto;
     object-fit: contain;
-    border-radius: 14px;
-    box-shadow: 0 0 16px rgba(96, 165, 250, 0.18), 0 2px 8px rgba(0,0,0,0.5);
+    border-radius: 16px;
+    box-shadow: 0 0 20px rgba(96, 165, 250, 0.32), 0 4px 18px rgba(0,0,0,0.45);
     transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 .nav-logo img:hover {
@@ -62,18 +86,19 @@ nav {
 .nav-links { display: flex; gap: 8px; align-items: center; }
 .nav-links a {
     text-decoration: none;
-    color: var(--silver);
-    font-weight: 500;
-    font-size: 0.92rem;
+    color: #eff6ff;
+    font-weight: 600;
+    font-size: 0.94rem;
     cursor: pointer;
     padding: 7px 14px;
-    border-radius: 8px;
-    transition: color 0.2s, background 0.2s;
+    border-radius: 12px;
+    transition: color 0.2s, background 0.2s, transform 0.2s;
     letter-spacing: 0.02em;
 }
 .nav-links a:hover {
-    color: var(--accent-bright);
-    background: rgba(96, 165, 250, 0.08);
+    color: #0f172a;
+    background: rgba(255,255,255,0.82);
+    transform: translateY(-1px);
 }
 
 .btn-logout-nav {
@@ -119,22 +144,66 @@ nav {
 
 /* ── Global Button Styles ── */
 button, .btn, [type="submit"], [type="button"], [role="button"] {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-primary);
     font-weight: 700;
     cursor: pointer;
     border: none;
-    border-radius: 12px;
-    transition: all 0.25s ease;
-    letter-spacing: 0.02em;
+    border-radius: 18px;
+    padding: 12px 20px;
+    background: var(--btn-primary);
+    color: #f8fafc;
+    box-shadow: 0 16px 34px rgba(59,130,246,0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
-button:disabled, .btn:disabled {
-    opacity: 0.5;
+button:hover, .btn:hover, [type="submit"]:hover, [type="button"]:hover, [role="button"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 20px 46px rgba(59,130,246,0.25);
+}
+
+button:disabled, .btn:disabled, [type="submit"]:disabled, [type="button"]:disabled, [role="button"]:disabled {
+    opacity: 0.55;
     cursor: not-allowed;
+    transform: none;
 }
 
-button:active, .btn:active {
-    transform: scale(0.98);
+button:active, .btn:active, [type="submit"]:active, [type="button"]:active, [role="button"]:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.btn-secondary,
+button.secondary,
+.btn-ghost,
+.btn-back,
+.btn-secondary-fit {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: #f8fafc;
+}
+
+.btn-primary,
+.btn-add,
+.btn-generate,
+.btn-save-routine,
+.btn-submit,
+.btn-modal-confirm,
+.btn-primary-fit {
+    background: var(--btn-primary);
+    color: #f8fafc;
+    border: 1px solid rgba(37, 99, 235, 0.35);
+}
+
+.btn-primary:hover,
+.btn-add:hover,
+.btn-generate:hover,
+.btn-save-routine:hover,
+.btn-submit:hover,
+.btn-modal-confirm:hover,
+.btn-primary-fit:hover {
+    background: var(--btn-primary-hover);
+    box-shadow: 0 22px 48px rgba(37,99,235,0.27);
 }
 
 /* ── Global Input Styles ── */
