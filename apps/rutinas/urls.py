@@ -16,4 +16,7 @@ urlpatterns = [
 
     # FIX: nueva ruta para eliminar una rutina individual por ID
     path('api/eliminar/<str:routine_id>/', views_rutinas.delete_routine_api, name='api_delete'),
+    
+    # API para obtener rutina del día
+    path('api/dia/', views_rutinas.get_routine_day_api, name='api_get_day'),
 ]

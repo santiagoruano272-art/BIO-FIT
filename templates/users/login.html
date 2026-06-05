@@ -1,139 +1,16 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends 'base.html' %}
+{% load static %}
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BIO-FIT — Iniciar Sesión</title>
+{% block extra_head %}
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
 
-        body {
-            font-family: 'DM Sans', sans-serif;
-            min-height: 100vh;
-            background: radial-gradient(ellipse at 20% 20%, #1a2f52 0%, #080f1e 50%, #0a1422 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
+{% block show_nav %}{% endblock %}
 
-        .brand {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 28px;
-        }
-
-        /* Logo con esquinas redondeadas y efecto glow metálico */
-        .brand img {
-            height: 110px;
-            width: auto;
-            object-fit: contain;
-            border-radius: 20px;
-            box-shadow:
-                0 0 30px rgba(96, 165, 250, 0.2),
-                0 0 60px rgba(96, 165, 250, 0.08),
-                0 8px 24px rgba(0, 0, 0, 0.7);
-            transition: box-shadow 0.4s ease;
-        }
-        .brand img:hover {
-            box-shadow:
-                0 0 40px rgba(96, 165, 250, 0.35),
-                0 0 80px rgba(96, 165, 250, 0.12),
-                0 10px 30px rgba(0, 0, 0, 0.8);
-        }
-
-        .logo-text {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #c4d4e8;
-            letter-spacing: -1px;
-        }
-
-        .login-card {
-            background: linear-gradient(145deg, #111c30, #0d1b2e);
-            border: 1px solid rgba(96, 165, 250, 0.15);
-            width: 100%;
-            max-width: 400px;
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow:
-                0 24px 60px rgba(8, 15, 30, 0.8),
-                0 0 0 1px rgba(96, 165, 250, 0.05) inset;
-        }
-
-        h1 { font-size: 1.5rem; color: #c4d4e8; margin-bottom: 8px; text-align: center; font-family: 'Syne', sans-serif; }
-        p.subtitle { color: #5a7a9f; font-size: 0.95rem; text-align: center; margin-bottom: 32px; }
-
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; color: #8ba3c7; margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
-        input {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1.5px solid rgba(96, 165, 250, 0.15);
-            background: rgba(8, 15, 30, 0.6);
-            color: #c4d4e8;
-            font-size: 1rem;
-            font-family: 'DM Sans', sans-serif;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input::placeholder { color: #3a5272; }
-        input:focus {
-            outline: none;
-            border-color: #60a5fa;
-            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
-            background: rgba(8, 15, 30, 0.8);
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
-            color: #93c5fd;
-            border: 1px solid rgba(96, 165, 250, 0.25);
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 700;
-            font-family: 'Syne', sans-serif;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
-            box-shadow: 0 4px 20px rgba(42, 82, 152, 0.3);
-        }
-        .btn-submit:hover {
-            background: linear-gradient(135deg, #2a5298 0%, #3b6fd4 100%);
-            color: #bfdbfe;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 28px rgba(42, 82, 152, 0.45);
-        }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            display: none;
-            align-items: center;
-            gap: 10px;
-        }
-        .alert-error { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
-        .alert-success { background: rgba(96, 165, 250, 0.1); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.2); }
-
-        .footer-link { text-align: center; margin-top: 24px; font-size: 0.9rem; color: #4a6a8f; }
-        .footer-link a { color: #60a5fa; font-weight: 600; text-decoration: none; transition: color 0.2s; }
-        .footer-link a:hover { color: #93c5fd; }
-    </style>
-</head>
-
-<body>
+{% block content %}
     <div class="brand">
-        <img src="/static/images/logo_biofit.png" alt="BIO-FIT Logo" style="height: 100px; width: auto; object-fit: contain;">
+        <img src="{% static 'images/logo_biofit.png' %}" alt="BIO-FIT Logo" style="height: 100px; width: auto; object-fit: contain;">
     </div>
 
     <div class="login-card">
@@ -158,75 +35,8 @@
             ¿No tienes cuenta? <a href="/registro/">Regístrate aquí</a>
         </div>
     </div>
+{% endblock %}
 
-    <script>
-        function showAlert(msg, type = 'error') {
-            const el = document.getElementById('alertBox');
-            el.className = 'alert ' + (type === 'error' ? 'alert-error' : 'alert-success');
-            el.textContent = msg;
-            el.style.display = 'flex';
-        }
-
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const btn = document.getElementById('submitBtn');
-
-            btn.textContent = 'Cargando...';
-            btn.disabled = true;
-
-            try {
-                // Petición al endpoint limpio centralizado del proyecto
-                const res = await fetch('/api/login/', { 
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, password }),
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    throw new Error(data.error || 'Credenciales incorrectas');
-                }
-
-                // Guardar las llaves exactas en memoria local
-                localStorage.setItem('biofit_token', data.token);
-                localStorage.setItem('biofit_uid', data.uid);
-                localStorage.setItem('biofit_email', email);
-                localStorage.setItem('biofit_rol', data.rol); 
-
-                showAlert('¡Acceso concedido! Entrando...', 'success');
-
-                setTimeout(() => {
-                    window.location.href = '/'; 
-                }, 1000);
-
-            } catch (err) {
-                showAlert(err.message);
-                btn.textContent = 'Entrar';
-                btn.disabled = false;
-            }
-        });
-    </script>
-</body>
-</html>
+{% block extra_scripts %}
+    <script src="{% static 'js/login.js' %}"></script>
+{% endblock %}
