@@ -157,12 +157,34 @@ FORMATO JSON REQUERIDO (ejemplo de estructura):
 Ahora genera la rutina REAL de {dias} días para el usuario. Usa ejercicios específicos y variados."""
 
 
+# ── Modelos de fallback en orden de prioridad ─────────────────────────────────
+_FALLBACK_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama3-70b-8192",
+    "llama-3.1-8b-instant",
+]
+
+
 class RoutineGenerator:
     def __init__(self):
         api_key = getattr(settings, "GROQ_API_KEY", None)
         self.client = Groq(api_key=api_key) if api_key else None
         self.model_name = getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile")
         print(f"[BIO-FIT] Motor de IA cargado: {self.model_name}")
+
+    def _try_model(self, model: str, messages: list, max_tokens: int) -> str:
+        """Intenta generar con un modelo específico. Lanza excepción si falla."""
+        response = self.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0.75,
+            max_tokens=max_tokens,
+            response_format={"type": "json_object"},
+        )
+        content = response.choices[0].message.content
+        if not content:
+            raise ValueError("La IA no devolvió contenido.")
+        return content
 
     def generate_routine(self, user_data: dict) -> dict:
         if not self.client:
@@ -177,20 +199,37 @@ class RoutineGenerator:
             else:
                 print(f"[BIO-FIT] Sin inventario — modo: {user_data.get('lugar', 'desconocido')}")
 
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user",   "content": user_msg},
-                ],
-                temperature=0.75,
-                max_tokens=6000,
-                response_format={"type": "json_object"},
-            )
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_msg},
+            ]
 
-            content = response.choices[0].message.content
-            if not content:
-                return {'success': False, 'error': 'La IA no devolvió contenido.'}
+            # Construir lista de modelos a intentar: el configurado primero, luego los fallbacks
+            modelos_a_intentar = [self.model_name] + [
+                m for m in _FALLBACK_MODELS if m != self.model_name
+            ]
+
+            content = None
+            ultimo_error = None
+
+            for modelo in modelos_a_intentar:
+                try:
+                    print(f"[BIO-FIT] Intentando con modelo: {modelo}")
+                    content = self._try_model(modelo, messages, max_tokens=4000)
+                    print(f"[BIO-FIT] Respuesta obtenida con modelo: {modelo}")
+                    break
+                except Exception as e:
+                    error_str = str(e)
+                    ultimo_error = error_str
+                    # Solo hacer fallback si es rate limit (429) o modelo no disponible (400)
+                    if '429' in error_str or 'rate_limit' in error_str or 'decommissioned' in error_str or '400' in error_str:
+                        print(f"[BIO-FIT] Modelo {modelo} no disponible ({error_str[:80]}...). Probando siguiente...")
+                        continue
+                    # Cualquier otro error lo lanzamos directo
+                    raise
+
+            if content is None:
+                return {'success': False, 'error': f'Todos los modelos están agotados o no disponibles. Intenta más tarde. ({ultimo_error[:120]})'}
 
             content_limpio = self._limpiar_json(content)
             routine_json   = json.loads(content_limpio)

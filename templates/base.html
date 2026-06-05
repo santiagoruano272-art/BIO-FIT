@@ -5,123 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIO-FIT</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            /* ── Paleta BIO-FIT — inspirada en el logo navy/steel ── */
-            --navy-deep:    #080f1e;
-            --navy-dark:    #0d1b2e;
-            --navy-mid:     #0f2444;
-            --steel-dark:   #1e3a5f;
-            --steel-main:   #2a5298;
-            --steel-light:  #4a7fc1;
-            --silver:       #8ba3c7;
-            --silver-light: #c4d4e8;
-            --accent:       #60a5fa;
-            --accent-bright:#93c5fd;
-            --white:        #ffffff;
-            --surface:      #111c30;
-            --surface-2:    #162035;
-            --border:       rgba(96, 165, 250, 0.15);
-
-            /* Legacy aliases para compatibilidad con hijos */
-            --green-dark:   #0d1b2e;
-            --green-main:   #2a5298;
-        }
-
-        *, *::before, *::after { box-sizing: border-box; }
-
-        body {
-            background: var(--navy-deep);
-            color: var(--silver-light);
-            font-family: 'DM Sans', sans-serif;
-            min-height: 100vh;
-        }
-
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 5%;
-            background: var(--navy-dark);
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 2px 24px rgba(8, 15, 30, 0.6);
-            position: relative;
-        }
-
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-        }
-        /* Logo con esquinas redondeadas + sutil glow metálico */
-        .nav-logo img {
-            height: 56px;
-            width: auto;
-            object-fit: contain;
-            border-radius: 14px;
-            box-shadow: 0 0 16px rgba(96, 165, 250, 0.18), 0 2px 8px rgba(0,0,0,0.5);
-            transition: box-shadow 0.3s ease, transform 0.3s ease;
-        }
-        .nav-logo img:hover {
-            box-shadow: 0 0 28px rgba(96, 165, 250, 0.35), 0 4px 14px rgba(0,0,0,0.6);
-            transform: scale(1.04);
-        }
-
-        .nav-links { display: flex; gap: 8px; align-items: center; }
-        .nav-links a {
-            text-decoration: none;
-            color: var(--silver);
-            font-weight: 500;
-            font-size: 0.92rem;
-            cursor: pointer;
-            padding: 7px 14px;
-            border-radius: 8px;
-            transition: color 0.2s, background 0.2s;
-            letter-spacing: 0.02em;
-        }
-        .nav-links a:hover {
-            color: var(--accent-bright);
-            background: rgba(96, 165, 250, 0.08);
-        }
-
-        .btn-logout-nav {
-            color: #f87171 !important;
-            font-weight: 600 !important;
-        }
-        .btn-logout-nav:hover {
-            background: rgba(248, 113, 113, 0.1) !important;
-            color: #fca5a5 !important;
-        }
-
-        /* Hamburguesa */
-        .menu-toggle { display: none; flex-direction: column; cursor: pointer; gap: 5px; }
-        .menu-toggle span { width: 25px; height: 2px; background: var(--silver); border-radius: 2px; transition: background 0.2s; }
-        .menu-toggle:hover span { background: var(--accent); }
-
-        @media (max-width: 768px) {
-            .menu-toggle { display: flex; }
-            .nav-links {
-                display: none;
-                flex-direction: column;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                width: 100%;
-                background: var(--navy-dark);
-                padding: 16px 20px;
-                box-shadow: 0 16px 32px rgba(8,15,30,0.7);
-                border-bottom: 1px solid var(--border);
-                z-index: 1000;
-            }
-            .nav-links.active { display: flex; }
-            .nav-links a { padding: 10px 12px; font-size: 1rem; }
-        }
-    </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
 
+{% block show_nav %}
 <nav>
     <a href="/" class="nav-logo">
         <img src="{% static 'images/logo_biofit.png' %}" alt="BIO-FIT Logo">
@@ -131,7 +22,6 @@
         <span></span>
         <span></span>
     </div>
-    
     <div class="nav-links" id="nav-links">
         {% if request.session.user_rol == 'admin' %}
             <a href="/">Inicio</a>
@@ -146,25 +36,12 @@
         {% endif %}
     </div>
 </nav>
+{% endblock %}
 
 {% block content %}{% endblock %}
 
-<script>
-    const menuToggle = document.getElementById('mobile-menu');
-    const navLinks = document.getElementById('nav-links');
-
-    menuToggle.addEventListener('click', () => {
-        navLinks.classList.toggle('active');
-    });
-
-    function logout() {
-        localStorage.clear();
-        document.cookie = "sessionid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        window.location.href = '/login/';
-    }
-</script>
+<script src="{% static 'js/base.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
 
 </body>
 </html>
-
-<!-- hola -->

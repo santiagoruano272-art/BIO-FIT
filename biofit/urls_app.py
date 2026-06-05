@@ -3,6 +3,13 @@ from django.urls import path, include
 from apps.users.views import RegisterView, login_view, login_page, registro_page, landing_page
 from apps.conexion import views_perfil
 from apps.conexion.views_conexion import cambiar_password_page, confirmar_password_view
+from apps.rutinas.views_rutinas import firebase_login_required
+from django.shortcuts import render
+
+
+@firebase_login_required
+def asistente_page(request):
+    return render(request, 'asistente/chat.html')
 
 
 urlpatterns = [
@@ -25,6 +32,9 @@ urlpatterns = [
 
     # ── Rutinas ───────────────────────────────────────────────────────────
     path('rutinas/', include('apps.rutinas.urls')),
+
+    # ── Asistente ─────────────────────────────────────────────────────────
+    path('asistente/', asistente_page, name='asistente'),
 
     # ── Perfil ────────────────────────────────────────────────────────────
     path('perfil/',     views_perfil.perfil_page,                       name='perfil'),

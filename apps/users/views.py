@@ -142,10 +142,13 @@ def login_view(request):
 
     user, _ = User.objects.get_or_create(username=email, defaults={'email': email})
 
+    login(request, user)  # Django regenera el session ID aquí
+
+    # FIX: guardar DESPUÉS de login() para que no se pierdan con el nuevo session ID
     request.session['user_uid'] = result['uid']
     request.session['user_rol'] = result.get('rol')
     request.session['gym_id']   = result.get('gym_id')
     request.session.modified    = True
+    request.session.save()
 
-    login(request, user)
     return Response(result, status=status.HTTP_200_OK)
