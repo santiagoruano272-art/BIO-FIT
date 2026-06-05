@@ -73,7 +73,7 @@ function renderPerfil() {
     $('field-nombre').value          = perfil.nombre   || '';
     $('field-email').value           = perfil.email    || '';
     $('field-telefono').value        = perfil.telefono || '';
-    $('field-nivel').textContent     = perfil.nivel    || '–';
+    $('field-nivel').value           = perfil.nivel    || 'principiante';
 
     renderGym();
 }
@@ -110,6 +110,7 @@ $('form-perfil').addEventListener('submit', async (e) => {
     const nombre = $('field-nombre').value.trim();
     const email  = $('field-email').value.trim();
     const tel    = $('field-telefono').value.trim();
+    const nivel  = $('field-nivel').value;
 
     if (!nombre) {
         toast('El nombre no puede estar vacío.', 'error');
@@ -128,7 +129,7 @@ $('form-perfil').addEventListener('submit', async (e) => {
     btn.disabled = true;
     btn.innerHTML = '<span>⏳</span> Guardando…';
 
-    const body = { nombre, email, telefono: tel };
+    const body = { nombre, email, telefono: tel, nivel };
 
     try {
         const r = await fetch(API.perfil, {
@@ -148,6 +149,7 @@ $('form-perfil').addEventListener('submit', async (e) => {
         localStorage.setItem('biofit_nombre', body.nombre);
         localStorage.setItem('biofit_email',  body.email);
         localStorage.setItem('biofit_tel',    body.telefono);
+        localStorage.setItem('biofit_nivel',  body.nivel);
         renderPerfil();
         toast('Perfil actualizado correctamente.');
     } catch (err) {

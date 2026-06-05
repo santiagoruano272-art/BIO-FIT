@@ -20,7 +20,7 @@
         <div class="topbar-right">
             <span class="badge-gym">Sede Activa: {{ gym_nombre }}</span>
             {% if es_admin %}
-                <span class="badge-gym" style="background: linear-gradient(135deg,#1e3a8a,#1e40af); border-color: rgba(59,130,246,.4); box-shadow: 0 0 12px rgba(59,130,246,.2);">Admin</span>
+                <span class="badge-gym badge-admin">Admin</span>
             {% else %}
                 <span class="badge-readonly">Solo Lectura</span>
             {% endif %}
@@ -64,7 +64,7 @@
                     <tbody>
                         {% for equipo in inventario %}
                             <tr>
-                                <td style="font-weight: 600;">{{ equipo.nombre }}</td>
+                                <td class="font-600">{{ equipo.nombre }}</td>
                                 <td>{{ equipo.tipo }}</td>
                                 <td>{{ equipo.ubicacion }}</td>
                                 <td>{{ equipo.fecha_adquisicion }}</td>
@@ -94,11 +94,11 @@
                 </table>
             {% else %}
                 <div class="empty-state">
-                    <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No hay activos registrados en esta sede.</p>
+                    <p class="empty-title">No hay activos registrados en esta sede.</p>
                     {% if es_admin %}
-                    <p style="font-size: 0.9rem;">Haz clic en "Agregar Activo" para inicializar tu subcolección en Firestore.</p>
+                    <p class="empty-text">Haz clic en "Agregar Activo" para inicializar tu subcolección en Firestore.</p>
                     {% else %}
-                    <p style="font-size: 0.9rem;">Contacta a un administrador para registrar equipos.</p>
+                    <p class="empty-text">Contacta a un administrador para registrar equipos.</p>
                     {% endif %}
                 </div>
             {% endif %}
@@ -145,7 +145,7 @@
                 <div class="error-message" id="addError"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn-action" onclick="closeModal('addModal')">Cancelar</button>
-                    <button type="submit" class="btn-add" style="box-shadow:none;">Guardar en Firestore</button>
+                    <button type="submit" class="btn-add no-shadow">Guardar en Firestore</button>
                 </div>
             </form>
         </div>
@@ -191,7 +191,7 @@
                 <div class="error-message" id="editError"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn-action" onclick="closeModal('editModal')">Cancelar</button>
-                    <button type="submit" class="btn-add" style="box-shadow:none; background:#3b82f6;">Actualizar Registro</button>
+                    <button type="submit" class="btn-add no-shadow bg-blue">Actualizar Registro</button>
                 </div>
             </form>
         </div>

@@ -5,15 +5,19 @@
 {% endblock %}
 
 {% block content %}
+<div class="perfil-page-bg">
 <div class="perfil-wrapper">
-    <h1 class="perfil-title"><span>👤</span> Mi Perfil</h1>
 
+    <h1 class="perfil-title"><span class="perfil-title-icon">👤</span> Mi Perfil</h1>
+
+    <!-- ── Información Personal ── -->
     <div class="perfil-card">
         <div class="card-header">
             <div class="icon">🧬</div>
             <h2>Información Personal</h2>
         </div>
         <div class="card-body">
+
             <div class="avatar-row">
                 <div class="avatar-circle" id="avatar-initials">?</div>
                 <div class="avatar-meta">
@@ -22,6 +26,9 @@
                     <span class="badge-rol" id="badge-rol">atleta</span>
                 </div>
             </div>
+
+            <div class="error-banner" id="form-error-banner" role="alert"></div>
+
             <form id="form-perfil" novalidate>
                 <div class="field-grid">
                     <div class="field-item">
@@ -40,8 +47,12 @@
                                placeholder="+57 300 0000000" autocomplete="tel">
                     </div>
                     <div class="field-item">
-                        <label>Nivel</label>
-                        <div class="field-value" id="field-nivel">–</div>
+                        <label for="field-nivel">Nivel</label>
+                        <select class="field-input" id="field-nivel">
+                            <option value="principiante">Principiante</option>
+                            <option value="novato">Novato</option>
+                            <option value="experto">Experto</option>
+                        </select>
                     </div>
                 </div>
                 <div class="save-row">
@@ -50,15 +61,19 @@
                     </button>
                 </div>
             </form>
+
         </div>
     </div>
 
+    <!-- ── Mi Gimnasio ── -->
     <div class="perfil-card">
         <div class="card-header">
             <div class="icon">🏋️</div>
             <h2>Mi Gimnasio</h2>
         </div>
         <div class="card-body">
+
+            <!-- Estado: gimnasio huérfano -->
             <div class="gym-not-found" id="gym-not-found">
                 ⚠️ Tu cuenta tenía un gimnasio asignado que ya no existe en el sistema.
                 Puedes seleccionar una sede nueva.
@@ -69,20 +84,21 @@
                 </div>
             </div>
 
+            <!-- Estado: vinculado -->
             <div id="gym-linked-view" style="display:none;">
                 <div class="gym-linked">
                     <div class="gym-info">
                         <div class="gym-icon">🏢</div>
                         <div>
                             <h3 id="gym-nombre">–</h3>
-                            <span id="gym-ubicacion">–</span>
+                            <span id="gym-ubicacion" class="gym-ubicacion">–</span>
                         </div>
                     </div>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <div class="gym-actions">
                         <button class="btn btn-sm btn-ghost" id="btn-cambiar-gym">
                             🔄 Cambiar gimnasio
                         </button>
-                        <button class="btn btn-sm btn-ghost" id="btn-desvincular">
+                        <button class="btn btn-sm btn-ghost btn-danger-ghost" id="btn-desvincular">
                             ✕ Desvincularse
                         </button>
                     </div>
@@ -96,18 +112,22 @@
                 </div>
             </div>
 
+            <!-- Estado: sin gimnasio -->
             <div id="gym-unlinked-view" class="gym-unlinked" style="display:none;">
+                <div class="gym-unlinked-icon">🏠</div>
                 <p>No estás vinculado a ningún gimnasio. Únete a una sede para acceder a planes exclusivos.</p>
-                <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-                    <button class="btn btn-primary" id="btn-vincular">
-                        🔗 Vincular a un gimnasio
-                    </button>
-                </div>
+                <button class="btn btn-primary" id="btn-vincular">
+                    🔗 Vincular a un gimnasio
+                </button>
             </div>
+
         </div>
     </div>
-</div>
 
+</div><!-- /perfil-wrapper -->
+</div><!-- /perfil-page-bg -->
+
+<!-- ── Modal: buscar sede ── -->
 <div class="modal-overlay" id="modal-gimnasio" role="dialog" aria-modal="true" aria-label="Buscar sede BIO-FIT">
     <div class="modal-box">
         <div class="modal-header">
@@ -140,6 +160,7 @@
 <div class="loading-overlay" id="loading-overlay" aria-label="Cargando…">
     <div class="spinner"></div>
 </div>
+
 {% endblock %}
 
 {% block extra_scripts %}
