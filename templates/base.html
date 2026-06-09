@@ -17,7 +17,7 @@
     <a href="/" class="nav-logo">
         <img src="{% static 'images/logo_biofit.png' %}" alt="BIO-FIT Logo">
     </a>
-    <div class="menu-toggle" id="mobile-menu">
+    <div class="menu-toggle" id="mobile-menu" aria-label="Abrir menú">
         <span></span>
         <span></span>
         <span></span>
@@ -26,13 +26,13 @@
         {% if request.session.user_rol == 'admin' %}
             <a href="/">Inicio</a>
             <a href="{% url 'inventory:admin_dashboard' %}">Inventario</a>
-            <a onclick="logout()" class="btn-logout-nav">Cerrar Sesión</a>
+            <a onclick="logout()" class="btn-logout-nav">🔒 Cerrar Sesión</a>
         {% else %}
             <a href="/">Inicio</a>
             <a href="/rutinas/detalle/">Rutinas</a>
             <a href="/rutinas/generar/">Asistente</a>
             <a href="/perfil/">Mi Perfil</a>
-            <a onclick="logout()" class="btn-logout-nav">Cerrar Sesión</a>
+            <a onclick="logout()" class="btn-logout-nav">🔒 Cerrar Sesión</a>
         {% endif %}
     </div>
 </nav>
