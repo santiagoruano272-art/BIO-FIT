@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: bio-fit
+    env: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn biofit.wsgi:application"
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: "llama-3.3-70b-versatile"
+      - key: FIREBASE_API_KEY
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: "True"
+      - key: CSRF_COOKIE_SECURE
+        value: "True"
+    autoDeploy: true

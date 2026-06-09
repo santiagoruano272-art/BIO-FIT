@@ -1,4 +1,6 @@
 import os
+import json
+import tempfile
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -7,9 +9,19 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ── SEGURIDAD ──────────────────────────────────────────────────────────────────
-SECRET_KEY    = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key')
-DEBUG         = os.getenv('DEBUG', 'False') == 'True'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key')
+DEBUG      = os.getenv('DEBUG', 'False') == 'True'
+
+# FIX: RENDER_EXTERNAL_HOSTNAME se agrega automáticamente a ALLOWED_HOSTS
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# FIX: CSRF_TRUSTED_ORIGINS necesario en Django 4+ para peticiones HTTPS en Render
+CSRF_TRUSTED_ORIGINS = []
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 # ── APLICACIONES ───────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
@@ -27,8 +39,10 @@ INSTALLED_APPS = [
 ]
 
 # ── MIDDLEWARE ─────────────────────────────────────────────────────────────────
+# FIX: WhiteNoiseMiddleware agregado justo después de SecurityMiddleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -67,29 +81,19 @@ DATABASES = {
 }
 
 # ── SESIONES ───────────────────────────────────────────────────────────────────
-# CRÍTICO: sin estas configuraciones la sesión se destruye entre navegaciones.
 SESSION_ENGINE             = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE         = 86400   # 24 horas
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY    = True
 SESSION_COOKIE_SAMESITE    = 'Lax'
-# FIX: leer SESSION_COOKIE_SECURE desde .env para no hardcodear False en producción.
-# En .env de desarrollo: SESSION_COOKIE_SECURE=False
-# En .env de producción:  SESSION_COOKIE_SECURE=True
-SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
+SESSION_COOKIE_SECURE      = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
 
 # ── CSRF ───────────────────────────────────────────────────────────────────────
-# FIX: también controlar CSRF_COOKIE_SECURE desde .env.
-# Las vistas de perfil usan @csrf_exempt pero el login no — esta config
-# protege el token de sesión en producción.
 CSRF_COOKIE_SECURE   = os.getenv('CSRF_COOKIE_SECURE', 'False') == 'True'
 CSRF_COOKIE_HTTPONLY = False   # el frontend JS necesita leer el csrftoken
 CSRF_COOKIE_SAMESITE = 'Lax'
 
 # ── REST FRAMEWORK ─────────────────────────────────────────────────────────────
-# FIX: configuración explícita de DRF para que use sesión Django por defecto.
-# Evita que vistas que no declaran authentication_classes caigan al
-# comportamiento de TokenAuthentication inesperado.
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
@@ -100,17 +104,28 @@ REST_FRAMEWORK = {
 }
 
 # ── ARCHIVOS ESTÁTICOS ─────────────────────────────────────────────────────────
-STATIC_URL = '/static/'
+STATIC_URL       = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'biofit' / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT      = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ── GROQ CLOUD (IA) ────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 GROQ_MODEL   = os.getenv('GROQ_MODEL', 'llama3-70b-8192')
 
 # ── FIREBASE ───────────────────────────────────────────────────────────────────
-FIREBASE_API_KEY          = os.getenv('FIREBASE_API_KEY')
-FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'bio-fit-serviceAccountKey.json')
+FIREBASE_API_KEY = os.getenv('FIREBASE_API_KEY')
+
+# FIX: en Render no existe el archivo .json, se lee desde variable de entorno.
+# En desarrollo local sigue usando el archivo directamente.
+_firebase_json = os.getenv('FIREBASE_CREDENTIALS_JSON')
+if _firebase_json:
+    _tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+    _tmp.write(_firebase_json)
+    _tmp.close()
+    FIREBASE_CREDENTIALS_PATH = _tmp.name
+else:
+    FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'bio-fit-serviceAccountKey.json')
 
 # ── LOCALIZACIÓN ───────────────────────────────────────────────────────────────
 LANGUAGE_CODE = 'es-co'
