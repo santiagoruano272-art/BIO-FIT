@@ -114,12 +114,21 @@ async function procesarGeneracion(e) {
 
     const btn = document.getElementById('btnSubmit');
     const content = document.getElementById('routineContent');
-    if (!btn || !content) return;
+    const levelEl = document.getElementById('level');
+    const goalEl = document.getElementById('goal');
+    const routinePageEl = document.getElementById('routinePage');
+    const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
 
-    const level = document.getElementById('level').value;
-    const goal = document.getElementById('goal').value;
+    if (!btn || !content || !levelEl || !goalEl || !routinePageEl || !csrfTokenEl) {
+        console.error('Faltan elementos del formulario', { btn, content, levelEl, goalEl, routinePageEl, csrfTokenEl });
+        return;
+    }
+
+    const level = levelEl.value;
+    const goal = goalEl.value;
     const selectedDays = Array.from(document.querySelectorAll('input[name="day"]:checked')).map(cb => cb.value);
     selectedDaysForSave = selectedDays;
+    
     if (selectedDays.length === 0) {
         alert('Por favor, selecciona al menos un día de entrenamiento.');
         return;
@@ -138,13 +147,13 @@ async function procesarGeneracion(e) {
         const token = getAuthToken();
         const headers = {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            'X-CSRFToken': csrfTokenEl.value
         };
         if (token) {
             headers['Authorization'] = 'Bearer ' + token;
         }
 
-        const response = await fetch(document.getElementById('routinePage').dataset.generateUrl, {
+        const response = await fetch(routinePageEl.dataset.generateUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify({ nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDays })
@@ -185,26 +194,32 @@ function guardarRutina() {
     const loginUrl = page.dataset.loginUrl;
     const detailUrl = page.dataset.detailUrl;
     const btn = document.getElementById('btnSave');
+    const levelEl = document.getElementById('level');
+    const goalEl = document.getElementById('goal');
+    const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
 
     if (!usuarioAutenticado) {
         alert('Para guardar tu plan necesitas estar identificado.');
         window.location.href = loginUrl;
         return;
     }
-    if (!btn) return;
+    if (!btn || !levelEl || !goalEl || !csrfTokenEl) {
+        console.error('Faltan elementos para guardar la rutina', { btn, levelEl, goalEl, csrfTokenEl });
+        return;
+    }
 
     btn.textContent = '💾 Guardando en tu perfil...';
     btn.disabled = true;
 
-    const level = document.getElementById('level').value;
-    const goal = document.getElementById('goal').value;
+    const level = levelEl.value;
+    const goal = goalEl.value;
     const days = rutinaActual.dias ? rutinaActual.dias.length : 0;
 
     fetch(saveUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-CSRFToken': csrfTokenEl.value,
         },
         body: JSON.stringify({ rutina: rutinaActual, inputs: { nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDaysForSave } })
     })
