@@ -1,3 +1,4 @@
+console.log("rutinas_generador.js cargado v3");
 let rutinaActual = null;
 let rutinaGuardada = true;
 let selectedDaysForSave = [];
@@ -110,6 +111,7 @@ function mostrarDia(idx) {
 }
 
 async function procesarGeneracion(e) {
+    console.log("procesarGeneracion llamado");
     e.preventDefault();
 
     const btn = document.getElementById('btnSubmit');
@@ -119,10 +121,14 @@ async function procesarGeneracion(e) {
     const routinePageEl = document.getElementById('routinePage');
     const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
 
-    if (!btn || !content || !levelEl || !goalEl || !routinePageEl || !csrfTokenEl) {
-        console.error('Faltan elementos del formulario', { btn, content, levelEl, goalEl, routinePageEl, csrfTokenEl });
-        return;
-    }
+    console.log("Elementos del formulario", { btn, content, levelEl, goalEl, routinePageEl, csrfTokenEl });
+
+    if (!btn) { console.error("Falta btnSubmit"); return; }
+    if (!content) { console.error("Falta routineContent"); return; }
+    if (!levelEl) { console.error("Falta level"); return; }
+    if (!goalEl) { console.error("Falta goal"); return; }
+    if (!routinePageEl) { console.error("Falta routinePage"); return; }
+    if (!csrfTokenEl) { console.error("Falta csrfmiddlewaretoken"); return; }
 
     const level = levelEl.value;
     const goal = goalEl.value;
@@ -153,13 +159,17 @@ async function procesarGeneracion(e) {
             headers['Authorization'] = 'Bearer ' + token;
         }
 
+        console.log("Enviando datos", { nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDays });
+
         const response = await fetch(routinePageEl.dataset.generateUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify({ nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDays })
     });
 
+        console.log("Respuesta del servidor", response.status);
         const data = await response.json();
+        console.log("Datos recibidos", data);
 
         if (response.ok && data.rutina) {
             rutinaActual = data.rutina;
@@ -244,9 +254,13 @@ function guardarRutina() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM completamente cargado");
     const routineForm = document.getElementById('routineForm');
     if (routineForm) {
+        console.log("Formulario encontrado, agregando event listener");
         routineForm.addEventListener('submit', procesarGeneracion);
+    } else {
+        console.error("No se encontró el formulario con ID routineForm");
     }
     cargarContextoGimnasio();
 });
