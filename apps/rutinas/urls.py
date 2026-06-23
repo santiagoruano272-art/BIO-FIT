@@ -19,4 +19,7 @@ urlpatterns = [
     
     # API para obtener rutina del día
     path('api/dia/', views_rutinas.get_routine_day_api, name='api_get_day'),
+    
+    # API para obtener información de la rutina (días seleccionados, etc.)
+    path('api/info/', views_rutinas.get_routine_info_api, name='api_get_info'),
 ]

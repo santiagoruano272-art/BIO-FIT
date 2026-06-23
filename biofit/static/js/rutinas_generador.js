@@ -1,4 +1,6 @@
 let rutinaActual = null;
+let rutinaGuardada = true;
+let selectedDaysForSave = [];
 
 function getAuthToken() {
     return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
@@ -55,6 +57,8 @@ function renderEjercicios(lista) {
 function renderRutina(rutina) {
     const content = document.getElementById('routineContent');
     if (!content) return;
+    rutinaActual = rutina;
+    rutinaGuardada = false;
     const dias = rutina.dias || [];
     if (dias.length === 0) {
         content.innerHTML = '<p class="empty-exercises">No se generaron días de entrenamiento.</p>';
@@ -114,7 +118,13 @@ async function procesarGeneracion(e) {
 
     const level = document.getElementById('level').value;
     const goal = document.getElementById('goal').value;
-    const days = document.getElementById('days').value;
+    const selectedDays = Array.from(document.querySelectorAll('input[name="day"]:checked')).map(cb => cb.value);
+    selectedDaysForSave = selectedDays;
+    if (selectedDays.length === 0) {
+        alert('Por favor, selecciona al menos un día de entrenamiento.');
+        return;
+    }
+    const days = selectedDays.length;
 
     btn.textContent = '🧠 Pensando tu rutina ideal...';
     btn.disabled = true;
@@ -135,10 +145,10 @@ async function procesarGeneracion(e) {
         }
 
         const response = await fetch(document.getElementById('routinePage').dataset.generateUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ nivel: level, objetivo: goal, dias: days })
-        });
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDays })
+    });
 
         const data = await response.json();
 
@@ -188,7 +198,7 @@ function guardarRutina() {
 
     const level = document.getElementById('level').value;
     const goal = document.getElementById('goal').value;
-    const days = document.getElementById('days').value;
+    const days = rutinaActual.dias ? rutinaActual.dias.length : 0;
 
     fetch(saveUrl, {
         method: 'POST',
@@ -196,11 +206,12 @@ function guardarRutina() {
             'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
         },
-        body: JSON.stringify({ rutina: rutinaActual, inputs: { nivel: level, objetivo: goal, dias: days } })
+        body: JSON.stringify({ rutina: rutinaActual, inputs: { nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDaysForSave } })
     })
     .then(res => res.json().then(data => ({ ok: res.ok, data })))
     .then(({ ok, data }) => {
         if (ok && data.success) {
+            rutinaGuardada = true;
             alert('¡Plan guardado con éxito! Redirigiendo al detalle de tu rutina...');
             window.location.href = detailUrl;
         } else {
@@ -223,4 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
         routineForm.addEventListener('submit', procesarGeneracion);
     }
     cargarContextoGimnasio();
+});
+
+window.addEventListener('beforeunload', (e) => {
+    if (rutinaActual && !rutinaGuardada) {
+        e.preventDefault();
+        e.returnValue = 'Tienes una rutina sin guardar. ¿Seguro que quieres salir?';
+        return e.returnValue;
+    }
 });

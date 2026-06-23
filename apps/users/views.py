@@ -20,6 +20,7 @@ def landing_page(request):
     """
     FIX: ahora pasa el contexto del gimnasio al template para que la tarjeta
     central del dashboard muestre el nombre del gym o 'Desde casa'.
+    También pasa los días seleccionados de la rutina.
     """
     contexto = {}
 
@@ -42,7 +43,24 @@ def landing_page(request):
     else:
         contexto['gym_nombre']    = None
         contexto['gym_ubicacion'] = None
-
+    
+    # Obtener días seleccionados de la rutina
+    selected_days = ['Lunes', 'Miércoles', 'Viernes']
+    user_uid = request.session.get('user_uid')
+    if user_uid:
+        try:
+            docs = firebase.get_user_routines(user_uid)
+            if docs:
+                user_inputs = docs[0].get('user_inputs', {})
+                if user_inputs and user_inputs.get('nombres_dias'):
+                    selected_days = user_inputs.get('nombres_dias', [])
+        except Exception as e:
+            print(f"[BIO-FIT] Error obteniendo días de la rutina: {e}")
+    
+    # Pasar los días al template (como JSON)
+    import json
+    contexto['selected_days_json'] = json.dumps(selected_days)
+    
     return render(request, 'landing.html', contexto)
 
 
