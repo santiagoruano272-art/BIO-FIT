@@ -62,7 +62,7 @@ function renderRutina(rutina) {
     rutinaGuardada = false;
     const dias = rutina.dias || [];
     if (dias.length === 0) {
-        content.innerHTML = '<p class="empty-exercises">No se generaron días de entrenamiento.</p>';
+        content.innerHTML = '<p class="empty-exercises">No se generaron días de entrenamiento...</p>';
         return;
     }
 
