@@ -183,18 +183,20 @@ def generate_routine_api(request):
     try:
         data = json.loads(request.body)
 
-        nivel    = data.get('nivel', 'intermedio')
-        objetivo = data.get('objetivo', 'salud_general')
-        dias     = data.get('dias', 3)
-        lugar    = data.get('lugar', 'gimnasio')
-        lesiones = data.get('lesiones', 'ninguna')
-        edad     = data.get('edad', '')
-        peso     = data.get('peso', '')
-        genero   = data.get('genero', '')
+        nivel        = data.get('nivel', 'intermedio')
+        objetivo     = data.get('objetivo', 'salud_general')
+        dias         = data.get('dias', 3)
+        nombres_dias = data.get('nombres_dias', [])
+        lugar        = data.get('lugar', 'gimnasio')
+        lesiones     = data.get('lesiones', 'ninguna')
+        edad         = data.get('edad', '')
+        peso         = data.get('peso', '')
+        genero       = data.get('genero', '')
 
-        request.session['ultimo_nivel']    = nivel
-        request.session['ultimo_objetivo'] = objetivo
-        request.session['ultimo_dias']     = dias
+        request.session['ultimo_nivel']        = nivel
+        request.session['ultimo_objetivo']     = objetivo
+        request.session['ultimo_dias']         = dias
+        request.session['ultimos_nombres_dias'] = nombres_dias
         request.session.modified = True
 
         gym_id     = request.session.get('gym_id')
@@ -233,6 +235,13 @@ def generate_routine_api(request):
             return JsonResponse({'status': 'error', 'error': error_msg}, status=400)
 
         rutina_procesada = _normalizar_rutina(result['routine'])
+        
+        # Replace generic day names with selected ones
+        if nombres_dias and len(nombres_dias) > 0:
+            for i, dia in enumerate(rutina_procesada.get('dias', [])):
+                if i < len(nombres_dias):
+                    dia['dia'] = nombres_dias[i]
+        
         print(f"[BIO-FIT] Días generados: {len(rutina_procesada.get('dias', []))}")
 
         return JsonResponse({'status': 'success', 'rutina': rutina_procesada})
@@ -266,6 +275,12 @@ def save_routine_api(request):
         user_inputs.setdefault('nivel',    request.session.get('ultimo_nivel',    ''))
         user_inputs.setdefault('objetivo', request.session.get('ultimo_objetivo', ''))
         user_inputs.setdefault('dias',     request.session.get('ultimo_dias',     ''))
+        
+        # Save selected days (nombres_dias) - first try from request, then from session
+        nombres_dias = body.get('inputs', {}).get('nombres_dias', [])
+        if not nombres_dias:
+            nombres_dias = request.session.get('ultimos_nombres_dias', [])
+        user_inputs.setdefault('nombres_dias', nombres_dias)
 
         now_col = datetime.now(COL_TZ)
         user_inputs.setdefault('start_date',    now_col.strftime('%Y-%m-%d'))
@@ -637,8 +652,44 @@ def get_routine_day_api(request):
             'ejercicios': metricas.get('ejercicios', []),
             'dia_nombre': dia_seleccionado.get('dia', f'Día {indice_dia + 1}'),
             'enfoque': dia_seleccionado.get('enfoque', ''),
+            'nombres_dias': user_inputs.get('nombres_dias', []),
         })
 
     except Exception as e:
         print(f"[BIO-FIT] Error obteniendo rutina del día: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@firebase_login_required
+def get_routine_info_api(request):
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    try:
+        user_uid = _get_uid(request)
+        
+        if not user_uid:
+            return JsonResponse({'error': 'Sesión inválida'}, status=401)
+
+        docs = firebase.get_user_routines(user_uid)
+
+        if not docs:
+            return JsonResponse({
+                'status': 'no_routine',
+                'nombres_dias': ['Lunes', 'Miércoles', 'Viernes'],
+            })
+
+        rutina_doc = docs[0]
+        user_inputs = rutina_doc.get('user_inputs', {})
+
+        return JsonResponse({
+            'status': 'success',
+            'nombres_dias': user_inputs.get('nombres_dias', ['Lunes', 'Miércoles', 'Viernes']),
+        })
+
+    except Exception as e:
+        print(f"[BIO-FIT] Error obteniendo info de rutina: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'nombres_dias': ['Lunes', 'Miércoles', 'Viernes'],
+        })

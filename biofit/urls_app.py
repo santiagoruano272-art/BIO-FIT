@@ -7,6 +7,10 @@ from apps.rutinas.views_rutinas import firebase_login_required
 from django.shortcuts import render
 
 
+def terminos_page(request):
+    return render(request, 'terminos.html')
+
+
 @firebase_login_required
 def asistente_page(request):
     return render(request, 'asistente/chat.html')
@@ -18,6 +22,7 @@ urlpatterns = [
     path('inicio/', landing_page, name='inicio'),
     path('login/',    login_page,    name='login'),
     path('registro/', registro_page, name='registro'),
+    path('terminos/', terminos_page, name='terminos'),
 
     # ── Auth ──────────────────────────────────────────────────────────────
     path('api/register/', RegisterView.as_view(), name='api_register'),

@@ -111,46 +111,99 @@
                 </div>
 
                 <div class="body-diagram">
-                    <svg class="body-svg" viewBox="0 0 200 520" xmlns="http://www.w3.org/2000/svg">
-                        <g id="head" class="region">
-                            <ellipse cx="100" cy="60" rx="28" ry="34" />
-                        </g>
-                        <g id="shoulders" class="region">
-                            <ellipse cx="58" cy="120" rx="24" ry="14" />
-                            <ellipse cx="142" cy="120" rx="24" ry="14" />
-                        </g>
-                        <g id="chest" class="region">
-                            <path d="M60 130 C60 170, 140 170, 140 130 L140 170 C140 210, 60 210, 60 170 Z" />
-                        </g>
-                        <g id="abs" class="region">
-                            <rect x="78" y="170" width="44" height="56" rx="10" />
-                        </g>
-                        <g id="core" class="region">
-                            <rect x="70" y="164" width="60" height="80" rx="12" />
-                        </g>
-                        <g id="biceps" class="region">
-                            <path d="M34 130 C20 150, 20 200, 34 230 L50 220 C44 190, 44 160, 50 150 Z" />
-                            <path d="M166 130 C180 150, 180 200, 166 230 L150 220 C156 190, 156 160, 150 150 Z" />
-                        </g>
-                        <g id="triceps" class="region">
-                            <path d="M34 200 C28 220, 28 250, 34 270 L50 260 C44 240, 44 220, 50 210 Z" />
-                            <path d="M166 200 C172 220, 172 250, 166 270 L150 260 C156 240, 156 220, 150 210 Z" />
-                        </g>
-                        <g id="glutes" class="region">
-                            <ellipse cx="100" cy="252" rx="34" ry="18" />
-                        </g>
-                        <g id="quads" class="region">
-                            <rect x="74" y="280" width="24" height="120" rx="12" />
-                            <rect x="102" y="280" width="24" height="120" rx="12" />
-                        </g>
-                        <g id="calves" class="region">
-                            <rect x="74" y="400" width="24" height="60" rx="8" />
-                            <rect x="102" y="400" width="24" height="60" rx="8" />
-                        </g>
-                        <g id="full_body" class="region">
-                            <rect x="40" y="40" width="120" height="440" rx="60" opacity="0" />
-                        </g>
-                    </svg>
+                    <div class="body-view-toggle">
+                        <button class="view-btn active" data-view="front">Frente</button>
+                        <button class="view-btn" data-view="back">Espalda</button>
+                    </div>
+                    <div class="body-views">
+                        <!-- Front view -->
+                        <svg class="body-svg body-front active" viewBox="0 0 200 500" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Head -->
+                            <ellipse cx="100" cy="45" rx="30" ry="35" fill="none" stroke="rgba(96,165,250,0.3)" stroke-width="2"/>
+                            <!-- Neck -->
+                            <rect x="92" y="75" width="16" height="20" rx="3" fill="none" stroke="rgba(96,165,250,0.3)" stroke-width="2"/>
+                            <!-- Shoulders -->
+                            <g id="shoulders" class="region">
+                                <rect x="40" y="95" width="45" height="20" rx="8" />
+                                <rect x="115" y="95" width="45" height="20" rx="8" />
+                            </g>
+                            <!-- Chest -->
+                            <g id="chest" class="region">
+                                <path d="M55 115 C70 140, 130 140, 145 115 L145 155 C130 180, 70 180, 55 155 Z" />
+                            </g>
+                            <!-- Biceps -->
+                            <g id="biceps" class="region">
+                                <rect x="35" y="115" width="18" height="60" rx="6" />
+                                <rect x="147" y="115" width="18" height="60" rx="6" />
+                            </g>
+                            <!-- Abs -->
+                            <g id="abs" class="region">
+                                <rect x="75" y="155" width="50" height="70" rx="10" />
+                            </g>
+                            <!-- Core -->
+                            <g id="core" class="region">
+                                <rect x="70" y="145" width="60" height="85" rx="12" />
+                            </g>
+                            <!-- Triceps (front view is still triceps) -->
+                            <g id="triceps" class="region">
+                                <rect x="35" y="115" width="18" height="60" rx="6" />
+                                <rect x="147" y="115" width="18" height="60" rx="6" />
+                            </g>
+                            <!-- Glutes (front view) -->
+                            <g id="glutes" class="region">
+                                <ellipse cx="100" cy="235" rx="35" ry="18" />
+                            </g>
+                            <!-- Quads -->
+                            <g id="quads" class="region">
+                                <rect x="70" y="245" width="25" height="100" rx="10" />
+                                <rect x="105" y="245" width="25" height="100" rx="10" />
+                            </g>
+                            <!-- Calves -->
+                            <g id="calves" class="region">
+                                <rect x="75" y="345" width="18" height="50" rx="8" />
+                                <rect x="107" y="345" width="18" height="50" rx="8" />
+                            </g>
+                            <!-- Full body -->
+                            <g id="full_body" class="region">
+                                <rect x="35" y="45" width="130" height="360" rx="60" opacity="0" />
+                            </g>
+                        </svg>
+                        <!-- Back view -->
+                        <svg class="body-svg body-back" viewBox="0 0 200 500" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Head -->
+                            <ellipse cx="100" cy="45" rx="30" ry="35" fill="none" stroke="rgba(96,165,250,0.3)" stroke-width="2"/>
+                            <!-- Neck -->
+                            <rect x="92" y="75" width="16" height="20" rx="3" fill="none" stroke="rgba(96,165,250,0.3)" stroke-width="2"/>
+                            <!-- Shoulders -->
+                            <g id="shoulders-back" class="region">
+                                <rect x="40" y="95" width="45" height="20" rx="8" />
+                                <rect x="115" y="95" width="45" height="20" rx="8" />
+                            </g>
+                            <!-- Back -->
+                            <g id="back" class="region">
+                                <path d="M55 115 C70 140, 130 140, 145 115 L145 200 C130 230, 70 230, 55 200 Z" />
+                            </g>
+                            <!-- Triceps (back view) -->
+                            <g id="triceps" class="region">
+                                <rect x="35" y="115" width="18" height="60" rx="6" />
+                                <rect x="147" y="115" width="18" height="60" rx="6" />
+                            </g>
+                            <!-- Glutes (back view) -->
+                            <g id="glutes" class="region">
+                                <ellipse cx="100" cy="220" rx="35" ry="20" />
+                            </g>
+                            <!-- Quads (back view - hamstrings) -->
+                            <g id="quads-back" class="region">
+                                <rect x="70" y="235" width="25" height="100" rx="10" />
+                                <rect x="105" y="235" width="25" height="100" rx="10" />
+                            </g>
+                            <!-- Calves (back view) -->
+                            <g id="calves-back" class="region">
+                                <rect x="75" y="335" width="18" height="55" rx="8" />
+                                <rect x="107" y="335" width="18" height="55" rx="8" />
+                            </g>
+                        </svg>
+                    </div>
                     <div class="body-info">
                         Músculos Trabajados<strong>{{ rutina_musculos }}</strong>
                     </div>
@@ -175,5 +228,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/landing.js' %}"></script>
+<script src="{% static 'js/landing.js' %}?v=8&t={{ now|date:'U' }}"></script>
 {% endblock %}

@@ -19,7 +19,10 @@
         <div class="card-body">
 
             <div class="avatar-row">
-                <div class="avatar-circle" id="avatar-initials">?</div>
+                <div class="avatar-circle" id="avatar-circle">
+                    <img id="avatar-img" alt="Foto de perfil" style="display:none;">
+                    <span id="avatar-initials">?</span>
+                </div>
                 <div class="avatar-meta">
                     <h3 id="avatar-name">Cargando…</h3>
                     <span id="avatar-email">–</span>
@@ -31,10 +34,22 @@
 
             <form id="form-perfil" novalidate>
                 <div class="field-grid">
+                    <div class="field-item" style="grid-column: span 2;">
+                        <label for="field-avatar">Foto de perfil</label>
+                        <div class="avatar-upload">
+                            <input class="field-input" type="file" id="field-avatar" accept="image/*">
+                            <span class="avatar-upload-hint">Sube una imagen para tu perfil (JPG, PNG, GIF)</span>
+                        </div>
+                    </div>
                     <div class="field-item">
                         <label for="field-nombre">Nombre completo</label>
                         <input class="field-input" type="text" id="field-nombre"
                                placeholder="Tu nombre" autocomplete="name">
+                    </div>
+                    <div class="field-item">
+                        <label for="field-sobrenombre">Sobrenombre (opcional)</label>
+                        <input class="field-input" type="text" id="field-sobrenombre"
+                               placeholder="Cómo quieres que te llamemos" autocomplete="nickname">
                     </div>
                     <div class="field-item">
                         <label for="field-email">Correo electrónico</label>
@@ -164,5 +179,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-    <script src="{% static 'js/perfil.js' %}"></script>
+    <script src="{% static 'js/perfil.js' %}?v=2&t={{ now|date:'U' }}"></script>
 {% endblock %}

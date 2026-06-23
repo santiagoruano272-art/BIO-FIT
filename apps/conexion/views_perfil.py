@@ -146,6 +146,8 @@ class PerfilView(SesionMixin, APIView):
 
             return Response({
                 'nombre':        perfil.get('nombre', ''),
+                'sobrenombre':   perfil.get('sobrenombre', ''),
+                'avatar_url':    perfil.get('avatar_url', ''),
                 'email':         perfil.get('email', ''),
                 'telefono':      perfil.get('telefono', ''),
                 'nivel':         perfil.get('nivel', 'principiante'),
@@ -167,12 +169,18 @@ class PerfilView(SesionMixin, APIView):
 
         datos    = {}
         nombre   = request.data.get('nombre', '').strip()
+        sobrenombre = request.data.get('sobrenombre', '').strip()
+        avatar_url = request.data.get('avatar_url', '').strip()
         email    = request.data.get('email', '').strip().lower()  # FIX: normalizar email
         telefono = request.data.get('telefono', '').strip()
         nivel    = request.data.get('nivel', '').strip().lower()
 
         if nombre:
             datos['nombre'] = nombre
+        if sobrenombre:
+            datos['sobrenombre'] = sobrenombre
+        if avatar_url:
+            datos['avatar_url'] = avatar_url
         if telefono:
             datos['telefono'] = telefono
         if email:

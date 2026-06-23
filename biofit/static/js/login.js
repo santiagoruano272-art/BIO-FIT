@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || 'Credenciales incorrectas');
+                throw new Error('Credenciales incorrectas o usuario no registrado');
             }
 
             localStorage.setItem('biofit_token', data.idToken || data.token || data.uid);
