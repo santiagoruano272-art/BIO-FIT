@@ -31,6 +31,28 @@ def landing_page(request):
 
     contexto = {}
 
+    user_uid = request.session.get('user_uid')
+
+    # FIX: resolver el apodo/nombre del usuario en el servidor, ANTES de
+    # renderizar. Antes el template siempre pintaba "Atleta" fijo y
+    # landing.js lo reemplazaba unos segundos después al llegar la
+    # respuesta de /api/perfil/. Ahora el HTML ya llega con el nombre
+    # correcto desde el primer render, sin parpadeo.
+    nombre_mostrar = 'Atleta'
+    if user_uid:
+        try:
+            perfil_usuario = firebase.get_user_profile(user_uid)
+            if perfil_usuario:
+                nombre_mostrar = (
+                    perfil_usuario.get('sobrenombre')
+                    or perfil_usuario.get('nombre')
+                    or 'Atleta'
+                )
+        except Exception as e:
+            print(f"[BIO-FIT] Error obteniendo perfil del usuario en landing: {e}")
+
+    contexto['user_display_name'] = nombre_mostrar
+
     gym_id = request.session.get('gym_id')
     if gym_id:
         # Intentar obtener el nombre del gimnasio desde Firestore (con caché)
@@ -53,7 +75,6 @@ def landing_page(request):
     
     # Obtener días seleccionados de la rutina
     selected_days = ['Lunes', 'Miércoles', 'Viernes']
-    user_uid = request.session.get('user_uid')
     if user_uid:
         try:
             docs = firebase.get_user_routines(user_uid)

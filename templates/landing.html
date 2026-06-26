@@ -39,7 +39,7 @@
 
         {% else %}
             <header class="welcome-header">
-                <h1>Hola, <span id="user-display-name">Atleta</span> 👋</h1>
+                <h1>Hola, <span id="user-display-name">{{ user_display_name|default:"Atleta" }}</span> 👋</h1>
                 <p>Tu IA ha preparado el entrenamiento de hoy.</p>
             </header>
 
