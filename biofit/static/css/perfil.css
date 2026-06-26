@@ -125,12 +125,74 @@ body {
 }
 
 /* ── Fields ── */
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
-@media(max-width: 700px) { .field-grid { grid-template-columns: 1fr; } }
-.field-item {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+.field-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:18px;
+    width:100%;
+}
+
+.field-item{
+    width:100%;
+    min-width:0;
+}
+
+.field-item .field-input,
+.field-item input,
+.field-item select{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0;
+    display:block;
+    box-sizing:border-box;
+}
+
+.field-item:first-child{
+    grid-column:1 / -1;
+}
+
+@media (max-width:768px){
+
+    .perfil-wrapper{
+        padding:24px 16px 50px;
+    }
+
+    .card-body{
+        padding:20px;
+    }
+
+    .avatar-row{
+        flex-direction:column;
+        align-items:center;
+        text-align:center;
+    }
+
+    .field-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:16px;
+    }
+
+    .save-row{
+        justify-content:center;
+    }
+
+    .save-row .btn{
+        width:100%;
+        max-width:350px;
+    }
+
+}
+
+@media (max-width:520px){
+
+    .field-grid{
+        grid-template-columns:1fr;
+    }
+
+    .field-item{
+        grid-column:auto !important;
+    }
+
 }
 .field-item label {
     display: block; font-size: .75rem; font-weight: 700;
@@ -318,4 +380,33 @@ body {
     color: var(--text-muted);
     display: block;
     margin-top: 2px;
+}
+/* ==========================
+   Avatar Responsive
+========================== */
+
+.avatar-upload{
+    width:100%;
+}
+
+.avatar-upload input[type="file"]{
+    width:100%;
+    max-width:100%;
+    display:block;
+    overflow:hidden;
+}
+
+.avatar-upload input[type="file"]::file-selector-button{
+    padding:10px 16px;
+    border:none;
+    border-radius:8px;
+    margin-right:12px;
+    cursor:pointer;
+}
+
+.avatar-upload-hint{
+    display:block;
+    margin-top:8px;
+    color:var(--text-muted);
+    font-size:.85rem;
 }

@@ -305,26 +305,39 @@
   .day-checkbox { padding: 10px 12px; }
   .day-checkbox span { font-size: 0.88rem; }
 }
-/* Correcciones Responsive */
-@media (max-width: 768px) {
-    .routine-meta-bar { 
-        flex-direction: column; 
-        align-items: center; 
-        text-align: center; 
-    }
-    .exercises-grid { 
-        grid-template-columns: 1fr !important; 
-    }
-    .card-top-row { 
-        flex-direction: column-reverse; 
-        align-items: stretch; 
-        gap: 10px;
-    }
-    .exercise-card { 
-        width: 100%; 
-    }
-    .phase-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
+.gym-context-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  background: rgba(42,82,152,0.15);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+
+  padding: 16px 18px;
+  margin-bottom: 28px;
+
+  color: var(--silver);
+  font-size: 0.95rem;
+
+  width: 100%;
+}
+
+.gym-badge-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+#gym-badge-text {
+  display: block;
+  width: 100%;
+
+  line-height: 1.6;
+  text-align: left;
+
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word;
+
+  max-width: 100%;
 }
