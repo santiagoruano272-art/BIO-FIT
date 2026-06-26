@@ -20,10 +20,16 @@ async function cargarPerfil() {
             const perfil = await response.json();
             console.log("📋 Perfil cargado:", perfil);
             
-            // Actualizar el nombre en el encabezado
+            // FIX: el nombre ya llega correcto desde el servidor en el render
+            // inicial (views.py resuelve sobrenombre/nombre antes de pintar
+            // landing.html), así que aquí ya NO hace falta "rellenar" el
+            // nombre por defecto. Esto solo sincroniza si el perfil trae un
+            // valor real distinto al que ya se mostró (ej. el usuario cambió
+            // su apodo en otra pestaña). Nunca lo pisa con 'Atleta'.
             const nombreDisplay = document.getElementById('user-display-name');
-            if (nombreDisplay) {
-                nombreDisplay.textContent = perfil.sobrenombre || perfil.nombre || 'Atleta';
+            const nombrePerfil = perfil.sobrenombre || perfil.nombre;
+            if (nombreDisplay && nombrePerfil && nombreDisplay.textContent !== nombrePerfil) {
+                nombreDisplay.textContent = nombrePerfil;
             }
             
             // Actualizar el nivel
