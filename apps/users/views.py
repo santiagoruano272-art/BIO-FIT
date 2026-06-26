@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
@@ -22,6 +22,13 @@ def landing_page(request):
     central del dashboard muestre el nombre del gym o 'Desde casa'.
     También pasa los días seleccionados de la rutina.
     """
+    # FIX: si no hay sesión activa, no se debe mostrar el dashboard del atleta.
+    # Antes, al no existir 'user_rol' en sesión, el template caía en el {% else %}
+    # de landing.html (que es justamente el dashboard del atleta), dando la
+    # apariencia de estar logueado sin estarlo.
+    if not request.session.get('user_uid'):
+        return redirect('login')
+
     contexto = {}
 
     gym_id = request.session.get('gym_id')
