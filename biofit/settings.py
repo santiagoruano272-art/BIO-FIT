@@ -108,8 +108,7 @@ REST_FRAMEWORK = {
 STATIC_URL       = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'biofit' / 'static']
 STATIC_ROOT      = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedFilesStorage'
 # ── GROQ CLOUD (IA) ────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 GROQ_MODEL   = os.getenv('GROQ_MODEL', 'llama3-70b-8192')
