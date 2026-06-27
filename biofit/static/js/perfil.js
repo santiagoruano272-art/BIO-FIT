@@ -425,3 +425,5 @@ document.addEventListener('DOMContentLoaded', function() {
     
     cargarPerfil();
 });
+
+//Correción para la foto de perfil
