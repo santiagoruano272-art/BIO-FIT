@@ -51,5 +51,5 @@ urlpatterns = [
     path('api/perfil/gimnasio/', views_perfil.GimnasioVinculacionView.as_view(), name='api_gym_vinculacion'),
 
     # Buscador de gimnasios
-    path('api/gimnasios/', views_perfil.BuscarGimnasioView.as_view(), name='api_buscar_gimnasios'),
+    path('api/gimnasios/', views_perfil.BuscarGimnasiosView.as_view(), name='api_buscar_gimnasios'),
 ]
