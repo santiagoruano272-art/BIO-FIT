@@ -60,7 +60,7 @@
         {% elif request.session.user_rol == 'admin' %}
             <a href="/">Inicio</a>
             <a href="{% url 'inventory:admin_dashboard' %}">Inventario</a>
-            <a onclick="logout()" class="btn-logout-nav">🔒 Cerrar Sesión</a>
+            <a href="javascript:void(0);" onclick="logout()" class="btn-logout-nav">🔒 Cerrar Sesión</a>
         {% else %}
             <a href="/">Inicio</a>
             <a href="/rutinas/detalle/">Rutinas</a>

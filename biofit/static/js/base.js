@@ -14,46 +14,37 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// FUNCIÓN AUXILIAR: Extrae el CSRF Token necesario para peticiones POST seguras en Django
-function getCsrfTokenForLogout() {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, 10) === ('csrftoken=')) {
-                cookieValue = decodeURIComponent(cookie.substring(10));
-                break;
-            }
-        }
-    }
-    return cookieValue;
+// Función auxiliar para obtener el token CSRF necesario para el POST de Django
+function getCsrfToken() {
+    return document.cookie.split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('csrftoken='))
+        ?.split('=')[1] || '';
 }
 
-// FIX DE FUGA DE SESIÓN: Cierre de sesión sincronizado Cliente <=> Servidor
 async function logout() {
+    console.log("🔒 Cerrando sesión en el servidor...");
     try {
-        const csrfToken = getCsrfTokenForLogout();
-        
-        // 1. Avisar al servidor Django para que destruya el registro en la BD de sesiones e invalide la cookie
-        await fetch('/api/logout/', {
+        // Le avisamos a Django que destruya la cookie sessionid
+        const response = await fetch('/api/logout/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': getCsrfToken()
             },
-            credentials: 'include' // Obligatorio para enviar e invalidar cookies de sesión activas
+            credentials: 'include' // Crucial para enviar las cookies de sesión actuales
         });
-        console.log("🔒 Sesión destruida en el servidor Django.");
-    } catch (error) {
-        console.error("Error al procesar el cierre de sesión en el servidor:", error);
-    } finally {
-        // 2. Limpiar todo rastro en el almacenamiento del cliente
-        localStorage.clear();
-        sessionStorage.clear();
-        console.log("🧹 Almacenamiento local del navegador limpio.");
 
-        // 3. Redirección final segura al formulario de login limpio
+        if (response.ok) {
+            console.log("✅ Sesión destruida en backend de forma segura.");
+        } else {
+            console.warn("⚠️ El backend no destruyó la sesión, forzando limpieza local.");
+        }
+    } catch (err) {
+        console.error("❌ Error conectando con la API de logout:", err);
+    } finally {
+        // Pase lo que pase, limpiamos el navegador y redirigimos
+        localStorage.clear();
         window.location.href = '/login/';
     }
 }
