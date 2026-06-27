@@ -1,7 +1,4 @@
-console.log("rutinas_generador.js cargado v3");
 let rutinaActual = null;
-let rutinaGuardada = true;
-let selectedDaysForSave = [];
 
 function getAuthToken() {
     return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
@@ -18,7 +15,8 @@ async function cargarContextoGimnasio() {
         const data = await res.json();
         if (data.gym_id && data.gym_nombre) {
             icon.textContent = '🏋️';
-            text.innerHTML = `Rutina adaptada al inventario de — <strong>${data.gym_nombre} </strong> — solo se usarán los equipos disponibles allí.`;
+            // ← CORRECCIÓN: asignar el texto completo en una sola línea inline
+            text.textContent = `Rutina adaptada al inventario de ${data.gym_nombre}. Solo se usarán los equipos disponibles allí.`;
             badge.style.background = 'rgba(42,82,152,0.12)';
             badge.style.borderColor = 'rgba(96,165,250,0.25)';
             badge.style.color = '#93c5fd';
@@ -58,8 +56,6 @@ function renderEjercicios(lista) {
 function renderRutina(rutina) {
     const content = document.getElementById('routineContent');
     if (!content) return;
-    rutinaActual = rutina;
-    rutinaGuardada = false;
     const dias = rutina.dias || [];
     if (dias.length === 0) {
         content.innerHTML = '<p class="empty-exercises">No se generaron días de entrenamiento.</p>';
@@ -111,35 +107,15 @@ function mostrarDia(idx) {
 }
 
 async function procesarGeneracion(e) {
-    console.log("procesarGeneracion llamado");
     e.preventDefault();
 
     const btn = document.getElementById('btnSubmit');
     const content = document.getElementById('routineContent');
-    const levelEl = document.getElementById('level');
-    const goalEl = document.getElementById('goal');
-    const routinePageEl = document.getElementById('routinePage');
-    const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!btn || !content) return;
 
-    console.log("Elementos del formulario", { btn, content, levelEl, goalEl, routinePageEl, csrfTokenEl });
-
-    if (!btn) { console.error("Falta btnSubmit"); return; }
-    if (!content) { console.error("Falta routineContent"); return; }
-    if (!levelEl) { console.error("Falta level"); return; }
-    if (!goalEl) { console.error("Falta goal"); return; }
-    if (!routinePageEl) { console.error("Falta routinePage"); return; }
-    if (!csrfTokenEl) { console.error("Falta csrfmiddlewaretoken"); return; }
-
-    const level = levelEl.value;
-    const goal = goalEl.value;
-    const selectedDays = Array.from(document.querySelectorAll('input[name="day"]:checked')).map(cb => cb.value);
-    selectedDaysForSave = selectedDays;
-    
-    if (selectedDays.length === 0) {
-        alert('Por favor, selecciona al menos un día de entrenamiento.');
-        return;
-    }
-    const days = selectedDays.length;
+    const level = document.getElementById('level').value;
+    const goal = document.getElementById('goal').value;
+    const days = [...document.querySelectorAll('input[name="day"]:checked')].map(cb => cb.value);
 
     btn.textContent = '🧠 Pensando tu rutina ideal...';
     btn.disabled = true;
@@ -153,23 +129,19 @@ async function procesarGeneracion(e) {
         const token = getAuthToken();
         const headers = {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrfTokenEl.value
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         };
         if (token) {
             headers['Authorization'] = 'Bearer ' + token;
         }
 
-        console.log("Enviando datos", { nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDays });
+        const response = await fetch(document.getElementById('routinePage').dataset.generateUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ nivel: level, objetivo: goal, dias: days.length, nombres_dias: days })
+        });
 
-        const response = await fetch(routinePageEl.dataset.generateUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDays })
-    });
-
-        console.log("Respuesta del servidor", response.status);
         const data = await response.json();
-        console.log("Datos recibidos", data);
 
         if (response.ok && data.rutina) {
             rutinaActual = data.rutina;
@@ -204,39 +176,32 @@ function guardarRutina() {
     const loginUrl = page.dataset.loginUrl;
     const detailUrl = page.dataset.detailUrl;
     const btn = document.getElementById('btnSave');
-    const levelEl = document.getElementById('level');
-    const goalEl = document.getElementById('goal');
-    const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
 
     if (!usuarioAutenticado) {
         alert('Para guardar tu plan necesitas estar identificado.');
         window.location.href = loginUrl;
         return;
     }
-    if (!btn || !levelEl || !goalEl || !csrfTokenEl) {
-        console.error('Faltan elementos para guardar la rutina', { btn, levelEl, goalEl, csrfTokenEl });
-        return;
-    }
+    if (!btn) return;
 
     btn.textContent = '💾 Guardando en tu perfil...';
     btn.disabled = true;
 
-    const level = levelEl.value;
-    const goal = goalEl.value;
-    const days = rutinaActual.dias ? rutinaActual.dias.length : 0;
+    const level = document.getElementById('level').value;
+    const goal = document.getElementById('goal').value;
+    const days = [...document.querySelectorAll('input[name="day"]:checked')].map(cb => cb.value);
 
     fetch(saveUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrfTokenEl.value,
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
         },
-        body: JSON.stringify({ rutina: rutinaActual, inputs: { nivel: level, objetivo: goal, dias: days, nombres_dias: selectedDaysForSave } })
+        body: JSON.stringify({ rutina: rutinaActual, inputs: { nivel: level, objetivo: goal, dias: days.length, nombres_dias: days, start_date: new Date().toISOString().slice(0, 10) } })
     })
     .then(res => res.json().then(data => ({ ok: res.ok, data })))
     .then(({ ok, data }) => {
         if (ok && data.success) {
-            rutinaGuardada = true;
             alert('¡Plan guardado con éxito! Redirigiendo al detalle de tu rutina...');
             window.location.href = detailUrl;
         } else {
@@ -254,21 +219,9 @@ function guardarRutina() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM completamente cargado");
     const routineForm = document.getElementById('routineForm');
     if (routineForm) {
-        console.log("Formulario encontrado, agregando event listener");
         routineForm.addEventListener('submit', procesarGeneracion);
-    } else {
-        console.error("No se encontró el formulario con ID routineForm");
     }
     cargarContextoGimnasio();
-});
-
-window.addEventListener('beforeunload', (e) => {
-    if (rutinaActual && !rutinaGuardada) {
-        e.preventDefault();
-        e.returnValue = 'Tienes una rutina sin guardar. ¿Seguro que quieres salir?';
-        return e.returnValue;
-    }
 });

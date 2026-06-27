@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
@@ -22,7 +22,36 @@ def landing_page(request):
     central del dashboard muestre el nombre del gym o 'Desde casa'.
     También pasa los días seleccionados de la rutina.
     """
+    # FIX: si no hay sesión activa, no se debe mostrar el dashboard del atleta.
+    # Antes, al no existir 'user_rol' en sesión, el template caía en el {% else %}
+    # de landing.html (que es justamente el dashboard del atleta), dando la
+    # apariencia de estar logueado sin estarlo.
+    if not request.session.get('user_uid'):
+        return redirect('login')
+
     contexto = {}
+
+    user_uid = request.session.get('user_uid')
+
+    # FIX: resolver el apodo/nombre del usuario en el servidor, ANTES de
+    # renderizar. Antes el template siempre pintaba "Atleta" fijo y
+    # landing.js lo reemplazaba unos segundos después al llegar la
+    # respuesta de /api/perfil/. Ahora el HTML ya llega con el nombre
+    # correcto desde el primer render, sin parpadeo.
+    nombre_mostrar = 'Atleta'
+    if user_uid:
+        try:
+            perfil_usuario = firebase.get_user_profile(user_uid)
+            if perfil_usuario:
+                nombre_mostrar = (
+                    perfil_usuario.get('sobrenombre')
+                    or perfil_usuario.get('nombre')
+                    or 'Atleta'
+                )
+        except Exception as e:
+            print(f"[BIO-FIT] Error obteniendo perfil del usuario en landing: {e}")
+
+    contexto['user_display_name'] = nombre_mostrar
 
     gym_id = request.session.get('gym_id')
     if gym_id:
@@ -46,7 +75,6 @@ def landing_page(request):
     
     # Obtener días seleccionados de la rutina
     selected_days = ['Lunes', 'Miércoles', 'Viernes']
-    user_uid = request.session.get('user_uid')
     if user_uid:
         try:
             docs = firebase.get_user_routines(user_uid)

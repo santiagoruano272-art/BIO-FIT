@@ -75,8 +75,10 @@
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
 }
 
+/* ── Badge de contexto de gimnasio ── */
 .gym-context-badge { 
-  display: flex; 
+  display: flex;
+  flex-wrap: nowrap;           /* evita que ícono y texto se apilen */
   align-items: center; 
   gap: 12px; 
   background: rgba(42,82,152,0.15); 
@@ -86,10 +88,23 @@
   margin-bottom: 28px; 
   font-size: 0.95rem; 
   color: var(--silver);
+  overflow: hidden;            /* contiene el texto en viewports muy angostos */
 }
 
 .gym-context-badge span { display: inline-flex; align-items: center; }
-.gym-badge-icon { font-size: 20px; }
+
+.gym-badge-icon { 
+  font-size: 20px; 
+  flex-shrink: 0;              /* el ícono nunca se comprime */
+}
+
+/* Texto del badge: siempre en una sola línea horizontal */
+#gym-badge-text {
+  white-space: nowrap;         /* fuerza una única línea */
+  overflow: hidden;
+  text-overflow: ellipsis;     /* "…" si el texto no cabe en móvil */
+  flex: 1;                     /* ocupa el espacio restante */
+}
 
 .routine-results { margin-top: 40px; text-align: left; }
 
@@ -228,9 +243,6 @@
 
 .btn-save-routine:hover { 
   background: linear-gradient(135deg, #1d4ed8 0%, #2363c7 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 14px 40px rgba(37,99,235,0.40);
-
   color: var(--white);
   transform: translateY(-2px); 
   box-shadow: 0 10px 36px rgba(42,82,152,0.5);
