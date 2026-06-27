@@ -76,46 +76,55 @@ def registro_page(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    email    = request.data.get('email', '').strip().lower()  # FIX: normalizar a minúsculas
+    email    = request.data.get('email', '').strip().lower()  # Normalizar a minúsculas
     password = request.data.get('password', '')
     result   = login_user(email, password)
 
+    # 1. Validar de forma segura si el inicio de sesión falló o trae un error
     if not result or 'error' in result:
-        return Response(result or {'error': 'Error interno'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(result or {'error': 'Credenciales incorrectas o error de autenticación'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # 2. Extraer el UID de forma segura usando .get()
+    uid = result.get('uid')
+    if not uid:
+        return Response(
+            {'error': 'El servicio de autenticación no devolvió un identificador de usuario válido (UID).'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
     # Bloqueo: contraseña provisional
     if result.get('must_change_password'):
-        request.session['uid_pending_password_change']   = result.get('uid')
+        request.session['uid_pending_password_change']   = uid
         request.session['email_pending_password_change'] = email
         request.session.modified = True
         return Response(
             {
                 'must_change_password': True,
                 'redirect':             '/cambiar-password/',
-                'error':                result['error'],
+                'error':                result.get('error', 'Debe cambiar la contraseña provisional.'),
             },
             status=status.HTTP_403_FORBIDDEN,
         )
 
+    # 3. Autenticación en Django local
     user, _ = User.objects.get_or_create(username=email, defaults={'email': email})
-
     login(request, user)  # Django regenera el session ID aquí
 
-    # FIX: guardar DESPUÉS de login() para que no se pierdan con el nuevo session ID
-    request.session['user_uid'] = result['uid']
+    # 4. Guardar en sesión de forma segura sin peligro de KeyError
+    request.session['user_uid'] = uid
     request.session['user_rol'] = result.get('rol', 'atleta')
     request.session['gym_id']   = result.get('gym_id', None)
-    request.session.modified = True
+    request.session.modified    = True
+    request.session.save()
 
+    # 5. Respuesta limpia y estructurada para tu JavaScript (login.js)
     return Response({
-        'uid':   result['uid'],
-        'email': email,
-        'rol':   result.get('rol', 'atleta'),
-        'gym_id': result.get('gym_id', None),
-        'token': result.get('idToken')
+        'message': 'Login exitoso',
+        'uid': uid,
+        'rol': request.session['user_rol'],
+        'gym_id': request.session['gym_id'],
+        'token': result.get('idToken') or result.get('token')
     }, status=status.HTTP_200_OK)
-
-
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
