@@ -222,7 +222,7 @@ class PerfilView(SesionMixin, APIView):
 # ── API: LISTAR GIMNASIOS  →  GET /api/gimnasios/?q=<query> ──────────────────
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GimnasioBuscadorView(SesionMixin, APIView):
+class BuscarGimnasiosView(SesionMixin, APIView):  # <-- MODIFICADO: Nombre cambiado para alinearse con urls_app.py
     """
     Devuelve la lista de gimnasios registrados, con filtro opcional por nombre
     o ubicación. No requiere uid — solo sesión Django activa.
@@ -261,7 +261,7 @@ class GimnasioBuscadorView(SesionMixin, APIView):
             return Response(sedes)
 
         except Exception as e:
-            logger.error("Error en GimnasioBuscadorView: %s", e)
+            logger.error("Error en BuscarGimnasiosView: %s", e)
             return Response(
                 {'error': 'No se pudo obtener la lista de gimnasios.', 'detalle': str(e)},
                 status=503,
