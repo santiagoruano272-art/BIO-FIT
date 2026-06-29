@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 # IMPORTANTE: Asegúrate de importar 'logout_view' desde el módulo correcto de users
-from apps.users.views import RegisterView, login_view, logout_view, login_page, registro_page, landing_page
+from apps.users.views import RegisterView, login_view, logout_view, auto_logout_view, login_page, registro_page, landing_page
 from apps.conexion import views_perfil
 from apps.conexion.views_conexion import cambiar_password_page, confirmar_password_view
 from apps.rutinas.views_rutinas import firebase_login_required
@@ -28,7 +28,8 @@ urlpatterns = [
     # ── Auth ──────────────────────────────────────────────────────────────
     path('api/register/', RegisterView.as_view(), name='api_register'),
     path('api/login/',    login_view,             name='api_login'),
-    path('api/logout/',   logout_view,            name='api_logout'),  # <-- NUEVA RUTA PARA EL FETCH DE LOGOUT
+    path('api/logout/',   logout_view,            name='api_logout'),
+    path('auto-logout/',  auto_logout_view,        name='auto_logout'),  # cierre automático al cerrar pestaña/navegador
 
     # ── Cambio de contraseña obligatorio ──────────────────────────────────
     path('cambiar-password/',       cambiar_password_page,   name='cambiar_password'),

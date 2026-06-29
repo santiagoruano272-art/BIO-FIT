@@ -87,8 +87,10 @@ def landing_page(request):
 @never_cache
 def login_page(request):
     """Renderiza de forma limpia la interfaz visual de inicio de sesión."""
-    if request.session.get('user_uid'):
-        return redirect('landing')
+    # Siempre destruir la sesión del servidor al llegar al login.
+    # Esto cubre el caso donde Django reinicia pero db.sqlite3 aún
+    # conserva la sesión anterior, evitando el redirect automático al dashboard.
+    django_logout(request)
     return render(request, 'users/login.html')
 
 
@@ -225,7 +227,7 @@ def login_view(request):
     }, status=status.HTTP_200_OK)
 
 
-# ── LOGOUT (API) ──────────────────────────────────────────────────────────────
+# ── LOGOUT MANUAL (API) ───────────────────────────────────────────────────────
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -240,3 +242,23 @@ def logout_view(request):
     except Exception as e:
         logger.error("Error durante el proceso de logout: %s", e)
         return Response({'error': 'No se pudo cerrar la sesión correctamente.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ── AUTO-LOGOUT AL CERRAR PESTAÑA/NAVEGADOR (API) ────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def auto_logout_view(request):
+    """
+    Llamado automáticamente por sendBeacon() desde base.js cuando el usuario
+    cierra la pestaña o el navegador. Destruye la sesión en el servidor
+    de forma idéntica al logout manual, sin requerir autenticación previa
+    (porque la cookie de sesión puede haber expirado justo al cerrar).
+    """
+    try:
+        django_logout(request)
+        return Response({'message': 'Sesión cerrada automáticamente.'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error("Error en auto-logout: %s", e)
+        # Retornamos 200 siempre para que el navegador no reintente la solicitud
+        return Response({'ok': True}, status=status.HTTP_200_OK)

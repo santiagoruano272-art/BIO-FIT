@@ -83,7 +83,8 @@ DATABASES = {
 
 # ── SESIONES ───────────────────────────────────────────────────────────────────
 SESSION_ENGINE             = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE         = 86400   # 24 horas
+SESSION_COOKIE_AGE         = 1800    # 30 minutos de inactividad máxima
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True   # la cookie desaparece al cerrar el navegador
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY    = True
 SESSION_COOKIE_SAMESITE    = 'Lax'

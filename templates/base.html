@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIO-FIT</title>
 
+    {% csrf_token %}
+
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
@@ -23,7 +25,7 @@
     <script>
         const firebaseConfig = {
             apiKey: "{{ FIREBASE_API_KEY }}",
-            authDomain: "bio-fit-1234.firebaseapp.com", // You might need to change this
+            authDomain: "bio-fit-1234.firebaseapp.com",
             projectId: "bio-fit-1234",
             storageBucket: "bio-fit-1234.appspot.com",
             messagingSenderId: "123456789",

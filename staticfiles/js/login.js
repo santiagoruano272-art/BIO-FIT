@@ -24,21 +24,22 @@ function getCookie(name) {
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('loginForm');
     if (!form) return;
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('email').value.trim();
+        const email    = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
-        const btn = document.getElementById('submitBtn');
+        const btn      = document.getElementById('submitBtn');
 
         btn.textContent = 'Cargando...';
-        btn.disabled = true;
+        btn.disabled    = true;
 
         try {
-            const res = await fetch('/api/login/', { 
+            const res = await fetch('/api/login/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': getCookie('csrftoken'),
                 },
                 credentials: 'include',
                 body: JSON.stringify({ email, password }),
@@ -47,24 +48,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || 'Credenciales incorrectas');
+                throw new Error('Credenciales incorrectas o usuario no registrado');
             }
 
-            localStorage.setItem('biofit_token', data.idToken || data.token || data.uid);
-            localStorage.setItem('biofit_uid', data.uid);
-            localStorage.setItem('biofit_email', email);
-            localStorage.setItem('biofit_rol', data.rol);
+            // Limpiar localStorage (sistema anterior)
+            localStorage.clear();
+
+            // Guardar en sessionStorage — se borra automáticamente al cerrar Edge/Chrome
+            sessionStorage.setItem('biofit_activo', 'true');
+            sessionStorage.setItem('biofit_uid',    data.uid);
+            sessionStorage.setItem('biofit_email',  email);
+            sessionStorage.setItem('biofit_rol',    data.rol);
+            sessionStorage.setItem('biofit_token',  data.idToken || data.token || data.uid);
 
             showAlert('¡Acceso concedido! Entrando...', 'success');
 
             setTimeout(() => {
-                window.location.href = '/'; 
+                window.location.replace('/');
             }, 1000);
 
         } catch (err) {
             showAlert(err.message || 'Error en login');
             btn.textContent = 'Entrar';
-            btn.disabled = false;
+            btn.disabled    = false;
         }
     });
 });
