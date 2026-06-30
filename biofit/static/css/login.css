@@ -209,6 +209,15 @@ input:focus {
 .input-password-wrap input {
     padding-right: 46px;
 }
+
+/* ── Ocultar el ícono nativo de "mostrar contraseña" de Edge/IE ──
+   Sin esto, Edge superpone su propio ojo encima del nuestro
+   (.toggle-password), haciendo que se vean dos íconos a la vez. */
+.input-password-wrap input::-ms-reveal,
+.input-password-wrap input::-ms-clear {
+    display: none;
+}
+
 .toggle-password {
     position: absolute;
     right: 12px;
