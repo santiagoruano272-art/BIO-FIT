@@ -41,6 +41,14 @@ Cada ejercicio tiene EXACTAMENTE estas 5 claves:
 REGLA 4 — EQUIPAMIENTO:
 SOLO usa ejercicios con el equipamiento listado. Sin excepciones.
 
+REGLA 4B — COHERENCIA TIPO DE MÁQUINA ↔ EJERCICIO (CRÍTICA):
+El inventario viene agrupado en: CARDIO, FUERZA/MUSCULACIÓN, PESO LIBRE, ACCESORIOS.
+  - CARDIO → solo cardiovascular (trote, intervalos, pedaleo, remo continuo). Nunca fuerza.
+  - FUERZA/MUSCULACIÓN → solo el movimiento guiado de esa máquina.
+  - PESO LIBRE → compuestos de fuerza (sentadilla, peso muerto, press, remo con barra).
+  - ACCESORIOS → core, movilidad, calentamiento, estiramiento.
+Nunca mezcles categorías (ej: "peso muerto en caminadora" PROHIBIDO). Si falta una categoría, usa otra disponible.
+
 REGLA 5 — DISTRIBUCIÓN MUSCULAR:
 Distribuye los grupos musculares de forma inteligente para asegurar recuperación adecuada entre días.
 Ejemplo para 3 días: Día1=Tren Superior Empuje | Día2=Tren Inferior | Día3=Tren Superior Jale+Core
@@ -65,12 +73,23 @@ def _build_user_prompt(user_data: dict) -> str:
     peso     = user_data.get("peso", "")
     genero   = user_data.get("genero", "")
 
-    # ── Equipamiento real del gimnasio ────────────────────────────────────────
+    # ── Equipamiento real del gimnasio, agrupado por tipo de máquina ──────────
     inventario = user_data.get("inventario_gimnasio", [])
     if inventario:
-        nombres = [e.get("nombre", "").strip() for e in inventario if e.get("nombre")]
-        equipo  = ", ".join(nombres) if nombres else "equipamiento completo de gimnasio"
-        lugar   = "gimnasio"
+        por_tipo = {}
+        for e in inventario:
+            nombre = (e.get("nombre") or "").strip()
+            tipo   = (e.get("tipo") or "Sin categoría").strip()
+            if not nombre:
+                continue
+            por_tipo.setdefault(tipo, []).append(nombre)
+
+        if por_tipo:
+            bloques = [f"  • {tipo}: {', '.join(nombres)}" for tipo, nombres in por_tipo.items()]
+            equipo  = "\n".join(bloques)
+        else:
+            equipo = "equipamiento completo de gimnasio"
+        lugar = "gimnasio"
     elif lugar == "casa" or not inventario:
         equipo = "peso corporal y colchoneta únicamente (SIN máquinas)"
     else:
@@ -108,7 +127,7 @@ PERFIL DEL USUARIO:
 {perfil}
 Lesiones o limitaciones: {lesiones}
 
-EQUIPAMIENTO DISPONIBLE (OBLIGATORIO — usa SOLO estos):
+EQUIPAMIENTO DISPONIBLE POR CATEGORÍA (OBLIGATORIO — usa SOLO estos, respetando la categoría de cada uno):
 {equipo}
 
 ORIENTACIÓN SEGÚN NIVEL:
@@ -125,7 +144,7 @@ INSTRUCCIONES CRÍTICAS:
 2. El entrenamiento principal debe incluir ejercicios COMPUESTOS e ISOLACIÓN.
 3. Adapta series/repeticiones al nivel "{nivel}" y objetivo "{objetivo_desc}".
 4. Responde SOLO con el JSON, sin texto adicional.
-5. EQUIPAMIENTO OBLIGATORIO: usa ÚNICAMENTE los ejercicios realizables con el equipo listado.
+5. EQUIPAMIENTO: usa solo lo listado, respetando la categoría correcta de cada máquina.
 
 FORMATO JSON REQUERIDO (ejemplo de estructura):
 {{
@@ -158,18 +177,25 @@ Ahora genera la rutina REAL de {dias} días para el usuario. Usa ejercicios espe
 
 
 # ── Modelos de fallback en orden de prioridad ─────────────────────────────────
+# ACTUALIZADO (jun 2026): Groq deprecó llama-3.3-70b-versatile, llama-3.1-8b-instant
+# y llama3-70b-8192. Se reemplazan por los modelos recomendados oficialmente:
+# openai/gpt-oss-120b (reemplaza a llama-3.3-70b-versatile) y
+# openai/gpt-oss-20b (reemplaza a llama-3.1-8b-instant). Ambos con contexto
+# de 128K tokens, así que ya no hace falta limitar max_tokens por modelo.
 _FALLBACK_MODELS = [
-    "llama-3.3-70b-versatile",
-    "llama3-70b-8192",
-    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
 ]
+
+_MAX_TOKENS_POR_MODELO = {}
+_MAX_TOKENS_DEFAULT = 4000
 
 
 class RoutineGenerator:
     def __init__(self):
         api_key = getattr(settings, "GROQ_API_KEY", None)
         self.client = Groq(api_key=api_key) if api_key else None
-        self.model_name = getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile")
+        self.model_name = getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b")
         print(f"[BIO-FIT] Motor de IA cargado: {self.model_name}")
 
     def _try_model(self, model: str, messages: list, max_tokens: int) -> str:
@@ -214,15 +240,18 @@ class RoutineGenerator:
 
             for modelo in modelos_a_intentar:
                 try:
-                    print(f"[BIO-FIT] Intentando con modelo: {modelo}")
-                    content = self._try_model(modelo, messages, max_tokens=4000)
+                    tokens_modelo = _MAX_TOKENS_POR_MODELO.get(modelo, _MAX_TOKENS_DEFAULT)
+                    print(f"[BIO-FIT] Intentando con modelo: {modelo} (max_tokens={tokens_modelo})")
+                    content = self._try_model(modelo, messages, max_tokens=tokens_modelo)
                     print(f"[BIO-FIT] Respuesta obtenida con modelo: {modelo}")
                     break
                 except Exception as e:
                     error_str = str(e)
                     ultimo_error = error_str
-                    # Solo hacer fallback si es rate limit (429) o modelo no disponible (400)
-                    if '429' in error_str or 'rate_limit' in error_str or 'decommissioned' in error_str or '400' in error_str:
+                    # Fallback si es rate limit (429), prompt muy grande (413),
+                    # o modelo no disponible (400 / decommissioned)
+                    if any(code in error_str for code in ('429', '413', '400')) or \
+                       any(kw in error_str for kw in ('rate_limit', 'decommissioned', 'too large')):
                         print(f"[BIO-FIT] Modelo {modelo} no disponible ({error_str[:80]}...). Probando siguiente...")
                         continue
                     # Cualquier otro error lo lanzamos directo
