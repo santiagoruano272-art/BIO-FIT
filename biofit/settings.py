@@ -141,11 +141,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ── REDIRECCIONES DE AUTENTICACIÓN ─────────────────────────────────────────────
 LOGIN_URL          = 'login-page'
 LOGIN_REDIRECT_URL = 'landing'
-# ── CORREO (Resend vía Anymail) ─────────────────────────────────────────────
-EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
+# ── CORREO (Brevo vía Anymail) ──────────────────────────────────────────────
+EMAIL_BACKEND = 'anymail.backends.sendinblue.EmailBackend'
 
 ANYMAIL = {
-    'RESEND_API_KEY': os.getenv('RESEND_API_KEY', ''),
+    'SENDINBLUE_API_KEY': os.getenv('BREVO_API_KEY', ''),
 }
 
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'onboarding@resend.dev')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'dt6368864@gmail.com')
