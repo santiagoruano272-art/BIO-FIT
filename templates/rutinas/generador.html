@@ -1,3 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/rutinas_generador.css' %}">
+{% endblock %}
+
+{% block content %}
+<div id="routinePage" class="generator-page"
+     data-user-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+     data-generate-url="{% url 'routines:api_generate' %}"
+     data-save-url="{% url 'routines:api_save' %}"
+     data-login-url="{% url 'login' %}"
+     data-detail-url="{% url 'routines:detail' %}">
+
+    <div class="generator-panel">
+        <h1>Generador de Rutinas Inteligente</h1>
+        <p>Configura tus preferencias y nuestro BioFit Coach creará un plan de entrenamiento estructurado y adaptado a tus objetivos.</p>
+
+        <form id="routineForm" class="routine-form">
+            {% csrf_token %}
+
+            <div class="routine-form-row">
+                <label for="level" class="form-label">Nivel de Experiencia:</label>
+                <select id="level" name="level" class="form-select">
+                    <option value="principiante">Principiante (Menos de 6 meses)</option>
+                    <option value="intermedio">Intermedio (6 meses a 2 años)</option>
+                    <option value="avanzado">Avanzado (Más de 2 años)</option>
+                </select>
+            </div>
+
+            <div class="routine-form-row">
+                <label for="goal" class="form-label">Objetivo Principal:</label>
+                <select id="goal" name="goal" class="form-select">
+                    <option value="perder_peso">Perder Peso / Definición</option>
+                    <option value="ganar_musculo">Ganar Masa Muscular (Hipertrofia)</option>
+                    <option value="fuerza">Aumento de Fuerza Máxima</option>
+                    <option value="resistencia">Mejora Cardiovascular y Resistencia</option>
+                </select>
+            </div>
+
+            <div class="routine-form-row">
                 <label for="days" class="form-label">Días de Entrenamiento por Semana:</label>
                 <div id="days-checkboxes" class="days-checkboxes">
                     <label class="day-checkbox">
