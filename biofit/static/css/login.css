@@ -199,3 +199,40 @@ input:focus {
 .btn-back svg {
     display: none;
 }
+
+/* ── Input de contraseña con botón de mostrar/ocultar ── */
+.input-password-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.input-password-wrap input {
+    padding-right: 46px;
+}
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #5a7a9f;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    transition: color 0.2s;
+}
+.toggle-password:hover,
+.toggle-password:focus,
+.toggle-password:active {
+    transform: translateY(-50%) !important;
+    background: none !important;
+    box-shadow: none !important;
+}
+.toggle-password:hover {
+    color: #93c5fd;
+}
+.toggle-password .eye-icon {
+    display: block;
+}
