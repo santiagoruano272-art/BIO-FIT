@@ -7,7 +7,7 @@
     <script>
         // Funciones de navegación entre vistas disponibles antes de login.js
         function mostrarVista(id) {
-            ['viewLogin', 'viewRecovery', 'viewCode', 'viewReset'].forEach(function(v) {
+            ['viewLogin', 'viewRecovery', 'viewCode', 'viewReset', 'viewForcedNotice', 'viewForcedChange'].forEach(function(v) {
                 var el = document.getElementById(v);
                 if (el) el.style.display = 'none';
             });
@@ -211,6 +211,87 @@
                 </div>
             </div>
             <button type="submit" id="resetBtn" class="btn-submit" disabled>Restablecer contraseña</button>
+        </form>
+    </div>
+
+    {# ── Vista 5: Aviso bloqueante de cambio de contraseña obligatorio ─────── #}
+    <div class="login-card recovery-card" id="viewForcedNotice" style="display:none;">
+        <div class="recovery-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+
+        <h1>Cambio de contraseña requerido</h1>
+        <p class="subtitle">Por seguridad, debes establecer una nueva contraseña antes de continuar. No podrás acceder a la plataforma hasta completar este paso.</p>
+
+        <button type="button" class="btn-submit" id="btnContinueForced">Continuar</button>
+    </div>
+
+    {# ── Vista 6: Formulario de cambio de contraseña obligatorio ──────────── #}
+    <div class="login-card recovery-card" id="viewForcedChange" style="display:none;">
+        <div class="recovery-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+
+        <h1>Nueva contraseña</h1>
+        <p class="subtitle">Ingresa tu contraseña anterior y la nueva contraseña que usarás de ahora en adelante.</p>
+
+        <div id="alertBoxForced" class="alert"></div>
+
+        <form id="forcedChangeForm">
+            <div class="form-group">
+                <label>Contraseña anterior</label>
+                <div class="input-password-wrap">
+                    <input type="password" id="oldPasswordForced" placeholder="Contraseña asignada" required autocomplete="current-password">
+                    <button type="button" class="toggle-password" data-target="oldPasswordForced" aria-label="Mostrar contraseña">
+                        <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Nueva contraseña</label>
+                <div class="input-password-wrap">
+                    <input type="password" id="newPasswordForced" placeholder="Mínimo 8 caracteres" required autocomplete="new-password">
+                    <button type="button" class="toggle-password" data-target="newPasswordForced" aria-label="Mostrar contraseña">
+                        <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <div class="password-strength" id="passwordStrengthForced">
+                    <div class="strength-bar"><span id="strengthFillForced"></span></div>
+                    <span id="strengthLabelForced" class="strength-label"></span>
+                </div>
+                <ul class="password-rules" id="passwordRulesForced">
+                    <li id="rule-length-forced">  Al menos 8 caracteres</li>
+                    <li id="rule-upper-forced">   Una letra mayúscula</li>
+                    <li id="rule-lower-forced">   Una letra minúscula</li>
+                    <li id="rule-number-forced">  Un número</li>
+                    <li id="rule-special-forced"> Un carácter especial (!@#$...)</li>
+                </ul>
+            </div>
+            <div class="form-group">
+                <label>Confirmar nueva contraseña</label>
+                <div class="input-password-wrap">
+                    <input type="password" id="confirmPasswordForced" placeholder="Repite tu nueva contraseña" required autocomplete="new-password">
+                    <button type="button" class="toggle-password" data-target="confirmPasswordForced" aria-label="Mostrar contraseña">
+                        <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" id="btnForcedUpdate" class="btn-submit" disabled>Actualizar contraseña</button>
         </form>
     </div>
 

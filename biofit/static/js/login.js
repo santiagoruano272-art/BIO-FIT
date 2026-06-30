@@ -61,8 +61,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await res.json();
 
+                if (data.must_change_password) {
+                    mostrarVista('viewForcedNotice');
+                    btn.textContent = 'Entrar';
+                    btn.disabled    = false;
+                    return;
+                }
+
                 if (!res.ok) {
-                    throw new Error('Credenciales incorrectas o usuario no registrado');
+                    throw new Error(data.error || 'Credenciales incorrectas o usuario no registrado');
                 }
 
                 localStorage.setItem('biofit_token', data.idToken || data.token || data.uid);
@@ -291,6 +298,76 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ── Cambio de contraseña obligatorio (primer ingreso del admin) ────────
+    const btnContinueForced = document.getElementById('btnContinueForced');
+    if (btnContinueForced) {
+        btnContinueForced.addEventListener('click', () => {
+            mostrarVista('viewForcedChange');
+            hideAlert('alertBoxForced');
+        });
+    }
+
+    const forcedChangeForm = document.getElementById('forcedChangeForm');
+    if (forcedChangeForm) {
+        const newPasswordForcedInput = document.getElementById('newPasswordForced');
+        const confirmForcedInput     = document.getElementById('confirmPasswordForced');
+        const oldPasswordForcedInput = document.getElementById('oldPasswordForced');
+
+        if (newPasswordForcedInput) {
+            newPasswordForcedInput.addEventListener('input', () => {
+                const pwd = newPasswordForcedInput.value;
+                actualizarReglas(pwd, '-forced');
+                actualizarFortaleza(pwd, 'Forced');
+                validarFormForced();
+            });
+        }
+        if (confirmForcedInput) confirmForcedInput.addEventListener('input', validarFormForced);
+        if (oldPasswordForcedInput) oldPasswordForcedInput.addEventListener('input', validarFormForced);
+
+        forcedChangeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const antigua_password = document.getElementById('oldPasswordForced').value;
+            const nueva_password   = document.getElementById('newPasswordForced').value;
+            const confirmar        = document.getElementById('confirmPasswordForced').value;
+            const btn              = document.getElementById('btnForcedUpdate');
+
+            if (nueva_password !== confirmar) {
+                showAlert('Las contraseñas nuevas no coinciden.', 'error', 'alertBoxForced');
+                return;
+            }
+
+            btn.textContent = 'Actualizando...';
+            btn.disabled    = true;
+            hideAlert('alertBoxForced');
+
+            try {
+                const res = await fetch('/api/confirmar-password/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ antigua_password, nueva_password }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'No se pudo actualizar la contraseña');
+                }
+
+                showAlert('¡Contraseña actualizada! Redirigiendo al inicio de sesión...', 'success', 'alertBoxForced');
+                setTimeout(() => { window.location.href = data.redirect || '/login/'; }, 1800);
+
+            } catch (err) {
+                showAlert(err.message || 'Error al actualizar la contraseña', 'error', 'alertBoxForced');
+                btn.textContent = 'Actualizar contraseña';
+                btn.disabled    = false;
+            }
+        });
+    }
+
     // ── Toggle mostrar/ocultar contraseña ──────────────────────────────────
     document.querySelectorAll('.toggle-password').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -305,13 +382,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Helpers de validación de contraseña ───────────────────────────────────────
 
-function actualizarReglas(pwd) {
+function actualizarReglas(pwd, suffix = '') {
     const reglas = {
-        'rule-length':  pwd.length >= 8,
-        'rule-upper':   /[A-Z]/.test(pwd),
-        'rule-lower':   /[a-z]/.test(pwd),
-        'rule-number':  /\d/.test(pwd),
-        'rule-special': /[!@#$%^&*()\-_=+\[\]{};:'",.<>/?\\|`~]/.test(pwd),
+        ['rule-length'  + suffix]: pwd.length >= 8,
+        ['rule-upper'   + suffix]: /[A-Z]/.test(pwd),
+        ['rule-lower'   + suffix]: /[a-z]/.test(pwd),
+        ['rule-number'  + suffix]: /\d/.test(pwd),
+        ['rule-special' + suffix]: /[!@#$%^&*()\-_=+\[\]{};:'",.<>/?\\|`~]/.test(pwd),
     };
     Object.entries(reglas).forEach(([id, ok]) => {
         const el = document.getElementById(id);
@@ -321,7 +398,7 @@ function actualizarReglas(pwd) {
     });
 }
 
-function actualizarFortaleza(pwd) {
+function actualizarFortaleza(pwd, suffix = '') {
     let score = 0;
     if (pwd.length >= 8)                                               score++;
     if (/[A-Z]/.test(pwd))                                            score++;
@@ -329,8 +406,8 @@ function actualizarFortaleza(pwd) {
     if (/\d/.test(pwd))                                               score++;
     if (/[!@#$%^&*()\-_=+\[\]{};:'",.<>/?\\|`~]/.test(pwd))         score++;
 
-    const fill  = document.getElementById('strengthFill');
-    const label = document.getElementById('strengthLabel');
+    const fill  = document.getElementById('strengthFill' + suffix);
+    const label = document.getElementById('strengthLabel' + suffix);
     if (!fill || !label) return;
 
     const niveles = [
@@ -355,6 +432,25 @@ function validarFormReset() {
     if (!btn) return;
 
     const valida =
+        pwd.length >= 8 &&
+        /[A-Z]/.test(pwd) &&
+        /[a-z]/.test(pwd) &&
+        /\d/.test(pwd) &&
+        /[!@#$%^&*()\-_=+\[\]{};:'",.<>/?\\|`~]/.test(pwd) &&
+        pwd === confirm;
+
+    btn.disabled = !valida;
+}
+
+function validarFormForced() {
+    const old     = (document.getElementById('oldPasswordForced')     || {}).value || '';
+    const pwd     = (document.getElementById('newPasswordForced')     || {}).value || '';
+    const confirm = (document.getElementById('confirmPasswordForced') || {}).value || '';
+    const btn     = document.getElementById('btnForcedUpdate');
+    if (!btn) return;
+
+    const valida =
+        old.length > 0 &&
         pwd.length >= 8 &&
         /[A-Z]/.test(pwd) &&
         /[a-z]/.test(pwd) &&

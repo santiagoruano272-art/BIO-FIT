@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from datetime import datetime, timedelta
 
-from apps.conexion.auth import login_user, confirmar_cambio_password, ROL_MAP
+from apps.conexion.auth import login_user, confirmar_cambio_password, cambiar_password_provisional, ROL_MAP
 from services.firebase_client import FirebaseClient
 
 firebase = FirebaseClient()
@@ -222,7 +222,7 @@ def login_view(request):
                 'redirect':             '/cambiar-password/',
                 'error':                result['error'],
             },
-            status=status.HTTP_403_FORBIDDEN,
+            status=status.HTTP_200_OK,
         )
 
     if 'error' in result:
@@ -275,33 +275,48 @@ def login_view(request):
 @permission_classes([AllowAny])
 def confirmar_password_view(request):
     """
-    El admin llama a este endpoint después de cambiar su contraseña
-    desde el email de Firebase. Elimina el bloqueo y redirige al dashboard.
+    El admin envía su contraseña anterior (provisional) y la nueva contraseña
+    desde el aviso bloqueante de primer ingreso. Verifica, actualiza en
+    Firebase Auth, limpia el flag must_change_password y cierra la sesión
+    para que vuelva a iniciar sesión con la contraseña definitiva.
     """
-    uid = request.session.get('uid_pending_password_change')
+    uid   = request.session.get('uid_pending_password_change')
+    email = request.session.get('email_pending_password_change')
 
-    if not uid:
+    if not uid or not email:
         return Response(
             {'error': 'No hay una sesión de cambio de contraseña activa.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    ok = confirmar_cambio_password(uid)
+    antigua_password = request.data.get('antigua_password', '')
+    nueva_password    = request.data.get('nueva_password', '')
 
-    if not ok:
+    if not antigua_password or not nueva_password:
         return Response(
-            {'error': 'No se pudo actualizar el estado de la contraseña.'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            {'error': 'Debes ingresar la contraseña anterior y la nueva contraseña.'},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-    request.session.pop('uid_pending_password_change', None)
-    request.session.pop('email_pending_password_change', None)
+    if len(nueva_password) < 8:
+        return Response(
+            {'error': 'La nueva contraseña debe tener al menos 8 caracteres.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    resultado = cambiar_password_provisional(email, antigua_password, nueva_password)
+
+    if 'error' in resultado:
+        return Response({'error': resultado['error']}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Limpia toda la sesión: fuerza a volver a iniciar sesión con la nueva contraseña
+    request.session.flush()
 
     return Response(
         {
             'success':  True,
-            'redirect': '/inventory/dashboard/',
-            'message':  'Contraseña actualizada. Ya puedes acceder al panel.',
+            'redirect': '/login/',
+            'message':  'Contraseña actualizada. Ya puedes iniciar sesión con tu nueva contraseña.',
         },
         status=status.HTTP_200_OK,
     )

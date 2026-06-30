@@ -78,6 +78,7 @@ def login_user(email: str, password: str) -> dict:
             'rol': ROL_MAP.get(perfil.get('rol', 'atleta'), perfil.get('rol', 'atleta')),
             'idToken': data['idToken'],
             'gym_id': perfil.get('gym_id'),
+            'must_change_password': bool(perfil.get('must_change_password', False)),
         }
     except Exception as e:
         return {'error': f"Error interno: {str(e)}"}
@@ -97,6 +98,32 @@ def confirmar_cambio_password(uid: str) -> bool:
         return True
     except:
         return False
+
+
+def cambiar_password_provisional(email: str, antigua_password: str, nueva_password: str) -> dict:
+    """
+    Cambio de contraseña obligatorio (primer ingreso del admin).
+    1. Verifica que 'antigua_password' sea correcta reutilizando login_user.
+    2. Si es válida, actualiza la contraseña en Firebase Auth.
+    3. Limpia el flag must_change_password en Firestore.
+    Retorna {'success': True, 'uid': ...} o {'error': '...'}.
+    """
+    verificacion = login_user(email, antigua_password)
+    if 'error' in verificacion:
+        return {'error': 'La contraseña actual no es correcta.'}
+
+    uid = verificacion['uid']
+
+    try:
+        firebase_auth.update_user(uid, password=nueva_password)
+    except Exception as e:
+        logger.error(f"[BIO-FIT] Error actualizando contraseña provisional uid={uid}: {e}")
+        return {'error': 'No se pudo actualizar la contraseña. Inténtalo de nuevo.'}
+
+    if not confirmar_cambio_password(uid):
+        logger.warning(f"[BIO-FIT] Contraseña actualizada pero no se pudo limpiar must_change_password uid={uid}")
+
+    return {'success': True, 'uid': uid}
 
 
 # ── RECUPERACIÓN DE CONTRASEÑA (CÓDIGO DE 6 DÍGITOS) ─────────────────────────
