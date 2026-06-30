@@ -148,3 +148,54 @@ input:focus {
 .footer-link { text-align: center; margin-top: 24px; font-size: 0.9rem; color: #4a6a8f; }
 .footer-link a { color: #60a5fa; font-weight: 600; text-decoration: none; transition: color 0.2s; }
 .footer-link a:hover { color: #93c5fd; }
+
+/* ── Enlace "olvidaste tu contraseña" ── */
+.forgot-password-wrap {
+    text-align: center;
+    margin-top: 18px;
+}
+.forgot-password-link {
+    color: #93c5fd;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.forgot-password-link:hover {
+    color: #ffffff;
+}
+
+/* ── Botón "Volver" en vistas de recuperación ── */
+.recovery-card {
+    padding-top: 36px;
+}
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(96,165,250,0.18) 0%, rgba(42,82,152,0.18) 100%);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    color: #c4d4e8;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(8,15,30,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: background 0.25s, border-color 0.25s, color 0.25s, transform 0.15s, box-shadow 0.25s;
+    margin-bottom: 22px;
+}
+.btn-back:hover {
+    background: linear-gradient(135deg, rgba(96,165,250,0.3) 0%, rgba(42,82,152,0.3) 100%);
+    border-color: rgba(96, 165, 250, 0.55);
+    color: #ffffff;
+    box-shadow: 0 8px 22px rgba(96,165,250,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.btn-back:active {
+    transform: scale(0.96);
+}
+.btn-back svg {
+    display: none;
+}
