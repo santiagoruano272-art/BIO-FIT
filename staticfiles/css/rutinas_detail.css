@@ -382,3 +382,203 @@
   .routine-meta-bar { flex-direction: column; align-items: flex-start; }
   .exercises-grid { grid-template-columns: 1fr; }
 }
+
+/* ── RESPONSIVE MÓVIL CORREGIDO ─────────────────────────────────────────────*/
+
+/* Fondo completo de página */
+body {
+  min-height: 100vh;
+  background: #080f1e;
+}
+
+/* Wrap principal: ocupa toda la altura disponible en móvil */
+.biofit-detail-wrap {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Empty state centrado verticalmente en móvil */
+.empty-state {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  background: rgba(8,15,30,0.7);
+  border: 1px solid rgba(96,165,250,0.15);
+  border-radius: 24px;
+  margin: 20px 0;
+}
+.empty-state.visible {
+  display: flex;
+}
+
+@media (max-width: 600px) {
+  /* Wrap con padding lateral correcto */
+  .biofit-detail-wrap {
+    margin: 16px auto;
+    padding: 0 16px;
+  }
+
+  /* Banner más compacto */
+  .health-banner {
+    padding: 24px 18px;
+    border-radius: 18px;
+    margin-bottom: 24px;
+  }
+  .health-banner h1 {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+  }
+  .health-banner p {
+    font-size: 0.95rem;
+  }
+
+  /* Card de rutina */
+  .routine-container-card {
+    padding: 18px 14px;
+    border-radius: 18px;
+    margin-bottom: 24px;
+  }
+
+  /* Fila superior: botón eliminar arriba, meta-bar abajo */
+  .card-top-row {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .btn-delete-routine {
+    justify-content: center;
+    width: 100%;
+    padding: 10px;
+    border-radius: 12px;
+  }
+  .routine-meta-bar {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+  .meta-item {
+    font-size: 0.88rem;
+  }
+  .meta-date {
+    align-self: flex-start;
+    font-size: 0.82rem;
+  }
+
+  /* Tabs de días */
+  .day-tabs {
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .day-tab-btn {
+    padding: 7px 13px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  /* Grid de ejercicios: 1 columna */
+  .exercises-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Tarjeta de ejercicio */
+  .exercise-card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+  .exercise-name {
+    font-size: 0.97rem;
+    margin-bottom: 10px;
+  }
+  .stats-row {
+    padding: 7px;
+    gap: 4px;
+  }
+  .stat-pill {
+    font-size: 0.72rem;
+  }
+  .stat-pill span {
+    font-size: 0.85rem;
+  }
+
+  /* Fase */
+  .phase-title {
+    font-size: 1.05rem;
+  }
+  .phase-icon {
+    font-size: 1.2rem;
+    padding: 4px 8px;
+  }
+
+  /* Botones de acción inferiores */
+  .actions-area {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .btn-primary-fit,
+  .btn-secondary-fit {
+    text-align: center;
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+  }
+
+  /* Modal */
+  .modal-box {
+    padding: 28px 20px;
+    border-radius: 18px;
+  }
+  .modal-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btn-modal-cancel,
+  .btn-modal-confirm {
+    width: 100%;
+    justify-content: center;
+    padding: 13px 20px;
+  }
+
+  /* Toast */
+  .toast-biofit {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    min-width: unset;
+    font-size: 0.85rem;
+  }
+
+  /* Empty state en móvil */
+  .empty-state {
+    padding: 50px 20px;
+    border-radius: 18px;
+  }
+  .empty-state .emoji {
+    font-size: 2.5rem;
+  }
+  .empty-state h2,
+  .empty-state h3 {
+    font-size: 1.2rem;
+  }
+  .empty-state p {
+    font-size: 0.9rem;
+  }
+  .empty-state .btn-primary-fit {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 380px) {
+  .health-banner h1 { font-size: 1.35rem; }
+  .day-tab-btn { padding: 6px 10px; font-size: 11px; }
+  .exercise-name { font-size: 0.9rem; }
+}

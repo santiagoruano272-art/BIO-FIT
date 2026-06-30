@@ -83,7 +83,8 @@ DATABASES = {
 
 # ── SESIONES ───────────────────────────────────────────────────────────────────
 SESSION_ENGINE             = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE         = 86400   # 24 horas
+SESSION_COOKIE_AGE         = 1800    # 30 minutos de inactividad máxima
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True   # la cookie desaparece al cerrar el navegador
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY    = True
 SESSION_COOKIE_SAMESITE    = 'Lax'
@@ -108,8 +109,7 @@ REST_FRAMEWORK = {
 STATIC_URL       = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'biofit' / 'static']
 STATIC_ROOT      = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedFilesStorage'
 # ── GROQ CLOUD (IA) ────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 GROQ_MODEL   = os.getenv('GROQ_MODEL', 'llama3-70b-8192')
@@ -140,3 +140,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ── REDIRECCIONES DE AUTENTICACIÓN ─────────────────────────────────────────────
 LOGIN_URL          = 'login-page'
 LOGIN_REDIRECT_URL = 'landing'
+# ── CORREO (SMTP) ──────────────────────────────────────────────────────────────
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_PORT          = 465
+EMAIL_USE_TLS       = False
+EMAIL_USE_SSL       = True
+EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL  = os.getenv('EMAIL_HOST_USER', 'noreply@biofit.com')
+EMAIL_TIMEOUT       = 10

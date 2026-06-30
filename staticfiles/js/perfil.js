@@ -28,6 +28,7 @@ let gimSeleccionado = null;
 let todasLasSedes = [];
 
 async function cargarPerfil() {
+    console.log("🔄 Cargando perfil...");
     showLoading(true);
     try {
         const r = await fetch(API.perfil, {
@@ -41,20 +42,24 @@ async function cargarPerfil() {
 
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         perfil = await r.json();
+        console.log("✅ Perfil cargado desde servidor:", perfil);
 
     } catch (err) {
-        console.warn('cargarPerfil: usando caché local —', err.message);
+        console.warn("cargarPerfil: usando caché local —", err.message);
         perfil = {
             nombre:        localStorage.getItem('biofit_nombre')        || '',
+            sobrenombre:   localStorage.getItem('biofit_sobrenombre')   || '',
+            avatar_url:    localStorage.getItem('biofit_avatar_url')    || '',
             email:         localStorage.getItem('biofit_email')         || '',
             telefono:      localStorage.getItem('biofit_tel')           || '',
-            nivel:         localStorage.getItem('biofit_nivel')         || 'Principiante',
+            nivel:         localStorage.getItem('biofit_nivel')         || 'principiante',
             rol:           localStorage.getItem('biofit_rol')           || 'atleta',
             gym_id:        localStorage.getItem('biofit_gym_id')        || null,
             gym_nombre:    localStorage.getItem('biofit_gym_nombre')    || null,
             gym_ubicacion: localStorage.getItem('biofit_gym_ubicacion') || null,
             _sesionRota:   true,
         };
+        console.log("ℹ️ Perfil cargado desde caché:", perfil);
     } finally {
         showLoading(false);
     }
@@ -62,15 +67,32 @@ async function cargarPerfil() {
 }
 
 function renderPerfil() {
+    console.log("🎨 Renderizando perfil con datos:", perfil);
     const nombre = perfil.nombre || '';
     const iniciales = nombre.trim().split(' ')
         .slice(0, 2).map(p => (p[0] || '').toUpperCase()).join('') || '?';
 
-    $('avatar-initials').textContent = iniciales;
-    $('avatar-name').textContent     = nombre || '–';
+    const avatarImg = $('avatar-img');
+    const avatarInitials = $('avatar-initials');
+    console.log("🖼️ avatar_url encontrado:", perfil.avatar_url ? "SI" : "NO");
+    
+    if (perfil.avatar_url) {
+        console.log("📷 Mostrando imagen desde:", perfil.avatar_url.substring(0, 50) + "...");
+        avatarImg.src = perfil.avatar_url;
+        avatarImg.style.display = 'block';
+        avatarInitials.style.display = 'none';
+    } else {
+        console.log("❌ No hay avatar_url, mostrando iniciales");
+        avatarImg.style.display = 'none';
+        avatarInitials.style.display = 'block';
+        avatarInitials.textContent = iniciales;
+    }
+    
+    $('avatar-name').textContent     = perfil.sobrenombre || nombre || 'Atleta';
     $('avatar-email').textContent    = perfil.email || '–';
     $('badge-rol').textContent       = perfil.rol || 'atleta';
     $('field-nombre').value          = perfil.nombre   || '';
+    $('field-sobrenombre').value     = perfil.sobrenombre || '';
     $('field-email').value           = perfil.email    || '';
     $('field-telefono').value        = perfil.telefono || '';
     $('field-nivel').value           = perfil.nivel    || 'principiante';
@@ -106,8 +128,10 @@ function renderGym() {
 
 $('form-perfil').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn    = $('btn-guardar');
+    console.log("📝 Enviando formulario...");
+    const btn = $('btn-guardar');
     const nombre = $('field-nombre').value.trim();
+    const sobrenombre = $('field-sobrenombre').value.trim();
     const email  = $('field-email').value.trim();
     const tel    = $('field-telefono').value.trim();
     const nivel  = $('field-nivel').value;
@@ -129,7 +153,11 @@ $('form-perfil').addEventListener('submit', async (e) => {
     btn.disabled = true;
     btn.innerHTML = '<span>⏳</span> Guardando…';
 
-    const body = { nombre, email, telefono: tel, nivel };
+    const body = { nombre, sobrenombre, email, telefono: tel, nivel };
+    if (perfil.avatar_url) {
+        body.avatar_url = perfil.avatar_url;
+    }
+    console.log("📤 Body a enviar:", Object.assign({}, body, { avatar_url: body.avatar_url ? "BASE64 (oculto)" : "NO" }));
 
     try {
         const r = await fetch(API.perfil, {
@@ -145,11 +173,17 @@ $('form-perfil').addEventListener('submit', async (e) => {
             const err = await r.json().catch(() => ({}));
             throw new Error(err.error || r.status);
         }
-        Object.assign(perfil, body);
-        localStorage.setItem('biofit_nombre', body.nombre);
-        localStorage.setItem('biofit_email',  body.email);
-        localStorage.setItem('biofit_tel',    body.telefono);
-        localStorage.setItem('biofit_nivel',  body.nivel);
+        const responseData = await r.json();
+        console.log("✅ Respuesta del servidor:", responseData);
+        
+        Object.assign(perfil, responseData);
+        localStorage.setItem('biofit_nombre', responseData.nombre);
+        localStorage.setItem('biofit_sobrenombre', responseData.sobrenombre);
+        localStorage.setItem('biofit_avatar_url', responseData.avatar_url || '');
+        localStorage.setItem('biofit_email', responseData.email);
+        localStorage.setItem('biofit_tel', responseData.telefono);
+        localStorage.setItem('biofit_nivel', responseData.nivel);
+        
         renderPerfil();
         toast('Perfil actualizado correctamente.');
     } catch (err) {
@@ -308,8 +342,9 @@ $('btn-confirmar-vinculacion').addEventListener('click', async () => {
     if (!gimSeleccionado) return;
 
     if (perfil._sesionRota) {
-        toast('Tu sesión expiró. Recarga la página o inicia sesión de nuevo.', 'error');
+        toast('Tu sesión expiró. Redirigiendo al login…', 'error');
         cerrarModal();
+        setTimeout(() => { window.location.href = '/login/?next=/perfil/'; }, 1500);
         return;
     }
 
@@ -355,5 +390,118 @@ $('btn-confirmar-vinculacion').addEventListener('click', async () => {
     }
 });
 
-/* ── Init ── */
-document.addEventListener('DOMContentLoaded', cargarPerfil);
+/* ── Avatar Upload Handler ── */
+
+/**
+ * Comprime una imagen a JPEG con máximo ancho/alto y calidad configurables.
+ * Esto es CRÍTICO para fotos de celular que pueden pesar 5-10 MB.
+ * Firestore tiene límite de 1 MB por documento — con compresión se baja a ~30-80 KB.
+ *
+ * @param {File} file       - Archivo de imagen original
+ * @param {number} maxPx    - Tamaño máximo en px del lado más largo (default 400)
+ * @param {number} quality  - Calidad JPEG 0-1 (default 0.7)
+ * @returns {Promise<string>} - Base64 comprimida lista para guardar
+ */
+function comprimirImagen(file, maxPx = 400, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+
+            // Calcular nuevas dimensiones manteniendo proporción
+            let { width, height } = img;
+            if (width > height) {
+                if (width > maxPx) { height = Math.round(height * maxPx / width); width = maxPx; }
+            } else {
+                if (height > maxPx) { width = Math.round(width * maxPx / height); height = maxPx; }
+            }
+
+            const canvas  = document.createElement('canvas');
+            canvas.width  = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const base64 = canvas.toDataURL('image/jpeg', quality);
+
+            // Calcular tamaño aproximado en KB para logging
+            const sizeKB = Math.round((base64.length * 3) / 4 / 1024);
+            console.log(`🗜️ Imagen comprimida: ${width}×${height}px ≈ ${sizeKB} KB`);
+
+            // Verificar que quepa en Firestore (< 900 KB para dejar margen)
+            if (sizeKB > 900) {
+                reject(new Error(
+                    `La imagen comprimida pesa ${sizeKB} KB y sigue siendo demasiado grande. ` +
+                    'Usa una imagen más pequeña.'
+                ));
+                return;
+            }
+
+            resolve(base64);
+        };
+
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('No se pudo leer la imagen. Asegúrate de que sea un archivo válido.'));
+        };
+
+        img.src = url;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🎯 DOM listo para perfil.js");
+
+    const avatarInput = document.getElementById('field-avatar');
+    if (avatarInput) {
+        avatarInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validar que sea imagen
+            if (!file.type.startsWith('image/')) {
+                toast('El archivo seleccionado no es una imagen válida.', 'error');
+                avatarInput.value = '';
+                return;
+            }
+
+            console.log(`📷 Archivo seleccionado: ${file.name} (${Math.round(file.size / 1024)} KB)`);
+
+            // Mostrar spinner mientras se comprime
+            showLoading(true);
+
+            try {
+                // Comprimir SIEMPRE antes de guardar, sin importar el tamaño original.
+                // Fotos de celular pueden ser 5-15 MB — esto las baja a ~40-80 KB.
+                const base64comprimida = await comprimirImagen(file, 400, 0.75);
+
+                // Mostrar preview inmediato con la versión comprimida
+                const avatarImg      = document.getElementById('avatar-img');
+                const avatarInitials = document.getElementById('avatar-initials');
+                if (avatarImg && avatarInitials) {
+                    avatarImg.src              = base64comprimida;
+                    avatarImg.style.display    = 'block';
+                    avatarInitials.style.display = 'none';
+                }
+
+                // Guardar en el objeto perfil y en localStorage
+                perfil.avatar_url = base64comprimida;
+                localStorage.setItem('biofit_avatar_url', base64comprimida);
+
+                toast('Vista previa lista. Pulsa "Guardar cambios" para aplicar.', 'success');
+
+            } catch (err) {
+                console.error('Error comprimiendo imagen:', err);
+                toast(err.message || 'No se pudo procesar la imagen.', 'error');
+                avatarInput.value = ''; // limpiar input
+            } finally {
+                showLoading(false);
+            }
+        });
+    }
+
+    cargarPerfil();
+});

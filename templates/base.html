@@ -23,7 +23,7 @@
     <script>
         const firebaseConfig = {
             apiKey: "{{ FIREBASE_API_KEY }}",
-            authDomain: "bio-fit-1234.firebaseapp.com", // You might need to change this
+            authDomain: "bio-fit-1234.firebaseapp.com",
             projectId: "bio-fit-1234",
             storageBucket: "bio-fit-1234.appspot.com",
             messagingSenderId: "123456789",
@@ -60,7 +60,7 @@
         {% elif request.session.user_rol == 'admin' %}
             <a href="/">Inicio</a>
             <a href="{% url 'inventory:admin_dashboard' %}">Inventario</a>
-            <a onclick="logout()" class="btn-logout-nav">🔒 Cerrar Sesión</a>
+            <a href="javascript:void(0);" onclick="logout()" class="btn-logout-nav">🔒 Cerrar Sesión</a>
         {% else %}
             <a href="/">Inicio</a>
             <a href="/rutinas/detalle/">Rutinas</a>

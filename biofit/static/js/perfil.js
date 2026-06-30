@@ -391,37 +391,117 @@ $('btn-confirmar-vinculacion').addEventListener('click', async () => {
 });
 
 /* ── Avatar Upload Handler ── */
+
+/**
+ * Comprime una imagen a JPEG con máximo ancho/alto y calidad configurables.
+ * Esto es CRÍTICO para fotos de celular que pueden pesar 5-10 MB.
+ * Firestore tiene límite de 1 MB por documento — con compresión se baja a ~30-80 KB.
+ *
+ * @param {File} file       - Archivo de imagen original
+ * @param {number} maxPx    - Tamaño máximo en px del lado más largo (default 400)
+ * @param {number} quality  - Calidad JPEG 0-1 (default 0.7)
+ * @returns {Promise<string>} - Base64 comprimida lista para guardar
+ */
+function comprimirImagen(file, maxPx = 400, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+
+            // Calcular nuevas dimensiones manteniendo proporción
+            let { width, height } = img;
+            if (width > height) {
+                if (width > maxPx) { height = Math.round(height * maxPx / width); width = maxPx; }
+            } else {
+                if (height > maxPx) { width = Math.round(width * maxPx / height); height = maxPx; }
+            }
+
+            const canvas  = document.createElement('canvas');
+            canvas.width  = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const base64 = canvas.toDataURL('image/jpeg', quality);
+
+            // Calcular tamaño aproximado en KB para logging
+            const sizeKB = Math.round((base64.length * 3) / 4 / 1024);
+            console.log(`🗜️ Imagen comprimida: ${width}×${height}px ≈ ${sizeKB} KB`);
+
+            // Verificar que quepa en Firestore (< 900 KB para dejar margen)
+            if (sizeKB > 900) {
+                reject(new Error(
+                    `La imagen comprimida pesa ${sizeKB} KB y sigue siendo demasiado grande. ` +
+                    'Usa una imagen más pequeña.'
+                ));
+                return;
+            }
+
+            resolve(base64);
+        };
+
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('No se pudo leer la imagen. Asegúrate de que sea un archivo válido.'));
+        };
+
+        img.src = url;
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log("🎯 DOM listo para perfil.js");
-    
+
     const avatarInput = document.getElementById('field-avatar');
     if (avatarInput) {
         avatarInput.addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
-            
-            console.log("📷 Archivo seleccionado para avatar:", file.name);
-            
-            // Preview the image immediately
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                console.log("✅ Imagen leída, mostrando preview...");
-                const avatarImg = document.getElementById('avatar-img');
+
+            // Validar que sea imagen
+            if (!file.type.startsWith('image/')) {
+                toast('El archivo seleccionado no es una imagen válida.', 'error');
+                avatarInput.value = '';
+                return;
+            }
+
+            console.log(`📷 Archivo seleccionado: ${file.name} (${Math.round(file.size / 1024)} KB)`);
+
+            // Mostrar spinner mientras se comprime
+            showLoading(true);
+
+            try {
+                // Comprimir SIEMPRE antes de guardar, sin importar el tamaño original.
+                // Fotos de celular pueden ser 5-15 MB — esto las baja a ~40-80 KB.
+                const base64comprimida = await comprimirImagen(file, 400, 0.75);
+
+                // Mostrar preview inmediato con la versión comprimida
+                const avatarImg      = document.getElementById('avatar-img');
                 const avatarInitials = document.getElementById('avatar-initials');
                 if (avatarImg && avatarInitials) {
-                    avatarImg.src = event.target.result;
-                    avatarImg.style.display = 'block';
+                    avatarImg.src              = base64comprimida;
+                    avatarImg.style.display    = 'block';
                     avatarInitials.style.display = 'none';
                 }
-                
-                // Option 1: Save as base64
-                perfil.avatar_url = event.target.result;
-                localStorage.setItem('biofit_avatar_url', event.target.result);
-                toast("Vista previa de avatar actualizada! Guarda cambios para aplicar.", "success");
-            };
-            reader.readAsDataURL(file);
+
+                // Guardar en el objeto perfil y en localStorage
+                perfil.avatar_url = base64comprimida;
+                localStorage.setItem('biofit_avatar_url', base64comprimida);
+
+                toast('Vista previa lista. Pulsa "Guardar cambios" para aplicar.', 'success');
+
+            } catch (err) {
+                console.error('Error comprimiendo imagen:', err);
+                toast(err.message || 'No se pudo procesar la imagen.', 'error');
+                avatarInput.value = ''; // limpiar input
+            } finally {
+                showLoading(false);
+            }
         });
     }
-    
+
     cargarPerfil();
 });

@@ -180,6 +180,17 @@ class PerfilView(SesionMixin, APIView):
         if sobrenombre:
             datos['sobrenombre'] = sobrenombre
         if avatar_url:
+            # Validar tamaño del Base64 en el backend como segunda línea de defensa.
+            # Base64 representa 3 bytes en 4 caracteres → tamaño real ≈ len * 3/4
+            size_kb = len(avatar_url) * 3 / 4 / 1024
+            if size_kb > 900:
+                return Response(
+                    {'error': f'La imagen pesa ~{int(size_kb)} KB. El máximo permitido es 900 KB. '
+                               'Usa la función de recorte o elige una imagen más pequeña.'},
+                    status=400,
+                )
+            if not avatar_url.startswith('data:image/'):
+                return Response({'error': 'Formato de imagen no válido.'}, status=400)
             datos['avatar_url'] = avatar_url
         if telefono:
             datos['telefono'] = telefono
@@ -211,7 +222,7 @@ class PerfilView(SesionMixin, APIView):
 # ── API: LISTAR GIMNASIOS  →  GET /api/gimnasios/?q=<query> ──────────────────
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GimnasioBuscadorView(SesionMixin, APIView):
+class BuscarGimnasiosView(SesionMixin, APIView):  # <-- MODIFICADO: Nombre cambiado para alinearse con urls_app.py
     """
     Devuelve la lista de gimnasios registrados, con filtro opcional por nombre
     o ubicación. No requiere uid — solo sesión Django activa.
@@ -250,7 +261,7 @@ class GimnasioBuscadorView(SesionMixin, APIView):
             return Response(sedes)
 
         except Exception as e:
-            logger.error("Error en GimnasioBuscadorView: %s", e)
+            logger.error("Error en BuscarGimnasiosView: %s", e)
             return Response(
                 {'error': 'No se pudo obtener la lista de gimnasios.', 'detalle': str(e)},
                 status=503,

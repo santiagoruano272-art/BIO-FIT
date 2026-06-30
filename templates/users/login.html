@@ -4,6 +4,31 @@
 {% block extra_head %}
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <script>
+        // Funciones de navegación entre vistas disponibles antes de login.js
+        function mostrarVista(id) {
+            ['viewLogin', 'viewRecovery', 'viewCode', 'viewReset'].forEach(function(v) {
+                var el = document.getElementById(v);
+                if (el) el.style.display = 'none';
+            });
+            var target = document.getElementById(id);
+            if (target) target.style.display = 'block';
+        }
+
+        function abrirRecuperacion() {
+            mostrarVista('viewRecovery');
+            ['alertBox','alertBoxRecovery','alertBoxCode','alertBoxReset'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            var emailInput = document.getElementById('recoveryEmail');
+            if (emailInput) emailInput.value = '';
+            var form = document.getElementById('recoveryForm');
+            if (form) form.style.display = 'block';
+            var success = document.getElementById('recoverySuccess');
+            if (success) success.style.display = 'none';
+        }
+    </script>
 {% endblock %}
 
 {% block show_nav %}{% endblock %}
@@ -13,7 +38,8 @@
         <img class="logo-large" src="{% static 'images/logo_biofit.png' %}" alt="BIO-FIT Logo">
     </div>
 
-    <div class="login-card">
+    {# ── Vista 1: Login ────────────────────────────────────────────────────── #}
+    <div class="login-card" id="viewLogin">
         <h1>Bienvenido</h1>
         <p class="subtitle">Ingresa tus credenciales para continuar</p>
 
@@ -31,10 +57,155 @@
             <button type="submit" id="submitBtn" class="btn-submit">Entrar</button>
         </form>
 
+        <div class="forgot-password-wrap">
+            <a href="javascript:void(0)" id="forgotPasswordLink" class="forgot-password-link" onclick="abrirRecuperacion()">¿Olvidaste tu contraseña?</a>
+        </div>
+
         <div class="footer-link">
             ¿No tienes cuenta? <a href="/registro/">Regístrate aquí</a>
         </div>
     </div>
+
+    {# ── Vista 2: Ingresar correo para recibir el código ───────────────────── #}
+    <div class="login-card recovery-card" id="viewRecovery" style="display:none;">
+        <button class="btn-back" id="btnBackToLogin" aria-label="Volver al login" onclick="mostrarVista('viewLogin')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Volver
+        </button>
+
+        <div class="recovery-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="3"></rect>
+                <polyline points="2,4 12,13 22,4"></polyline>
+            </svg>
+        </div>
+
+        <h1>Recuperar acceso</h1>
+        <p class="subtitle">Ingresa el correo con el que te registraste en BIO-FIT. Si escribes otro correo, no recibirás el código.</p>
+
+        <div id="alertBoxRecovery" class="alert"></div>
+
+        <form id="recoveryForm">
+            <div class="form-group">
+                <label>Correo Electrónico</label>
+                <input type="email" id="recoveryEmail" placeholder="ejemplo@correo.com" required>
+            </div>
+            <button type="submit" id="recoveryBtn" class="btn-submit">Enviar código</button>
+        </form>
+
+        <div id="recoverySuccess" class="recovery-success-panel" style="display:none;">
+            <div class="success-icon-wrap">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <p class="success-title">¡Código enviado!</p>
+            <p class="success-body">Revisa tu bandeja de entrada. El código expira en <strong>30 minutos</strong>.</p>
+            <button class="btn-submit" id="btnGoToCode" style="margin-top:16px;">Ingresar código</button>
+        </div>
+    </div>
+
+    {# ── Vista 3: Ingresar código de 6 dígitos ─────────────────────────────── #}
+    <div class="login-card recovery-card" id="viewCode" style="display:none;">
+        <button class="btn-back" aria-label="Volver" onclick="mostrarVista('viewRecovery')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Volver
+        </button>
+
+        <div class="recovery-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+
+        <h1>Ingresa el código</h1>
+        <p class="subtitle" id="codeSubtitle">Escribe el código de 6 dígitos que enviamos a tu correo.</p>
+
+        <div id="alertBoxCode" class="alert"></div>
+
+        <form id="codeForm">
+            <div class="form-group">
+                <label>Código de verificación</label>
+                <input type="text" id="verificationCode"
+                       placeholder="000000"
+                       maxlength="6"
+                       inputmode="numeric"
+                       pattern="[0-9]{6}"
+                       autocomplete="one-time-code"
+                       style="font-size:1.6rem;letter-spacing:0.3em;text-align:center;"
+                       required>
+            </div>
+            <button type="submit" id="codeBtn" class="btn-submit">Verificar código</button>
+        </form>
+
+        <div class="footer-link" style="margin-top:16px;">
+            ¿No llegó el correo? <a href="javascript:void(0)" id="resendCodeLink">Reenviar código</a>
+        </div>
+    </div>
+
+    {# ── Vista 4: Nueva contraseña (después de verificar el código) ────────── #}
+    <div class="login-card recovery-card" id="viewReset" style="display:none;">
+        <div class="recovery-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+
+        <h1>Nueva contraseña</h1>
+        <p class="subtitle">Elige una contraseña segura para tu cuenta.</p>
+
+        <div id="alertBoxReset" class="alert"></div>
+
+        <form id="resetForm">
+            {# Campos ocultos que transfieren el email y el código validado al paso final #}
+            <input type="hidden" id="_hiddenEmail" value="">
+            <input type="hidden" id="_hiddenCode"  value="">
+
+            <div class="form-group">
+                <label>Nueva contraseña</label>
+                <div class="input-password-wrap">
+                    <input type="password" id="newPassword" placeholder="Mínimo 8 caracteres" required autocomplete="new-password">
+                    <button type="button" class="toggle-password" data-target="newPassword" aria-label="Mostrar contraseña">
+                        <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <div class="password-strength" id="passwordStrength">
+                    <div class="strength-bar"><span id="strengthFill"></span></div>
+                    <span id="strengthLabel" class="strength-label"></span>
+                </div>
+                <ul class="password-rules" id="passwordRules">
+                    <li id="rule-length">   Al menos 8 caracteres</li>
+                    <li id="rule-upper">    Una letra mayúscula</li>
+                    <li id="rule-lower">    Una letra minúscula</li>
+                    <li id="rule-number">   Un número</li>
+                    <li id="rule-special">  Un carácter especial (!@#$...)</li>
+                </ul>
+            </div>
+            <div class="form-group">
+                <label>Confirmar contraseña</label>
+                <div class="input-password-wrap">
+                    <input type="password" id="confirmPassword" placeholder="Repite tu contraseña" required autocomplete="new-password">
+                    <button type="button" class="toggle-password" data-target="confirmPassword" aria-label="Mostrar contraseña">
+                        <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" id="resetBtn" class="btn-submit" disabled>Restablecer contraseña</button>
+        </form>
+    </div>
+
 {% endblock %}
 
 {% block extra_scripts %}
