@@ -107,26 +107,10 @@ def dashboard_view(request):
     """
     Vista principal del inventario. Solo accesible para admin.
     Muestra datos del gimnasio, conteo de máquinas y atletas.
-    Si must_change_password está activo en Firestore, fuerza el cambio.
     """
-    # Bloqueo por contraseña provisional (flag en sesión)
-    if request.session.get('uid_pending_password_change'):
-        return redirect('cambiar_password')
-
     gym_id = get_admin_tenant(request)
     if not gym_id:
         return redirect('login')
-
-    # Verificar flag must_change_password en Firestore (cuentas creadas manualmente)
-    uid = request.session.get('user_uid')
-    try:
-        perfil = firebase.get_user_profile(uid)
-        if perfil and perfil.get('must_change_password'):
-            request.session['uid_pending_password_change'] = uid
-            request.session.modified = True
-            return redirect('cambiar_password')
-    except Exception as e:
-        logger.error("Error verificando must_change_password: %s", e)
 
     gym_context = get_gym_context(request, gym_id)
     inventario  = firebase.get_all_equipment(gym_id)
