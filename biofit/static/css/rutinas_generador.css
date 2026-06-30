@@ -75,18 +75,6 @@
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
 }
 
-/* Reset de fieldset/legend para que se vea igual que el div/label anterior */
-.form-fieldset {
-  border: none;
-  padding: 0;
-  margin-bottom: 28px;
-}
-
-.form-fieldset legend {
-  padding: 0;
-  width: 100%;
-}
-
 /* ── Badge de contexto de gimnasio ── */
 .gym-context-badge { 
   display: flex;
