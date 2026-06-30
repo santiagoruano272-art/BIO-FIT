@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic.base import RedirectView
 # IMPORTANTE: Asegúrate de importar 'logout_view' desde el módulo correcto de users
 from apps.users.views import RegisterView, login_view, logout_view, auto_logout_view, login_page, registro_page, landing_page
 from apps.conexion import views_perfil
@@ -53,4 +54,6 @@ urlpatterns = [
 
     # Buscador de gimnasios
     path('api/gimnasios/', views_perfil.BuscarGimnasiosView.as_view(), name='api_buscar_gimnasios'),
+
+    path('favicon.ico', RedirectView.as_view(url='/static/images/favicon.ico', permanent=True)),
 ]

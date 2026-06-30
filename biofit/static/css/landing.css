@@ -10,7 +10,7 @@
     gap: 15px;
     margin-bottom: 40px;
     flex-wrap: wrap;
-    background: linear-gradient(135deg, rgba(42,82,152,0.1) 0%, rgba(59,130,246,0.08) 100%);
+    background: linear-gradient(135deg, #15233d 0%, #101d33 100%);
     padding: 30px 25px;
     border-radius: 20px;
     border: 1px solid rgba(42,82,152,0.2);
@@ -50,7 +50,7 @@
     }
 }
 .stat-card {
-    background: linear-gradient(135deg, #111c30, #0d1b2e);
+    background: #0e1a2e;
     border: 1px solid rgba(42,82,152,0.2);
     padding: 28px;
     border-radius: 20px;
@@ -147,7 +147,7 @@
 /* ────────────────────────────── */
 
 .routine-section {
-    background: linear-gradient(135deg, rgba(42,82,152,0.1) 0%, rgba(42,82,152,0.05) 100%);
+    background: linear-gradient(135deg, #16243f 0%, #101c33 100%);
     border: 1.5px solid rgba(42,82,152,0.3);
     color: #c4d4e8;
     padding: 40px;
@@ -250,7 +250,7 @@
 
 /* ── Vista Previa de Entrenamiento ── */
 .training-preview {
-    background: linear-gradient(135deg, rgba(42,82,152,0.08) 0%, rgba(59,130,246,0.06) 100%);
+    background: linear-gradient(135deg, #14213a 0%, #0f1b30 100%);
     border: 1.5px solid rgba(42,82,152,0.25);
     border-radius: 25px;
     padding: 40px;
@@ -400,7 +400,8 @@
 /* Utility classes to replace inline styles in templates */
 .landing-root {
     min-height: 100vh;
-    background: #080f1e;
+    background: linear-gradient(rgba(8,15,30,0.85), rgba(8,15,30,0.85)),
+        url("/static/images/fondo.webp") center/cover no-repeat fixed;
     padding: 1px 0;
 }
 .stat-card--accent {
