@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'apps.conexion',
     'apps.rutinas',
     'apps.inventory',
+    'anymail',
 ]
 
 # ── MIDDLEWARE ─────────────────────────────────────────────────────────────────
@@ -140,13 +141,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ── REDIRECCIONES DE AUTENTICACIÓN ─────────────────────────────────────────────
 LOGIN_URL          = 'login-page'
 LOGIN_REDIRECT_URL = 'landing'
-# ── CORREO (SMTP) ──────────────────────────────────────────────────────────────
-EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST          = 'smtp.gmail.com'
-EMAIL_PORT          = 465
-EMAIL_USE_TLS       = False
-EMAIL_USE_SSL       = True
-EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL  = os.getenv('EMAIL_HOST_USER', 'noreply@biofit.com')
-EMAIL_TIMEOUT       = 10
+# ── CORREO (Resend vía Anymail) ─────────────────────────────────────────────
+EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
+
+ANYMAIL = {
+    'RESEND_API_KEY': os.getenv('RESEND_API_KEY', ''),
+}
+
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'onboarding@resend.dev')
