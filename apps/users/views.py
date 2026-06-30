@@ -10,7 +10,14 @@ from rest_framework import status
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
-from apps.conexion.auth import register_user, login_user
+from apps.conexion.auth import (
+    register_user, login_user,
+    verificar_limite_recuperacion, registrar_intento_recuperacion,
+    generar_codigo_recuperacion, enviar_correo_recuperacion,
+    validar_codigo_recuperacion, aplicar_nueva_password,
+)
+# Nota: validar_codigo_recuperacion se usa tanto en verificar_codigo_view (paso 2)
+# como en restablecer_password_view (paso 3) para doble validación.
 from services.firebase_client import FirebaseClient
 
 logger = logging.getLogger(__name__)
@@ -31,7 +38,6 @@ def landing_page(request):
     contexto = {}
     user_uid = request.session.get('user_uid')
 
-    # Resolver el apodo o nombre del usuario en el servidor antes de renderizar
     nombre_mostrar = 'Atleta'
     if user_uid:
         try:
@@ -64,8 +70,7 @@ def landing_page(request):
     else:
         contexto['gym_nombre']    = None
         contexto['gym_ubicacion'] = None
-    
-    # Obtener días seleccionados de la rutina
+
     selected_days = ['Lunes', 'Miércoles', 'Viernes']
     if user_uid:
         try:
@@ -76,22 +81,20 @@ def landing_page(request):
                     selected_days = user_inputs.get('nombres_dias', [])
         except Exception as e:
             print(f"[BIO-FIT] Error obteniendo días de la rutina: {e}")
-    
-    # Pasar los días al template (como JSON)
+
     import json
     contexto['selected_days_json'] = json.dumps(selected_days)
-    
+
     return render(request, 'landing.html', contexto)
 
 
 @never_cache
 def login_page(request):
-    """Renderiza de forma limpia la interfaz visual de inicio de sesión."""
-    # Siempre destruir la sesión del servidor al llegar al login.
-    # Esto cubre el caso donde Django reinicia pero db.sqlite3 aún
-    # conserva la sesión anterior, evitando el redirect automático al dashboard.
+    """
+    Renderiza de forma limpia la interfaz visual de inicio de sesión.
+    """
     django_logout(request)
-    return render(request, 'users/login.html')
+    return render(request, 'users/login.html', {})
 
 
 @never_cache
@@ -167,32 +170,19 @@ class RegisterView(APIView):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    """
-    Procesa las credenciales enviadas por login.js contra Firebase Auth
-    y establece la sesión segura dentro del ecosistema de Django.
-    """
     email    = request.data.get('email', '').strip().lower()
     password = request.data.get('password', '')
-    
-    # Intentar autenticación con Firebase
+
     result = login_user(email, password)
 
-    # 1. Validar si Firebase retornó un error o respuesta vacía
     if not result or 'error' in result:
         return Response(
-            result or {'error': 'Credenciales incorrectas o error de autenticación.'}, 
+            result or {'error': 'Credenciales incorrectas o error de autenticación.'},
             status=status.HTTP_401_UNAUTHORIZED
         )
 
-    # 2. Extraer el UID de forma segura usando .get() para evitar KeyError
     uid = result.get('uid')
-    if not uid:
-        return Response(
-            {'error': 'El servicio de autenticación no retornó un UID de usuario válido.'}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
 
-    # Manejo de bloqueo por cambio obligatorio de contraseña provisional
     if result.get('must_change_password'):
         request.session['uid_pending_password_change']   = uid
         request.session['email_pending_password_change'] = email
@@ -206,24 +196,21 @@ def login_view(request):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    # 3. Autenticación e inicio de sesión local en Django
     user, _ = User.objects.get_or_create(username=email, defaults={'email': email})
-    login(request, user)  # Django regenera de forma segura el ID de sesión aquí
+    login(request, user)
 
-    # 4. Asignación controlada de variables en la sesión del backend
     request.session['user_uid'] = uid
     request.session['user_rol'] = result.get('rol', 'atleta')
     request.session['gym_id']   = result.get('gym_id', None)
     request.session.modified    = True
     request.session.save()
 
-    # 5. Respuesta estructurada para el cliente (login.js)
     return Response({
         'message': 'Login exitoso',
-        'uid': uid,
-        'rol': request.session['user_rol'],
-        'gym_id': request.session['gym_id'],
-        'token': result.get('idToken') or result.get('token')
+        'uid':     uid,
+        'rol':     request.session['user_rol'],
+        'gym_id':  request.session['gym_id'],
+        'token':   result.get('idToken') or result.get('token')
     }, status=status.HTTP_200_OK)
 
 
@@ -232,10 +219,6 @@ def login_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def logout_view(request):
-    """
-    Destruye por completo la sesión activa en el servidor de Django 
-    y limpia la cookie 'sessionid' en el navegador del cliente.
-    """
     try:
         django_logout(request)
         return Response({'message': 'Sesión destruida exitosamente.'}, status=status.HTTP_200_OK)
@@ -249,16 +232,177 @@ def logout_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def auto_logout_view(request):
-    """
-    Llamado automáticamente por sendBeacon() desde base.js cuando el usuario
-    cierra la pestaña o el navegador. Destruye la sesión en el servidor
-    de forma idéntica al logout manual, sin requerir autenticación previa
-    (porque la cookie de sesión puede haber expirado justo al cerrar).
-    """
     try:
         django_logout(request)
         return Response({'message': 'Sesión cerrada automáticamente.'}, status=status.HTTP_200_OK)
     except Exception as e:
         logger.error("Error en auto-logout: %s", e)
-        # Retornamos 200 siempre para que el navegador no reintente la solicitud
         return Response({'ok': True}, status=status.HTTP_200_OK)
+
+
+# ── RECUPERACIÓN DE CONTRASEÑA — PASO 1: Enviar código (API) ─────────────────
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def recuperar_password_view(request):
+    """
+    Recibe un email, verifica que exista en Firestore, genera un código
+    de 6 dígitos y lo envía por correo.
+
+    Siempre responde 200 OK sin revelar si el email está registrado
+    (prevención de enumeración de usuarios). El rate limiting devuelve 429.
+    """
+    email = (request.data.get('email') or '').strip().lower()
+
+    if not email:
+        return Response(
+            {'error': 'El campo de correo electrónico es obligatorio.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # ── Rate limiting ──────────────────────────────────────────────────────
+    if not verificar_limite_recuperacion(email):
+        return Response(
+            {'error': 'Has realizado demasiados intentos. Por favor espera al menos una hora antes de volver a intentarlo.'},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
+    registrar_intento_recuperacion(email)
+
+    # ── Buscar al usuario en Firestore ─────────────────────────────────────
+    try:
+        docs = firebase.db.collection('users').where('email', '==', email).limit(1).stream()
+        usuario = None
+        for doc in docs:
+            usuario = doc.to_dict()
+            usuario['uid'] = doc.id
+            break
+    except Exception as e:
+        logger.error(f"[BIO-FIT] Error buscando usuario para recuperación ({email}): {e}")
+        return Response({'message': 'Si ese correo está registrado, recibirás un código en breve.'}, status=status.HTTP_200_OK)
+
+    if not usuario:
+        logger.info(f"[BIO-FIT] Solicitud de recuperación para email no registrado: {email}")
+        return Response(
+            {'error': 'Este correo no está registrado en BIO-FIT.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    uid = usuario['uid']
+
+    # ── Generar código y guardar en Firestore ──────────────────────────────
+    codigo = generar_codigo_recuperacion(uid)
+    if not codigo:
+        logger.error(f"[BIO-FIT] Falló la generación del código para uid={uid}")
+        return Response(
+            {'error': 'Error interno al generar el código de recuperación. Intenta de nuevo.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # ── Enviar correo ──────────────────────────────────────────────────────
+    enviado = enviar_correo_recuperacion(email, codigo)
+    if not enviado:
+        logger.error(f"[BIO-FIT] Falló el envío de correo de recuperación a {email}")
+        return Response(
+            {'error': 'No se pudo enviar el correo. Verifica la configuración del servidor de correo.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return Response(
+        {'message': 'Si ese correo está registrado, recibirás un código en breve.'},
+        status=status.HTTP_200_OK,
+    )
+
+
+# ── RECUPERACIÓN DE CONTRASEÑA — PASO 2: Verificar código ────────────────────
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verificar_codigo_view(request):
+    """
+    Recibe el email y el código de 6 dígitos.
+    Solo verifica que sea válido y no haya expirado sin aplicar aún la contraseña.
+    Retorna 200 si el código es correcto, 400 si no.
+    """
+    email  = (request.data.get('email') or '').strip().lower()
+    codigo = (request.data.get('codigo') or '').strip()
+
+    if not email or not codigo:
+        return Response(
+            {'error': 'Email y código son obligatorios.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    perfil = validar_codigo_recuperacion(email, codigo)
+    if not perfil:
+        return Response(
+            {'error': 'El código es incorrecto o ya expiró. Solicita uno nuevo.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return Response({'message': 'Código válido.'}, status=status.HTTP_200_OK)
+
+
+# ── RECUPERACIÓN DE CONTRASEÑA — PASO 3: Verificar código y nueva contraseña ─
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def restablecer_password_view(request):
+    """
+    Recibe el email, el código de 6 dígitos y la nueva contraseña.
+    Valida el código, aplica las reglas de seguridad y actualiza Firebase Auth.
+    El código queda invalidado tras el primer uso exitoso.
+    """
+    import re
+
+    email          = (request.data.get('email') or '').strip().lower()
+    codigo         = (request.data.get('codigo') or '').strip()
+    nueva_password = request.data.get('nueva_password', '')
+
+    if not email or not codigo or not nueva_password:
+        return Response(
+            {'error': 'Email, código y nueva contraseña son obligatorios.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # ── Validaciones de seguridad de la contraseña ─────────────────────────
+    errores = []
+    if len(nueva_password) < 8:
+        errores.append('al menos 8 caracteres')
+    if not re.search(r'[A-Z]', nueva_password):
+        errores.append('una letra mayúscula')
+    if not re.search(r'[a-z]', nueva_password):
+        errores.append('una letra minúscula')
+    if not re.search(r'\d', nueva_password):
+        errores.append('un número')
+    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|`~]', nueva_password):
+        errores.append('un carácter especial (!@#$...)')
+
+    if errores:
+        return Response(
+            {'error': f'La contraseña debe incluir: {", ".join(errores)}.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # ── Validar código en Firestore ────────────────────────────────────────
+    perfil = validar_codigo_recuperacion(email, codigo)
+    if not perfil:
+        return Response(
+            {'error': 'El código es incorrecto o ya expiró. Solicita uno nuevo.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    uid = perfil['uid']
+
+    # ── Aplicar la nueva contraseña en Firebase Auth ───────────────────────
+    exito = aplicar_nueva_password(uid, nueva_password)
+    if not exito:
+        return Response(
+            {'error': 'No se pudo actualizar la contraseña. Intenta de nuevo.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return Response(
+        {'message': 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.'},
+        status=status.HTTP_200_OK,
+    )

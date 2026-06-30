@@ -425,6 +425,54 @@
     filter: drop-shadow(0 6px 14px rgba(96,165,250,0.15));
     opacity: 1;
 }
+
+/* New body diagram features */
+.body-view-toggle {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.view-btn {
+    background: rgba(42,82,152,0.15);
+    border: 1px solid rgba(42,82,152,0.3);
+    color: #8aa5be;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.view-btn:hover {
+    border-color: rgba(42,82,152,0.5);
+    color: #93c5fd;
+}
+
+.view-btn.active {
+    background: linear-gradient(135deg, #2a5298 0%, #3b6fd4 100%);
+    border-color: rgba(42,82,152,0.6);
+    color: #ffffff;
+}
+
+.body-views {
+    display: flex;
+    justify-content: center;
+}
+
+.body-svg {
+    width: 160px;
+    height: 320px;
+    margin-bottom: 15px;
+    opacity: 0.95;
+    display: none;
+}
+
+.body-svg.active {
+    display: block;
+}
+
 .body-info {
     text-align: center;
     font-size: 0.85rem;
