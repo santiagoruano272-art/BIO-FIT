@@ -75,65 +75,23 @@
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
 }
 
-.days-checkboxes {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
+/* Reset de fieldset/legend para que se vea igual que el div/label anterior */
+.form-fieldset {
+  border: none;
+  padding: 0;
+  margin-bottom: 28px;
+}
+
+.form-fieldset legend {
+  padding: 0;
   width: 100%;
 }
 
-.day-checkbox {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  background: rgba(8,15,30,0.7);
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 14px;
-  cursor: pointer;
-  transition: all 0.25s;
-  user-select: none;
-  min-height: 48px;
-  min-width: 0;
-}
-
-.day-checkbox:hover {
-  border-color: rgba(96,165,250,0.4);
-  background: rgba(8,15,30,0.9);
-  transform: translateY(-1px);
-}
-
-.day-checkbox input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--accent);
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.day-checkbox span {
-  color: var(--silver);
-  font-weight: 700;
-  font-size: 0.92rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.day-checkbox:has(input:checked) {
-  border-color: var(--accent);
-  background: rgba(42,82,152,0.25);
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
-}
-
-.day-checkbox:has(input:checked) span {
-  color: var(--accent-bright);
-}
-
+/* ── Badge de contexto de gimnasio ── */
 .gym-context-badge { 
-  display: flex; 
-  align-items: flex-start; 
+  display: flex;
+  flex-wrap: nowrap;           /* evita que ícono y texto se apilen */
+  align-items: center; 
   gap: 12px; 
   background: rgba(42,82,152,0.15); 
   border: 1.5px solid var(--border);
@@ -142,11 +100,23 @@
   margin-bottom: 28px; 
   font-size: 0.95rem; 
   color: var(--silver);
+  overflow: hidden;            /* contiene el texto en viewports muy angostos */
 }
 
-.gym-context-badge #gym-badge-text { display: flex; line-height: 1.5; }
-.gym-context-badge #gym-badge-text strong { color: var(--accent-bright); font-weight: 700; }
-.gym-badge-icon { font-size: 20px; line-height: 1.5; flex-shrink: 0; }
+.gym-context-badge span { display: inline-flex; align-items: center; }
+
+.gym-badge-icon { 
+  font-size: 20px; 
+  flex-shrink: 0;              /* el ícono nunca se comprime */
+}
+
+/* Texto del badge: siempre en una sola línea horizontal */
+#gym-badge-text {
+  white-space: nowrap;         /* fuerza una única línea */
+  overflow: hidden;
+  text-overflow: ellipsis;     /* "…" si el texto no cabe en móvil */
+  flex: 1;                     /* ocupa el espacio restante */
+}
 
 .routine-results { margin-top: 40px; text-align: left; }
 
@@ -285,59 +255,13 @@
 
 .btn-save-routine:hover { 
   background: linear-gradient(135deg, #1d4ed8 0%, #2363c7 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 14px 40px rgba(37,99,235,0.40);
-
   color: var(--white);
   transform: translateY(-2px); 
   box-shadow: 0 10px 36px rgba(42,82,152,0.5);
 }
 
 @media (max-width: 768px) {
-  .generator-panel { margin: 30px auto; padding: 15px; }
-  .generator-panel h1 { font-size: 2rem; }
+  .generator-panel h1 { font-size: 2.2rem; }
   .routine-form { padding: 24px; }
   .form-label { font-size: 0.85rem; }
-  .days-checkboxes { 
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-  .day-checkbox { padding: 10px 12px; }
-  .day-checkbox span { font-size: 0.88rem; }
-}
-.gym-context-badge {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  background: rgba(42,82,152,0.15);
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-
-  padding: 16px 18px;
-  margin-bottom: 28px;
-
-  color: var(--silver);
-  font-size: 0.95rem;
-
-  width: 100%;
-}
-
-.gym-badge-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-#gym-badge-text {
-  display: block;
-  width: 100%;
-
-  line-height: 1.6;
-  text-align: left;
-
-  white-space: normal !important;
-  word-break: normal !important;
-  overflow-wrap: break-word;
-
-  max-width: 100%;
 }
